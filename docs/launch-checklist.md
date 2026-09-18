@@ -74,6 +74,28 @@ will not be looking at it on launch day.
 
 ---
 
+## November handover
+
+The club Google account, and everything published that depends on it, moves
+from one person to the club. Until it happens the maintainer holds it alone —
+deliberately, not as an oversight. That is why the email test below waits on
+this date, and why the club calendar turns out not to.
+
+In order, because each step needs the one before it:
+
+1. **Name the responsible people.** Who owns `welfare@`, `membership@`,
+   `hello@` and the two race addresses, and who holds the club Google account
+   afterwards. Names still to be supplied — nothing below can start without
+   them.
+2. **Hand over the club Google account.** Transfer it to the people named
+   above, so it belongs to the club as an organisation rather than to whoever
+   set it up.
+3. **Set up the forwarders.** One per published address, pointing at the
+   people named in step 1. Then test them end to end, as **Before the day**
+   requires — that test is the proof this section actually happened.
+
+---
+
 ## Before the day
 
 ### Must be done, or the site is wrong
@@ -95,6 +117,10 @@ will not be looking at it on launch day.
   addresses. A safeguarding address that looks official and quietly routes
   nowhere is the worst failure this site could have, and it is invisible from
   the outside.
+  **None of them forward anywhere yet, and that is deliberate.** A forwarder
+  needs somebody to forward to, and who owns each address is settled at the
+  November handover below. So this test cannot be run until the forwarders
+  exist — and running it is how you prove they do.
 - **Verify CMS sign-in on the final domain, after the switch, in a fresh
   browser, by somebody who is not the maintainer.** A maintainer with a live
   session cannot detect this class of failure, and `ALLOWED_DOMAINS` above is
@@ -118,13 +144,23 @@ will not be looking at it on launch day.
 - **Both race pages** (`src/content/races/`) — parking, registration times,
   facilities, baggage, prizes, the course description, and who marshals contact.
   Chard Flyer also has no race director named and no alt text on its hero image.
-- **Join Us** — when membership renews, and whether the Connect My Club code
-  carried over from the old site is still current.
+- **Join Us** — when membership renews.
 
 ### Decisions
 
-- **Which races count for the championship.** Every one of the 30 diary entries
-  carries `championship: false` with a `TODO`. One list settles all of them.
+- **Which races count for the championship.** The 2026 list has been received,
+  but it is the wrong year for this. The diary runs twelve months ahead, so a
+  December 2026 launch shows December 2026 to December 2027, and almost
+  everything in it is a 2027 running. **The 2027 list is the one that settles
+  the diary.** All 29 entries carry `championship: false` with a `TODO` until
+  it arrives.
+
+  **Flagging, not fixing — the field may be the wrong shape.** `championship`
+  is a boolean on the recurring race, so setting it true says "this race
+  counts", permanently, not "this race counts in 2027". If the list changes
+  from season to season the field cannot say so, and each new list means
+  editing every entry again. That is a decision about how the diary should
+  work, not a typing job, so no diary entries have been changed.
 - **Forde Abbey's slot** — fourth Wednesday in June, or last? 2026 was both, so
   the diary is guessing. It is the club's own race; somebody knows.
 
@@ -134,9 +170,11 @@ will not be looking at it on launch day.
   years old — 11 today. Each needs confirming with the organiser or retiring.
 - **The Full MontyCute entry link** is commented out in its diary entry;
   entries are open and the real Race Nation URL needs pasting in.
-- **The club Google Calendar** on `/calendar` — blocked on the club Google
-  account. The agreed version reads the calendar's `.ics` feed at build time
-  rather than embedding an iframe. See `backlog.md`.
+- **The club Google Calendar** on `/calendar` — **not blocked on access.** The
+  maintainer holds the club Google account alone, by design, until the November
+  handover, so there is nothing to wait for and no one to chase: this is time,
+  not permission. The agreed version reads the calendar's `.ics` feed at build
+  time rather than embedding an iframe. See `backlog.md`.
 - **The 2017 Dark Valley race report** is still `draft: true` and is the only
   history that entry has.
 - **The weekly rebuild** (`workers/diary-rebuild/`) — confirm a Monday build
