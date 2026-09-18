@@ -74,6 +74,16 @@ https://crr-cms-auth.buddygoestravelling.workers.dev/callback
 That is this Worker's address, **not the website's**. It does not change when
 the site's domain changes.
 
+**It does change if the Cloudflare account changes.** The `workers.dev`
+subdomain belongs to the account, not to the Worker, so moving this Worker to
+the club's own Cloudflare account turns every
+`*.buddygoestravelling.workers.dev` address into
+`*.<the new account's>.workers.dev` — this callback URL with them. That is
+planned for the November handover, and the callback URL is one of three things
+that have to change together: it, `base_url` in `public/admin/config.yml`, and
+`ALLOWED_DOMAINS` below. See `docs/launch-checklist.md` under November
+handover.
+
 ### Worker environment variables
 
 Set in the Cloudflare dashboard. Names only — the values are not written down
