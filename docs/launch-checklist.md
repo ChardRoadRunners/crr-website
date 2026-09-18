@@ -45,32 +45,111 @@ flag, deliberately, so there is only one thing to remember.
 This is not security. Anyone with the address can read every page today, and
 this repository is public. It only stops the site being found by accident.
 
-### And confirm ALLOWED_DOMAINS includes the live domain
+### ~~And confirm ALLOWED_DOMAINS includes the live domain~~
 
-**On the `crr-cms-auth` Worker, not this one.** It is the GitHub sign-in proxy
-the CMS uses, and `ALLOWED_DOMAINS` is the list of hostnames allowed to use it.
-`cms-install-plan.md` records it as set, but its value is only visible in the
-Cloudflare dashboard, so **read it before changing anything**. If it does not
-already include the live domain, sign-in fails with "Your domain is not allowed
-to use the authenticator" the moment `/admin` is served from
-`chardroadrunners.com`.
+**Done — read from the live Worker on 18 September 2026, and already correct.
+Nothing to change on launch day.** Left here rather than deleted so a future
+reader can see it was checked, and knows where to look if sign-in ever breaks.
 
-The Worker the CMS calls is `crr-cms-auth.buddygoestravelling.workers.dev`,
-named as `base_url` in `public/admin/config.yml`.
-
-Set it to cover the naked domain and its subdomains, which need listing
-separately:
+It is set to:
 
 ```
-chardroadrunners.com, *.chardroadrunners.com
+chardroadrunners.com, *.chardroadrunners.com, crr-website.buddygoestravelling.workers.dev
 ```
 
-Keep the `workers.dev` hostname on the list too while that address is still in
-use, or the CMS stops working there the moment you change it.
+The naked domain, its subdomains listed separately as they have to be, and the
+`workers.dev` hostname kept on while that address is still in use. Note the
+third is the *site's* hostname, not the authenticator's: what gets checked is
+the domain serving `/admin`, not the address the CMS calls.
 
-This one fails quietly from the outside. The website is completely fine — it is
-only the committee who cannot sign in to edit it, which is the one group who
-will not be looking at it on launch day.
+**It is not dashboard-only, as this entry used to say.** Sveltia inlines the
+compiled patterns into every error response — the browser needs them to check
+the origin of the `postMessage` it receives — so the list is public, and can be
+read again in one command without opening Cloudflare:
+
+```
+curl -s 'https://crr-cms-auth.buddygoestravelling.workers.dev/auth' \
+  | grep -o 'trustedPatterns = .*;'
+```
+
+That is upstream behaviour rather than a leak: an allow-list of domains is not
+a secret. But it is worth knowing it is readable by anyone.
+
+Still worth knowing where this lives. `ALLOWED_DOMAINS` is on the
+`crr-cms-auth` Worker, not this site's — the GitHub sign-in proxy the CMS
+calls, named as `base_url` in `public/admin/config.yml`. The patterns are
+exact, and a hostname matching none of the three is refused with "Your domain
+is not allowed to use the authenticator". That fails quietly from the outside:
+the website is completely fine, it is only the committee who cannot sign in to
+edit it, which is the one group who will not be looking at it on launch day.
+
+---
+
+## November handover
+
+Everything the website runs on moves from one person to the club: the club
+Google account, the Cloudflare account that holds the domain and the Workers,
+and the GitHub repository. Until then the maintainer holds all of it alone —
+deliberately, not as an oversight. That is why the email test below waits on
+this date, and why the club calendar turns out not to.
+
+**It is one job, not four.** The CRR Gmail account is the root of all of it:
+the CRR Cloudflare account is opened from that Gmail account, the domain
+registration moves into that Cloudflare account, and the Workers follow it
+there. So the Google account has to land first and everything else is
+downstream of it.
+
+In order, because each step needs the one before it:
+
+1. **Name the responsible people.** Who owns `welfare@`, `membership@`,
+   `hello@` and the two race addresses, who holds the club Google account
+   afterwards, and who holds the CRR Cloudflare account. Names still to be
+   supplied — nothing below can start without them.
+2. **Hand over the club Google account.** Transfer it to the people named
+   above, so it belongs to the club as an organisation rather than to whoever
+   set it up.
+3. **Set up the forwarders.** One per published address, pointing at the
+   people named in step 1. Then test them end to end, as **Before the day**
+   requires — that test is the proof this section actually happened.
+4. **Open the CRR Cloudflare account from the CRR Gmail account**, then move
+   the domain registration and the Workers into it. See what this breaks,
+   below — it is more than it looks.
+5. **Move the GitHub repository** to the club's own GitHub account, and
+   reconnect Workers Builds to it so that a push still deploys. Which account
+   it moves to is not decided yet.
+
+### What the Cloudflare move breaks
+
+Worth reading before it starts, because it is not obvious. **The `workers.dev`
+subdomain belongs to the account, not to the Worker.** Move to a CRR Cloudflare
+account and every `*.buddygoestravelling.workers.dev` address becomes
+`*.<whatever the new account's is>.workers.dev`.
+
+Three things name the old address and stop working:
+
+- `public/admin/config.yml` — `base_url`, the address the CMS calls
+- the GitHub OAuth App's **Authorization callback URL**, set on GitHub rather
+  than in this repository
+- `ALLOWED_DOMAINS` on `crr-cms-auth`, whose third entry is the old hostname
+
+And two more record it and go stale: `workers/cms-auth/README.md`, and this
+file's own ALLOWED_DOMAINS entry above.
+
+Note `workers/cms-auth/README.md` says the callback URL "does not change when
+the site's domain changes". That is true and stays true — but an account move
+is not a domain change, and it does change then.
+
+Get any one of these wrong and the website is completely fine while the
+committee cannot sign in to edit it. Change them together, then test `/admin`
+end to end from a browser with no live session, by somebody who is not the
+maintainer.
+
+**This is also where the preview-URL gap gets closed.** Branch deployments get
+a `workers.dev` hostname that `ALLOWED_DOMAINS` does not match, so CMS sign-in
+fails on a branch preview today. Left alone deliberately rather than patched
+now: widening the allow-list to cover previews would authorise every Worker on
+that subdomain, and the subdomain is about to change anyway. It gets fixed
+once, properly, as part of this move — and tested in the same pass.
 
 ---
 
@@ -95,6 +174,10 @@ will not be looking at it on launch day.
   addresses. A safeguarding address that looks official and quietly routes
   nowhere is the worst failure this site could have, and it is invisible from
   the outside.
+  **None of them forward anywhere yet, and that is deliberate.** A forwarder
+  needs somebody to forward to, and who owns each address is settled at the
+  November handover below. So this test cannot be run until the forwarders
+  exist — and running it is how you prove they do.
 - **Verify CMS sign-in on the final domain, after the switch, in a fresh
   browser, by somebody who is not the maintainer.** A maintainer with a live
   session cannot detect this class of failure, and `ALLOWED_DOMAINS` above is
@@ -118,13 +201,23 @@ will not be looking at it on launch day.
 - **Both race pages** (`src/content/races/`) — parking, registration times,
   facilities, baggage, prizes, the course description, and who marshals contact.
   Chard Flyer also has no race director named and no alt text on its hero image.
-- **Join Us** — when membership renews, and whether the Connect My Club code
-  carried over from the old site is still current.
+- **Join Us** — when membership renews.
 
 ### Decisions
 
-- **Which races count for the championship.** Every one of the 30 diary entries
-  carries `championship: false` with a `TODO`. One list settles all of them.
+- **Which races count for the championship.** The 2026 list has been received,
+  but it is the wrong year for this. The diary runs twelve months ahead, so a
+  December 2026 launch shows December 2026 to December 2027, and almost
+  everything in it is a 2027 running. **The 2027 list is the one that settles
+  the diary.** All 29 entries carry `championship: false` with a `TODO` until
+  it arrives.
+
+  **Flagging, not fixing — the field may be the wrong shape.** `championship`
+  is a boolean on the recurring race, so setting it true says "this race
+  counts", permanently, not "this race counts in 2027". If the list changes
+  from season to season the field cannot say so, and each new list means
+  editing every entry again. That is a decision about how the diary should
+  work, not a typing job, so no diary entries have been changed.
 - **Forde Abbey's slot** — fourth Wednesday in June, or last? 2026 was both, so
   the diary is guessing. It is the club's own race; somebody knows.
 
@@ -134,9 +227,11 @@ will not be looking at it on launch day.
   years old — 11 today. Each needs confirming with the organiser or retiring.
 - **The Full MontyCute entry link** is commented out in its diary entry;
   entries are open and the real Race Nation URL needs pasting in.
-- **The club Google Calendar** on `/calendar` — blocked on the club Google
-  account. The agreed version reads the calendar's `.ics` feed at build time
-  rather than embedding an iframe. See `backlog.md`.
+- **The club Google Calendar** on `/calendar` — **not blocked on access.** The
+  maintainer holds the club Google account alone, by design, until the November
+  handover, so there is nothing to wait for and no one to chase: this is time,
+  not permission. The agreed version reads the calendar's `.ics` feed at build
+  time rather than embedding an iframe. See `backlog.md`.
 - **The 2017 Dark Valley race report** is still `draft: true` and is the only
   history that entry has.
 - **The weekly rebuild** (`workers/diary-rebuild/`) — confirm a Monday build
