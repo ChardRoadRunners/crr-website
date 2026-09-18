@@ -87,23 +87,69 @@ edit it, which is the one group who will not be looking at it on launch day.
 
 ## November handover
 
-The club Google account, and everything published that depends on it, moves
-from one person to the club. Until it happens the maintainer holds it alone —
+Everything the website runs on moves from one person to the club: the club
+Google account, the Cloudflare account that holds the domain and the Workers,
+and the GitHub repository. Until then the maintainer holds all of it alone —
 deliberately, not as an oversight. That is why the email test below waits on
 this date, and why the club calendar turns out not to.
+
+**It is one job, not four.** The CRR Gmail account is the root of all of it:
+the CRR Cloudflare account is opened from that Gmail account, the domain
+registration moves into that Cloudflare account, and the Workers follow it
+there. So the Google account has to land first and everything else is
+downstream of it.
 
 In order, because each step needs the one before it:
 
 1. **Name the responsible people.** Who owns `welfare@`, `membership@`,
-   `hello@` and the two race addresses, and who holds the club Google account
-   afterwards. Names still to be supplied — nothing below can start without
-   them.
+   `hello@` and the two race addresses, who holds the club Google account
+   afterwards, and who holds the CRR Cloudflare account. Names still to be
+   supplied — nothing below can start without them.
 2. **Hand over the club Google account.** Transfer it to the people named
    above, so it belongs to the club as an organisation rather than to whoever
    set it up.
 3. **Set up the forwarders.** One per published address, pointing at the
    people named in step 1. Then test them end to end, as **Before the day**
    requires — that test is the proof this section actually happened.
+4. **Open the CRR Cloudflare account from the CRR Gmail account**, then move
+   the domain registration and the Workers into it. See what this breaks,
+   below — it is more than it looks.
+5. **Move the GitHub repository** to the club's own GitHub account, and
+   reconnect Workers Builds to it so that a push still deploys. Which account
+   it moves to is not decided yet.
+
+### What the Cloudflare move breaks
+
+Worth reading before it starts, because it is not obvious. **The `workers.dev`
+subdomain belongs to the account, not to the Worker.** Move to a CRR Cloudflare
+account and every `*.buddygoestravelling.workers.dev` address becomes
+`*.<whatever the new account's is>.workers.dev`.
+
+Three things name the old address and stop working:
+
+- `public/admin/config.yml` — `base_url`, the address the CMS calls
+- the GitHub OAuth App's **Authorization callback URL**, set on GitHub rather
+  than in this repository
+- `ALLOWED_DOMAINS` on `crr-cms-auth`, whose third entry is the old hostname
+
+And two more record it and go stale: `workers/cms-auth/README.md`, and this
+file's own ALLOWED_DOMAINS entry above.
+
+Note `workers/cms-auth/README.md` says the callback URL "does not change when
+the site's domain changes". That is true and stays true — but an account move
+is not a domain change, and it does change then.
+
+Get any one of these wrong and the website is completely fine while the
+committee cannot sign in to edit it. Change them together, then test `/admin`
+end to end from a browser with no live session, by somebody who is not the
+maintainer.
+
+**This is also where the preview-URL gap gets closed.** Branch deployments get
+a `workers.dev` hostname that `ALLOWED_DOMAINS` does not match, so CMS sign-in
+fails on a branch preview today. Left alone deliberately rather than patched
+now: widening the allow-list to cover previews would authorise every Worker on
+that subdomain, and the subdomain is about to change anyway. It gets fixed
+once, properly, as part of this move — and tested in the same pass.
 
 ---
 
