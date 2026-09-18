@@ -45,32 +45,43 @@ flag, deliberately, so there is only one thing to remember.
 This is not security. Anyone with the address can read every page today, and
 this repository is public. It only stops the site being found by accident.
 
-### And confirm ALLOWED_DOMAINS includes the live domain
+### ~~And confirm ALLOWED_DOMAINS includes the live domain~~
 
-**On the `crr-cms-auth` Worker, not this one.** It is the GitHub sign-in proxy
-the CMS uses, and `ALLOWED_DOMAINS` is the list of hostnames allowed to use it.
-`cms-install-plan.md` records it as set, but its value is only visible in the
-Cloudflare dashboard, so **read it before changing anything**. If it does not
-already include the live domain, sign-in fails with "Your domain is not allowed
-to use the authenticator" the moment `/admin` is served from
-`chardroadrunners.com`.
+**Done — read from the live Worker on 18 September 2026, and already correct.
+Nothing to change on launch day.** Left here rather than deleted so a future
+reader can see it was checked, and knows where to look if sign-in ever breaks.
 
-The Worker the CMS calls is `crr-cms-auth.buddygoestravelling.workers.dev`,
-named as `base_url` in `public/admin/config.yml`.
-
-Set it to cover the naked domain and its subdomains, which need listing
-separately:
+It is set to:
 
 ```
-chardroadrunners.com, *.chardroadrunners.com
+chardroadrunners.com, *.chardroadrunners.com, crr-website.buddygoestravelling.workers.dev
 ```
 
-Keep the `workers.dev` hostname on the list too while that address is still in
-use, or the CMS stops working there the moment you change it.
+The naked domain, its subdomains listed separately as they have to be, and the
+`workers.dev` hostname kept on while that address is still in use. Note the
+third is the *site's* hostname, not the authenticator's: what gets checked is
+the domain serving `/admin`, not the address the CMS calls.
 
-This one fails quietly from the outside. The website is completely fine — it is
-only the committee who cannot sign in to edit it, which is the one group who
-will not be looking at it on launch day.
+**It is not dashboard-only, as this entry used to say.** Sveltia inlines the
+compiled patterns into every error response — the browser needs them to check
+the origin of the `postMessage` it receives — so the list is public, and can be
+read again in one command without opening Cloudflare:
+
+```
+curl -s 'https://crr-cms-auth.buddygoestravelling.workers.dev/auth' \
+  | grep -o 'trustedPatterns = .*;'
+```
+
+That is upstream behaviour rather than a leak: an allow-list of domains is not
+a secret. But it is worth knowing it is readable by anyone.
+
+Still worth knowing where this lives. `ALLOWED_DOMAINS` is on the
+`crr-cms-auth` Worker, not this site's — the GitHub sign-in proxy the CMS
+calls, named as `base_url` in `public/admin/config.yml`. The patterns are
+exact, and a hostname matching none of the three is refused with "Your domain
+is not allowed to use the authenticator". That fails quietly from the outside:
+the website is completely fine, it is only the committee who cannot sign in to
+edit it, which is the one group who will not be looking at it on launch day.
 
 ---
 
