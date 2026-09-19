@@ -36,7 +36,8 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
   share links, RSS and the sitemap correct.
   **`docs/launch-checklist.md` is the list of everything else still to do.**
 - **A second, separate Worker** — `diary-rebuild` in `workers/diary-rebuild/` —
-  pings a deploy hook once a week so the race diary rolls forward on its own. It
+  pings a deploy hook nightly so the race diary rolls forward and the club
+  Google calendars stay current on their own. It
   has its own Workers Build against this same repository, with the root
   directory set to that folder, so a push to `main` builds it alongside the site.
   `name` in its `wrangler.jsonc` must match the Worker's name in the Cloudflare

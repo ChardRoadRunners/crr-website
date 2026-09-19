@@ -1,10 +1,11 @@
-# Weekly rebuild
+# Nightly rebuild
 
-The race diary is worked out at build time. Without a rebuild it freezes: races
-that have already happened stop dropping off, and the twelve-month window stops
-rolling forward. This Worker rings a deploy hook once a week so that happens on
-its own — which is what stops the diary lapsing the way the old hand-maintained
-calendar did.
+The race diary is worked out at build time, and so are the club's Google
+calendars. Without a rebuild both freeze: races that have already happened stop
+dropping off, the twelve-month window stops rolling forward, and an event added
+in Google never appears. This Worker rings a deploy hook once a night so that
+happens on its own — which is what stops the diary lapsing the way the old
+hand-maintained calendar did.
 
 It is a separate Worker from the site and shares nothing with it. Twenty lines,
 in `src/index.js`.
@@ -21,7 +22,7 @@ see the shape of it, and rebuild it if it is ever lost.
 2. **This Worker, named `diary-rebuild`**, created under **Workers & Pages →
    Create application** with the `Smellyllama/crr-website` repository connected
    and **Root directory** set to `workers/diary-rebuild`. Cloudflare builds this
-   folder on its own machines and reads the `wrangler.jsonc` here, so the weekly
+   folder on its own machines and reads the `wrangler.jsonc` here, so the
    schedule travels with the code.
 3. **The deploy hook URL stored as a secret** on this Worker, under **Settings →
    Variables and Secrets**, named `DEPLOY_HOOK_URL`. The code refuses to run
@@ -39,7 +40,7 @@ as a second build every time.
 
 ## Checking it works
 
-The first scheduled run is the Monday after setup, 06:00 UTC. Two ways to see
+The first scheduled run is the next 04:00 UTC after setup. Two ways to see
 it:
 
 - **In the dashboard** — this Worker's **Logs** tab. A successful run logs
@@ -49,7 +50,7 @@ it:
 - **From a terminal** — `npx wrangler tail diary-rebuild` shows the same thing
   live.
 
-To test without waiting for Monday, from this directory:
+To test without waiting for the small hours, from this directory:
 
 ```
 npx wrangler dev --test-scheduled
@@ -61,14 +62,21 @@ fires a *real* rebuild if `DEPLOY_HOOK_URL` is set locally.
 ## Changing the schedule
 
 `triggers.crons` in `wrangler.jsonc` — standard cron syntax, always UTC.
-Currently `0 6 * * 1`: Mondays at 06:00, so the week opens with a current diary.
+Currently `0 4 * * *`: every night at 04:00.
 
 It can also be changed in the dashboard under **Settings → Triggers → Cron
 Triggers**, but prefer the file, so the schedule stays written down in the
 repository rather than living only somewhere nobody thinks to look.
 
-Weekly is enough. The diary only moves when a month rolls over, and an edit
-through the CMS already triggers its own build.
+It was Monday-only until the club calendars were read at build time. Weekly
+suited the diary on its own, which moves when a month rolls over — but an event
+added to a Google calendar on a Tuesday should not wait until the following
+Monday to show up. Nightly is the slowest schedule that still makes a calendar
+useful.
+
+Do not go faster than nightly. A club calendar changes weekly at most, and
+anything more frequent burns build minutes for nothing. An edit through the CMS
+already triggers its own build, so content changes never wait for this.
 
 ## Deploying from a terminal instead
 

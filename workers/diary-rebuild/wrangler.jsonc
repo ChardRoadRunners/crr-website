@@ -13,8 +13,12 @@
 	"main": "src/index.js",
 	"compatibility_date": "2026-09-08",
 
-	// Monday 06:00 UTC, so the week opens with a current diary.
+	// Nightly at 04:00 UTC. Was Monday only, which was enough for the race
+	// diary on its own — that moves in weeks. The club calendars are read at
+	// build time too now, and an event added on a Tuesday should not wait
+	// until the following Monday to appear. 04:00 is low traffic and before
+	// anybody looks.
 	"triggers": {
-		"crons": ["0 6 * * 1"]
+		"crons": ["0 4 * * *"]
 	}
 }
