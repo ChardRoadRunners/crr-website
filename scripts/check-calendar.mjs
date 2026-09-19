@@ -17,7 +17,7 @@ import assert from 'node:assert/strict';
 
 import ical from 'node-ical';
 
-const { normalise, formatEventWhen, isSameRace } = await import(
+const { normalise, formatEventWhen, isSameRace, isPubRun } = await import(
 	new URL('../src/utils/calendar.ts', import.meta.url).href
 );
 const { ordinal } = await import(new URL('../src/utils/date.ts', import.meta.url).href);
@@ -305,6 +305,35 @@ for (const [a, b, aDate, bDate, want, why] of [
 ]) {
 	check(`same race? ${why}`, () => {
 		assert.equal(isSameRace(a, b, d(aDate), d(bDate)), want);
+	});
+}
+
+// ---------------------------------------------------------------------------
+// Which socials are pub runs
+//
+// The /pub-runs page reads the socials calendar and keeps the pub runs. There
+// is no field saying which those are, only the title, so this is a naming
+// convention holding up a page. A miss is silent — the run simply never
+// appears — which is why the match is generous and why the wordings the
+// secretaries actually use are pinned here rather than assumed.
+// ---------------------------------------------------------------------------
+
+for (const [title, want, why] of [
+	['Pub Run', true, 'the plain wording'],
+	['Pub run - The George', true, 'a pub named after a dash'],
+	['Pub Run: The Eagle Tavern', true, 'a colon instead'],
+	['July pub run', true, 'the month first'],
+	['Pub runs', true, 'plural'],
+	['Pubs Run', true, 'the annual one, pubs plural'],
+	['PUB RUN', true, 'shouted'],
+	['Pub-run', true, 'hyphenated'],
+	['Christmas party', false, 'an ordinary social'],
+	['Pub quiz', false, 'a pub, but nobody is running'],
+	['Club run', false, 'a run, but not to a pub'],
+	['Summer BBQ', false, 'no pub, no run'],
+]) {
+	check(`pub run? ${why}`, () => {
+		assert.equal(isPubRun({ title }), want, `"${title}"`);
 	});
 }
 

@@ -321,6 +321,30 @@ export function isSameRace(
 }
 
 /**
+ * Is this social a pub run?
+ *
+ * Pub runs live in the socials calendar alongside parties and quizzes, because
+ * that is the calendar the social secretaries already keep. Nothing marks one
+ * out except its title, so this is a naming convention doing structural work —
+ * the weakest joint in the pub runs page, and worth knowing about.
+ *
+ * Deliberately generous, because the failure is silent: a pub run the filter
+ * misses does not error, it just never appears. "Pub run", "Pub Run - The
+ * George", "July pub run" and the annual "Pubs Run" all match. Matching too
+ * widely only pulls a party onto a page about pub runs, which somebody will
+ * notice and report; matching too narrowly empties a page nobody is checking.
+ *
+ * `\b` on both ends keeps it honest: "pub quiz" and "club run" do not match,
+ * and neither does a word that merely ends in "pub".
+ *
+ * If this ever needs to be stricter, the honest fix is a field the secretaries
+ * fill in, not a cleverer regex — see docs/pub-runs.md.
+ */
+const PUB_RUN = /\bpubs?[\s-]*runs?\b/i;
+
+export const isPubRun = (event: ClubEvent): boolean => PUB_RUN.test(event.title);
+
+/**
  * The club's own next running of a race, from the club-races calendar.
  *
  * Matched by name alone — unlike the homepage merge there is no second date to
