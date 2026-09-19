@@ -15,19 +15,24 @@
 # own, which is one fewer thing for an editor to get wrong.
 
 # The top menu.
+#
+# Home is deliberately not here. The logo links to / from every page, which is
+# where people look for it, and a menu item saying the same thing spent a slot
+# that Race reports now uses.
+#
+# Order is by what a newcomer wants first: joining, then the club's own races,
+# then when things happen, then how we did, then the writing, then how to ask.
 primary:
-  - label: "Home"
-    href: "/"
-  - label: "Join Us"
+  - label: "Join us"
     href: "/join-us"
-  - label: "Race Reports"
-    href: "/race-reports"
-  - label: "Our Races"
+  - label: "Our races"
     href: "/our-races"
   - label: "Calendar"
     href: "/calendar"
   - label: "Results"
     href: "/results"
+  - label: "Race reports"
+    href: "/race-reports"
   - label: "Contact"
     href: "/contact"
 

@@ -36,7 +36,7 @@ const { primary } = await getNavigation();
 	{/*
 	  w-auto, because daisyUI gives .navbar-start a flat 50% of the bar. At 1024px
 	  — the exact width the desktop nav appears at — that reserved 512px for a
-	  138px logo and left the seven nav items 500px to fit in, so they wrapped to
+	  138px logo and left the (then seven) nav items 500px to fit in, so they wrapped to
 	  a second row and the header grew from 64px to 108px. The logo takes what it
 	  needs and the nav takes the rest.
 	*/}
@@ -108,7 +108,8 @@ const { primary } = await getNavigation();
 
 	  visibility, not just opacity, so the link leaves the tab order while it
 	  is invisible: a keyboard user tabbing to a logo they cannot see has
-	  nowhere to look. The nav's own Home link covers the same destination.
+	  nowhere to look. Nothing is lost by that here — this only applies to the
+	  homepage, so the link they cannot reach points at the page they are on.
 	*/
 	.site-header--overlay {
 		transition:

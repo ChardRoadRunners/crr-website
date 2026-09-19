@@ -7,8 +7,10 @@
  *
  * Nothing here decides what the menus say. That is
  * `src/content/navigation/navigation.md`, which the committee can edit in the
- * CMS. This only fetches it and answers the two questions a template has about
- * a link: is it external, and is it the page we are on.
+ * CMS. This only fetches it and says whether a link leaves the site.
+ *
+ * Marking the current page is HeaderLink's job, not this file's — it already
+ * did it, including matching a section from one of its pages.
  */
 import { getEntry } from 'astro:content';
 
@@ -53,20 +55,3 @@ export async function getNavigation(): Promise<SiteNavigation> {
  */
 export const isExternal = (href: string): boolean => /^https?:\/\//i.test(href);
 
-/**
- * Whether `href` is the page currently being rendered.
- *
- * Matches the section as well as the page itself, so /race-reports stays
- * marked while reading a report inside it. A hash is ignored: /calendar and
- * /calendar#race-calendar are the same page, and marking both current would
- * put two current-page markers in one menu.
- */
-export function isCurrent(href: string, pathname: string): boolean {
-	if (isExternal(href)) return false;
-
-	const target = href.split('#')[0].replace(/\/$/, '') || '/';
-	const here = pathname.replace(/\/$/, '') || '/';
-
-	if (target === '/') return here === '/';
-	return here === target || here.startsWith(`${target}/`);
-}
