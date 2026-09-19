@@ -15,6 +15,11 @@
  */
 export const PRE_LAUNCH = true;
 
+// The menus used to live here, as NAV_LINKS, FOOTER_PAGE_LINKS, SOCIAL_LINKS
+// and ENGLAND_ATHLETICS_URL. They are now content, in
+// src/content/navigation/navigation.md, so the committee can change them
+// without a developer. src/utils/navigation.ts reads them.
+
 export const SITE_TITLE = 'Chard Road Runners';
 export const SITE_DESCRIPTION =
 	'Sociable England Athletics affiliated running club in Chard, Somerset. Established 1981.';
@@ -27,45 +32,6 @@ export const SKIP_LINK_LABEL = 'Skip to content';
 
 // The id it targets, and the id on <main>. One constant so they cannot drift.
 export const MAIN_CONTENT_ID = 'main-content';
-
-// The top-level nav, per crr-sitemap.md. Seven items: Calendar and Results were
-// one item until the two turned out to answer different questions — "when is
-// the next race" and "how did we do" — and a page trying to do both buried the
-// calendar under standings tables. Seven is the ceiling. Any more and the
-// mobile menu becomes a list nobody reads.
-export const NAV_LINKS: { href: string; label: string }[] = [
-	{ href: '/', label: 'Home' },
-	{ href: '/join-us', label: 'Join Us' },
-	{ href: '/race-reports', label: 'Race Reports' },
-	{ href: '/our-races', label: 'Our Races' },
-	{ href: '/calendar', label: 'Calendar' },
-	{ href: '/results', label: 'Results' },
-	{ href: '/contact', label: 'Contact' },
-];
-
-// Footer page links, per crr-sitemap.md. Welfare is first and stays
-// findable in one click from any page.
-export const FOOTER_PAGE_LINKS: { href: string; label: string }[] = [
-	{ href: '/welfare', label: 'Welfare' },
-	{ href: '/inclusion', label: 'Inclusion' },
-	{ href: '/rules-and-constitution', label: 'Rules & Constitution' },
-	{ href: '/privacy', label: 'Privacy' },
-	{ href: '/club-kit', label: 'Club Kit' },
-	// The diary specifically, not the top of the page — the label promises races
-	// and the club calendar is what sits above it.
-	{ href: '/calendar#race-calendar', label: 'Race Calendar' },
-	// Not in NAV_LINKS on purpose: seven is the ceiling up there, and a summer
-	// social belongs below a page about joining or racing. It kept its old
-	// Webador slug so shared links still land.
-	{ href: '/pub-runs', label: 'Pub Runs' },
-];
-
-export const SOCIAL_LINKS = {
-	facebook: 'https://www.facebook.com/groups/161908423862991/',
-	strava: 'https://www.strava.com/clubs/246805/leaderboard',
-};
-
-export const ENGLAND_ATHLETICS_URL = 'https://www.englandathletics.org/';
 
 // The club's five public Google calendars, read at build time by
 // `src/utils/calendar.ts` and rendered as ordinary HTML. No visitor's browser

@@ -21,6 +21,14 @@
 // posts. Checking here turns that class of failure into a local error before
 // the push. Image fields are read from the CMS config rather than named here,
 // so a new one is covered the day it is added.
+//
+// The third guard is the menus. src/content/navigation/navigation.md holds
+// routes as well as labels, which is a thing the CMS can now get wrong: an
+// editor renaming a page's address, or pointing a menu item at a page that was
+// never built, ships a 404 into the header of every page on the site. So every
+// internal href there is resolved against src/pages/ and the routes the
+// content collections generate. External links are somebody else's to keep
+// alive and are left alone, exactly as remote image URLs are.
 
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -211,6 +219,106 @@ for (const name of readdirSync(CONTENT)) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// The menus point at real pages
+// ---------------------------------------------------------------------------
+
+const NAV_FILE = join(ROOT, 'src/content/navigation/navigation.md');
+const navProblems = [];
+
+/**
+ * Every route the site actually serves.
+ *
+ * Two sources, because the site builds pages two ways: files in src/pages/,
+ * and the routes a dynamic page generates from a collection. [legal].astro is
+ * the one that matters here — /welfare and /privacy are files in
+ * src/content/legal/, not src/pages/, so checking src/pages/ alone would call
+ * the footer's most important link a 404.
+ */
+const builtRoutes = () => {
+  const routes = new Set(['/']);
+
+  const walk = (dir, prefix) => {
+    if (!existsSync(dir)) return;
+    for (const name of readdirSync(dir)) {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) {
+        walk(full, prefix + name + '/');
+        continue;
+      }
+      const match = name.match(/^(.+)\.(astro|md|ts|js)$/);
+      if (!match) continue;
+      const base = match[1];
+      // Dynamic routes are filled in from their collections below rather than
+      // guessed at from the filename.
+      if (base.startsWith('[')) continue;
+      // robots.txt.ts and rss.xml.js are endpoints, not pages, and nothing in
+      // a menu should point at one.
+      if (base.includes('.')) continue;
+      routes.add(base === 'index' ? ('/' + prefix).replace(/\/$/, '') || '/' : '/' + prefix + base);
+    }
+  };
+  walk(join(ROOT, 'src/pages'), '');
+
+  // src/pages/[legal].astro turns each file in src/content/legal/ into a
+  // top-level route of its own.
+  const legalDir = join(CONTENT, 'legal');
+  if (existsSync(join(ROOT, 'src/pages/[legal].astro')) && existsSync(legalDir)) {
+    for (const file of markdownIn(legalDir)) {
+      routes.add('/' + file.split('/').pop().replace(/\.md$/, ''));
+    }
+  }
+
+  return routes;
+};
+
+if (existsSync(NAV_FILE)) {
+  const nav = readFrontMatter(NAV_FILE);
+  const routes = builtRoutes();
+
+  const links = [
+    ...(nav?.primary ?? []).map((link) => ['top menu', link]),
+    ...(nav?.footerGroups ?? []).flatMap((group) =>
+      (group.links ?? []).map((link) => ['footer column "' + group.label + '"', link]),
+    ),
+  ];
+
+  for (const [where, link] of links) {
+    const href = link?.href;
+    if (typeof href !== 'string' || !href) {
+      navProblems.push(`${where}: "${link?.label ?? '(no label)'}" has no address.`);
+      continue;
+    }
+    // Somebody else's site to keep alive, same as a remote image.
+    if (/^(https?:)?\/\//.test(href) || href.startsWith('mailto:')) continue;
+
+    if (!href.startsWith('/')) {
+      navProblems.push(
+        `${where}: "${link.label}" points at "${href}", which is neither a route on this site (starting with /) nor a full web address.`,
+      );
+      continue;
+    }
+
+    // A hash targets a section of a page; the page is the thing that has to exist.
+    const path = href.split('#')[0].replace(/\/$/, '') || '/';
+    if (!routes.has(path)) {
+      navProblems.push(`${where}: "${link.label}" points at ${href}, which is not a page on this site.`);
+    }
+  }
+}
+
+if (navProblems.length) {
+  console.error(red(`\n✗ Menu links — ${navProblems.length} broken link(s)\n`));
+  for (const problem of navProblems) console.error(`  ${red('•')} ${problem}`);
+  console.error(
+    yellow(
+      '\n  src/content/navigation/navigation.md holds routes as well as labels, so a\n' +
+        '  menu item can point at a page that does not exist. Fix the address, or\n' +
+        '  remove the item. A broken menu link shows on every page of the site.\n',
+    ),
+  );
+}
+
 if (problems.length) {
   console.error(red(`\n✗ CMS schema drift — ${problems.length} problem(s)\n`));
   for (const problem of problems) console.error(`  ${red('•')} ${problem}`);
@@ -234,7 +342,8 @@ if (mediaProblems.length) {
   );
 }
 
-if (problems.length || mediaProblems.length) process.exit(1);
+if (problems.length || mediaProblems.length || navProblems.length) process.exit(1);
 
 console.log(dim('✓ CMS schema mirrors the content — no undeclared frontmatter keys.'));
 console.log(dim('✓ Every image path resolves on disk.'));
+console.log(dim('✓ Every menu link points at a real page.'));

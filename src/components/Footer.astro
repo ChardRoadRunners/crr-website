@@ -1,9 +1,12 @@
 ---
 import logoLockup from '../assets/crr-logo-lockup.svg?raw';
-import { ENGLAND_ATHLETICS_URL, FOOTER_PAGE_LINKS, SITE_TITLE, SOCIAL_LINKS } from '../consts';
+import { SITE_TITLE } from '../consts';
 import ContourBackdrop from './ContourBackdrop.astro';
+import { getNavigation, isExternal } from '../utils/navigation';
 
 const year = new Date().getFullYear();
+
+const { footerGroups } = await getNavigation();
 ---
 
 {/*
@@ -19,43 +22,31 @@ const year = new Date().getFullYear();
 		<div class="footer-logo" aria-hidden="true" set:html={logoLockup} />
 	</div>
 	<div class="footer sm:footer-horizontal relative z-1 mx-auto max-w-5xl gap-8 px-4 py-10 sm:px-6 lg:px-8">
-		<nav>
-			<p class="footer-title text-sm font-semibold tracking-wide uppercase text-primary-content/70">Club</p>
-			{
-				FOOTER_PAGE_LINKS.map((link) => (
-					<a href={link.href} class="link link-hover text-primary-content hover:text-sky">
-						{link.label}
-					</a>
-				))
-			}
-		</nav>
-		<nav>
-			<p class="footer-title text-sm font-semibold tracking-wide uppercase text-primary-content/70">Connect</p>
-			<a
-				href={SOCIAL_LINKS.facebook}
-				class="link link-hover text-primary-content hover:text-sky"
-				target="_blank"
-				rel="noopener noreferrer"
-			>
-				Facebook
-			</a>
-			<a
-				href={SOCIAL_LINKS.strava}
-				class="link link-hover text-primary-content hover:text-sky"
-				target="_blank"
-				rel="noopener noreferrer"
-			>
-				Strava
-			</a>
-			<a
-				href={ENGLAND_ATHLETICS_URL}
-				class="link link-hover text-primary-content hover:text-sky"
-				target="_blank"
-				rel="noopener noreferrer"
-			>
-				England Athletics affiliated
-			</a>
-		</nav>
+		{
+			footerGroups.map((group) => (
+				<nav>
+					<p class="footer-title text-sm font-semibold tracking-wide uppercase text-primary-content/70">
+						{group.label}
+					</p>
+					{group.links.map((link) =>
+						isExternal(link.href) ? (
+							<a
+								href={link.href}
+								class="link link-hover text-primary-content hover:text-sky"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								{link.label}
+							</a>
+						) : (
+							<a href={link.href} class="link link-hover text-primary-content hover:text-sky">
+								{link.label}
+							</a>
+						),
+					)}
+				</nav>
+			))
+		}
 	</div>
 	<div class="relative z-1 border-t border-primary-content/10 px-4 py-4 text-center text-sm text-primary-content/70">
 		&copy; {year} {SITE_TITLE}

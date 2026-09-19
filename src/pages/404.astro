@@ -10,11 +10,12 @@
 // a 404 status rather than a 200. That needs `wrangler dev` or a deploy.
 import ContourBackdrop from '../components/ContourBackdrop.astro';
 import logoMark from '../assets/crr-logo-mark.svg?raw';
-import { NAV_LINKS } from '../consts';
 import Layout from '../layouts/Layout.astro';
+import { getNavigation } from '../utils/navigation';
 
 // The links are the site's own nav, so this page cannot fall out of step with
 // it — a new top-level page appears here the day it appears in the header.
+const { primary } = await getNavigation();
 ---
 
 <Layout
@@ -45,7 +46,7 @@ import Layout from '../layouts/Layout.astro';
 			<nav aria-label="Main pages">
 				<ul class="flex flex-wrap justify-center gap-3">
 					{
-						NAV_LINKS.map((link) => (
+						primary.map((link) => (
 							<li>
 								<a
 									href={link.href}

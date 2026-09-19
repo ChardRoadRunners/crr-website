@@ -1,7 +1,8 @@
 ---
 import logoMark from '../assets/crr-logo-mark.svg?raw';
-import { NAV_LINKS, SITE_TITLE } from '../consts';
+import { SITE_TITLE } from '../consts';
 import HeaderLink from './HeaderLink.astro';
+import { getNavigation } from '../utils/navigation';
 
 interface Props {
 	/** Overlay transparently on a hero instead of sitting in normal flow. */
@@ -17,6 +18,8 @@ interface Props {
 }
 
 const { overlay = false, hideLogo = false } = Astro.props;
+
+const { primary } = await getNavigation();
 ---
 
 <header
@@ -54,7 +57,7 @@ const { overlay = false, hideLogo = false } = Astro.props;
 				class="menu dropdown-content menu-sm z-10 mt-3 w-52 rounded-box bg-primary p-2 text-primary-content shadow-lg"
 			>
 				{
-					NAV_LINKS.map((link) => (
+					primary.map((link) => (
 						<li>
 							<HeaderLink href={link.href}>{link.label}</HeaderLink>
 						</li>
@@ -75,7 +78,7 @@ const { overlay = false, hideLogo = false } = Astro.props;
 	<div class="navbar-end hidden w-auto flex-1 lg:flex">
 		<ul class="menu menu-horizontal gap-1 px-1">
 			{
-				NAV_LINKS.map((link) => (
+				primary.map((link) => (
 					<li>
 						<HeaderLink href={link.href}>{link.label}</HeaderLink>
 					</li>

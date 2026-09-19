@@ -1236,6 +1236,61 @@ collections:
   # =========================================================================
   # RACE DIARY
   # =========================================================================
+  - name: navigation
+    label: Menus
+    label_singular: Menu
+    files:
+      - name: navigation
+        label: Site menus
+        file: src/content/navigation/navigation.md
+        description: >-
+          The top menu and the footer columns. Renaming or reordering an item
+          here changes it everywhere on the site.
+        fields:
+          - label: Top menu
+            name: primary
+            widget: list
+            label_singular: Menu item
+            summary: "{{fields.label}} -> {{fields.href}}"
+            hint: >-
+              The main menu across the top of every page. Keep it short - more
+              than about seven items and the menu on a phone becomes a list
+              nobody reads.
+            fields:
+              - { label: Label, name: label, widget: string }
+              - label: Address
+                name: href
+                widget: string
+                hint: >-
+                  A page on this site, starting with a slash - for example
+                  /join-us. The build fails if it points at a page that does
+                  not exist, so a typo here cannot reach the live site.
+
+          - label: Footer columns
+            name: footerGroups
+            widget: list
+            label_singular: Column
+            summary: "{{fields.label}}"
+            hint: >-
+              Each column has a heading and its own links. Welfare must stay
+              easy to find from every page, so leave it in the first column.
+            fields:
+              - { label: Column heading, name: label, widget: string }
+              - label: Links
+                name: links
+                widget: list
+                label_singular: Link
+                summary: "{{fields.label}} -> {{fields.href}}"
+                fields:
+                  - { label: Label, name: label, widget: string }
+                  - label: Address
+                    name: href
+                    widget: string
+                    hint: >-
+                      A page on this site (/club-kit) or a full web address
+                      (https://...). A full address opens in a new tab on its
+                      own - there is nothing to tick.
+
   - name: calendar-events
     label: Race diary
     label_singular: Race
