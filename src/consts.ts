@@ -54,6 +54,10 @@ export const FOOTER_PAGE_LINKS: { href: string; label: string }[] = [
 	// The diary specifically, not the top of the page — the label promises races
 	// and the club calendar is what sits above it.
 	{ href: '/calendar#race-calendar', label: 'Race Calendar' },
+	// Not in NAV_LINKS on purpose: seven is the ceiling up there, and a summer
+	// social belongs below a page about joining or racing. It kept its old
+	// Webador slug so shared links still land.
+	{ href: '/pub-runs', label: 'Pub Runs' },
 ];
 
 export const SOCIAL_LINKS = {

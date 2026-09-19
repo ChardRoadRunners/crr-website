@@ -19,7 +19,7 @@ clubNights:
 
 socials:
   heading: "Socials"
-  intro: "Pub runs, parties and get togethers."
+  intro: "Pub runs, parties and get togethers. There is [more about the pub runs](/pub-runs), including the annual Pubs Run."
   emptyState: "Nothing in the social calendar at the moment. Club nights are the easiest way to meet people — Tuesday and Thursday, 7pm."
 
 races:

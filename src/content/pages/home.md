@@ -38,7 +38,10 @@ clubNights:
       detail: |-
         A relaxed pace run, normally around town of up to around 4 miles (7km) but there is always options to make it shorter if your not up for 4 miles just yet.
         The clubhouse and showers aren't open afterwards.
-  reassurance: You don't need to be a member to come along, and you don't need to be fast. Come for a couple of runs and see what you think.
+  reassurance: |-
+    You don't need to be a member to come along, and you don't need to be fast. Come for a couple of runs and see what you think.
+
+    Through the summer there is also a [monthly pub run](/pub-runs) — a run that starts and finishes at a pub, with dinner afterwards.
 handicap:
   heading: Last Tuesday of the Month
   body: |-
