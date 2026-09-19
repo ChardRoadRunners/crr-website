@@ -10,9 +10,14 @@ interface Props {
 	// Frontmatter dates have no time of their own, so they are read in UTC.
 	// A real instant (a calendar event) should pass Europe/London.
 	timeZone?: string;
+	// Set false where the day of the week means nothing — a "last reviewed"
+	// date, say. On anything a runner turns up to, leave it on.
+	weekday?: boolean;
 }
 
-const { date, approximate = false, timeZone = 'UTC' } = Astro.props;
+const { date, approximate = false, timeZone = 'UTC', weekday = true } = Astro.props;
 ---
 
-<time datetime={date.toISOString()}>{formatDate(date, { timeZone, monthOnly: approximate })}</time>
+<time datetime={date.toISOString()}>
+	{formatDate(date, { timeZone, monthOnly: approximate, weekday })}
+</time>

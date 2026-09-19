@@ -81,7 +81,7 @@ check('a UTC-encoded 10am BST start renders as 10am, not 9am', () => {
 		WINDOW_TO,
 	);
 	const when = formatEventWhen(event, new Date('2026-06-01T00:00:00Z'));
-	assert.equal(when, '18th Oct 2026, 10:00 am');
+	assert.equal(when, 'Sun 18th Oct 2026, 10:00 am');
 });
 
 check('a UTC-encoded 10am GMT start also renders as 10am', () => {
@@ -117,7 +117,7 @@ check('an all-day race in summer keeps its own date', () => {
 	);
 	assert.equal(event.allDay, true);
 	const when = formatEventWhen(event, new Date('2026-01-01T00:00:00Z'));
-	assert.equal(when, '4th Jul 2026', `expected 4th Jul 2026, got "${when}"`);
+	assert.equal(when, 'Sat 4th Jul 2026', `got "${when}"`);
 	assert.ok(!/\d:\d\d/.test(when), `all-day should show no time, got "${when}"`);
 });
 
@@ -134,7 +134,7 @@ check('an all-day race in winter keeps its own date', () => {
 		WINDOW_FROM,
 		WINDOW_TO,
 	);
-	assert.equal(formatEventWhen(event, new Date('2026-01-01T00:00:00Z')), '8th Nov 2026');
+	assert.equal(formatEventWhen(event, new Date('2026-01-01T00:00:00Z')), 'Sun 8th Nov 2026');
 });
 
 check('the year is always shown, so a January race is not read as this one', () => {
@@ -149,7 +149,7 @@ check('the year is always shown, so a January race is not read as this one', () 
 		WINDOW_FROM,
 		WINDOW_TO,
 	);
-	assert.equal(formatEventWhen(event, new Date('2026-12-20T00:00:00Z')), '1st Jan 2027, 10:00 am');
+	assert.equal(formatEventWhen(event, new Date('2026-12-20T00:00:00Z')), 'Fri 1st Jan 2027, 10:00 am');
 });
 
 check('ordinals are right for the awkward numbers', () => {
@@ -157,6 +157,21 @@ check('ordinals are right for the awkward numbers', () => {
 		[1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 31].map(ordinal),
 		['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '31st'],
 	);
+});
+
+check('the weekday is shown, so a Saturday race is not taken for a Sunday one', () => {
+	const [saturday] = parse(
+		feed([
+			'UID:sat@test',
+			'DTSTART:20261017T090000Z',
+			'SUMMARY:A Saturday race',
+			'STATUS:CONFIRMED',
+		]),
+		'race-calendar',
+		WINDOW_FROM,
+		WINDOW_TO,
+	);
+	assert.match(formatEventWhen(saturday, WINDOW_FROM), /^Sat /);
 });
 
 // ---------------------------------------------------------------------------

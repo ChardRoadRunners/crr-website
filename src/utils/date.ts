@@ -5,10 +5,17 @@
  * the race diary next to it listed "Nov 1, 2026" — American order, on a
  * Somerset running club's website.
  *
- * The form is "1st Nov 2026": ordinal day, short month, full year. The year is
- * always shown. A race calendar is read months ahead and often spans a new
- * year, and "1st Jan" with no year is exactly the entry somebody turns up to
- * twelve months early.
+ * The form is "Sat 1st Nov 2026": weekday, ordinal day, short month, full
+ * year.
+ *
+ * The year is always shown. A race calendar is read months ahead and often
+ * spans a new year, and "1st Jan" with no year is exactly the entry somebody
+ * turns up to twelve months early.
+ *
+ * The weekday is shown because most races are on a Sunday, so the ones that
+ * are not — a Saturday race — are exactly the ones that catch people out. It
+ * can be turned off for a date where the day of the week means nothing, such
+ * as when a policy was last reviewed.
  */
 
 const ORDINAL_RULES = new Intl.PluralRules('en-GB', { type: 'ordinal' });
@@ -40,12 +47,14 @@ export interface FormatDateOptions {
 	timeZone?: string;
 	/** Month and year only, for a date whose exact day is not known. */
 	monthOnly?: boolean;
+	/** Set false where the day of the week carries no meaning. */
+	weekday?: boolean;
 }
 
-/** "1st Nov 2026", or "November 2026" when the day is not known. */
+/** "Sat 1st Nov 2026", or "November 2026" when the day is not known. */
 export function formatDate(
 	date: Date,
-	{ timeZone = 'UTC', monthOnly = false }: FormatDateOptions = {},
+	{ timeZone = 'UTC', monthOnly = false, weekday = true }: FormatDateOptions = {},
 ): string {
 	if (monthOnly) {
 		return new Intl.DateTimeFormat('en-GB', {
@@ -59,6 +68,7 @@ export function formatDate(
 	// our own order, rather than accepting whatever the locale assembles.
 	const parts = new Intl.DateTimeFormat('en-GB', {
 		timeZone,
+		...(weekday ? { weekday: 'short' as const } : {}),
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric',
@@ -67,7 +77,9 @@ export function formatDate(
 	const part = (type: Intl.DateTimeFormatPartTypes) =>
 		parts.find((p) => p.type === type)?.value ?? '';
 
-	return `${ordinal(Number(part('day')))} ${part('month')} ${part('year')}`;
+	return [part('weekday'), ordinal(Number(part('day'))), part('month'), part('year')]
+		.filter(Boolean)
+		.join(' ');
 }
 
 /** "10:00 am", in London time. */

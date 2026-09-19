@@ -302,19 +302,83 @@ const normaliseName = (value: string) =>
 		.replace(/[^a-z0-9]+/g, ' ')
 		.trim();
 
+export function racesShareAName(aName: string, bName: string): boolean {
+	const [x, y] = [normaliseName(aName), normaliseName(bName)];
+	if (!x || !y) return false;
+
+	return x === y || x.startsWith(`${y} `) || y.startsWith(`${x} `);
+}
+
 export function isSameRace(
 	aName: string,
 	bName: string,
 	aDate: Date,
 	bDate: Date,
 ): boolean {
-	const [x, y] = [normaliseName(aName), normaliseName(bName)];
-	if (!x || !y) return false;
-
-	const namesMatch = x === y || x.startsWith(`${y} `) || y.startsWith(`${x} `);
-	if (!namesMatch) return false;
+	if (!racesShareAName(aName, bName)) return false;
 
 	return Math.abs(aDate.getTime() - bDate.getTime()) / 86_400_000 <= NEAR_ENOUGH_DAYS;
+}
+
+/**
+ * The club's own next running of a race, from the club-races calendar.
+ *
+ * Matched by name alone — unlike the homepage merge there is no second date to
+ * compare against, because finding the date is the whole point.
+ */
+export async function findNextClubRace(
+	title: string,
+	now = new Date(),
+): Promise<ClubEvent | null> {
+	const races = await getUpcoming(['club-races'], { now });
+
+	return races.find((race) => racesShareAName(race.title, title)) ?? null;
+}
+
+export interface ResolvedRaceDate {
+	date: Date | null;
+	/** True when the date came from the calendar rather than the content file. */
+	fromCalendar: boolean;
+	/** All-day calendar entries, and content-file dates, have no time. */
+	showTime: boolean;
+}
+
+/**
+ * Where a race page's date comes from.
+ *
+ * The club-races calendar is the source of truth: it is what the committee
+ * actually edits, and it carries a start time. A race's content file may still
+ * name a date for one the calendar does not have yet.
+ *
+ * If both exist and disagree, the build fails rather than picking one. Two
+ * dates for the same race is exactly the failure a runner discovers by
+ * arriving on the wrong day, and silently preferring either would hide it.
+ */
+export async function resolveRaceDate(
+	title: string,
+	contentDate: Date | undefined,
+	now = new Date(),
+): Promise<ResolvedRaceDate> {
+	const event = await findNextClubRace(title, now);
+
+	if (!event) {
+		return { date: contentDate ?? null, fromCalendar: false, showTime: false };
+	}
+
+	if (contentDate) {
+		const daysApart = Math.abs(event.start.getTime() - contentDate.getTime()) / 86_400_000;
+		if (daysApart > 1) {
+			throw new Error(
+				`"${title}" has two different dates. The club-races calendar says ` +
+					`${event.start.toISOString().slice(0, 10)}, and its content file says ` +
+					`${contentDate.toISOString().slice(0, 10)}. The calendar is the one the ` +
+					'committee edits, so remove nextDate from the race\'s content file — or ' +
+					'correct whichever of the two is wrong.',
+			);
+		}
+	}
+
+	return { date: event.start, fromCalendar: true, showTime: !event.allDay };
 }
 
 const LONDON = 'Europe/London';

@@ -49,7 +49,7 @@ const showContents = contents.length >= 8;
 						<div>
 							<dt class="text-sm font-bold text-primary">Last updated</dt>
 							<dd class="mt-1 text-base-content/80">
-								<FormattedDate date={lastUpdated} />
+								<FormattedDate date={lastUpdated} weekday={false} />
 							</dd>
 						</div>
 					)}
@@ -57,7 +57,7 @@ const showContents = contents.length >= 8;
 						<div>
 							<dt class="text-sm font-bold text-primary">Last reviewed</dt>
 							<dd class="mt-1 text-base-content/80">
-								<FormattedDate date={lastReviewed} />
+								<FormattedDate date={lastReviewed} weekday={false} />
 							</dd>
 						</div>
 					)}
