@@ -358,6 +358,12 @@ const calendarPage = z.object({
     emptyState: z.string(),
   }),
 
+  socials: z.object({
+    heading: z.string(),
+    intro: z.string(),
+    emptyState: z.string(),
+  }),
+
   races: z.object({
     heading: z.string(),
     intro: z.string(),

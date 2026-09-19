@@ -28,14 +28,16 @@ const page = await getEntry('pages', 'calendar');
 if (page?.data.page !== 'calendar') {
 	throw new Error('src/content/pages/calendar.md is missing or is not a calendar page.');
 }
-const { hero, seo, clubNights, races, championshipLabel, entryLabel, raceDiary } = page.data;
+const { hero, seo, clubNights, socials, races, championshipLabel, entryLabel, raceDiary } =
+	page.data;
 
 const now = new Date();
 
 // Fetched together so one broken feed names itself rather than failing on
 // whichever page happened to read it first.
-const [nights, upcomingRaces] = await Promise.all([
+const [nights, socialEvents, upcomingRaces] = await Promise.all([
 	getUpcoming(['club-nights'], { now }),
+	getUpcoming(['socials'], { now }),
 	getUpcoming(['race-calendar', 'championship', 'club-races'], { now }),
 ]);
 ---
@@ -50,6 +52,24 @@ const [nights, upcomingRaces] = await Promise.all([
 			<EventList
 				events={nights}
 				emptyState={clubNights.emptyState}
+				championshipLabel={championshipLabel}
+				entryLabel={entryLabel}
+				class="mt-6"
+			/>
+		</section>
+
+		{/*
+		  Socials get their own list rather than joining the club nights above.
+		  A Tuesday run and a Christmas party answer different questions, and
+		  the page's own strapline has promised socials since before there was
+		  a calendar to fill them.
+		*/}
+		<section id="socials" class="mt-12 scroll-mt-20">
+			<h2 class="text-3xl font-bold text-primary">{socials.heading}</h2>
+			<RichText text={socials.intro} class="mt-3 text-base-content/80" />
+			<EventList
+				events={socialEvents}
+				emptyState={socials.emptyState}
 				championshipLabel={championshipLabel}
 				entryLabel={entryLabel}
 				class="mt-6"

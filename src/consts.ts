@@ -63,7 +63,7 @@ export const SOCIAL_LINKS = {
 
 export const ENGLAND_ATHLETICS_URL = 'https://www.englandathletics.org/';
 
-// The club's four public Google calendars, read at build time by
+// The club's five public Google calendars, read at build time by
 // `src/utils/calendar.ts` and rendered as ordinary HTML. No visitor's browser
 // ever talks to Google — the only request happens on the build machine, which
 // is the whole point of doing it this way rather than embedding an iframe.
@@ -90,5 +90,7 @@ export const CALENDAR_IDS = {
 		'78dc42844390d900d7f73636253272e26ee9851256b4af745e6c0efa6f6243f8@group.calendar.google.com',
 	championship:
 		'a36807b7ef85ef1b9be2d386404124369e9f1db3066e24e2f36b0488a0ae90b0@group.calendar.google.com',
+	socials:
+		'e5e1ed32f0aa0f46521a0030b4a71d221606e1ff988caa688d67a9f0a4248ce2@group.calendar.google.com',
 } as const;
 

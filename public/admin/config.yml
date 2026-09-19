@@ -887,6 +887,23 @@ collections:
                   something a visitor can actually use - they still want to
                   know when we meet.
 
+          - label: Socials
+            name: socials
+            widget: object
+            hint: >-
+              Read from the socials calendar in Google. This is the wording
+              around them.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Introduction, name: intro, widget: text }
+              - label: If there is nothing to show
+                name: emptyState
+                widget: text
+                hint: >-
+                  Shown when there are no socials in the calendar, which will
+                  often be true. Point somebody somewhere useful rather than
+                  leaving them with nothing.
+
           - label: Races coming up
             name: races
             widget: object

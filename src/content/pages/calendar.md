@@ -17,6 +17,11 @@ clubNights:
   intro: "When we next meet. Club nights run every week, so this is simply the next one of each."
   emptyState: "Club nights are not in the calendar at the moment. They still run — Tuesday and Thursday, 7pm at the cricket club."
 
+socials:
+  heading: "Socials"
+  intro: "Pub runs, parties and get togethers."
+  emptyState: "Nothing in the social calendar at the moment. Club nights are the easiest way to meet people — Tuesday and Thursday, 7pm."
+
 races:
   heading: "Races coming up"
   intro: "Races members are entered for or heading to, and the club's own two. Dates here are confirmed, unlike the diary below."
