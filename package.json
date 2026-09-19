@@ -8,10 +8,11 @@
   "scripts": {
     "dev": "astro dev",
     "check:cms": "node scripts/check-cms-schema.mjs",
-    "build": "node scripts/check-cms-schema.mjs && node scripts/check-diary-freshness.mjs && astro build",
+    "build": "node scripts/check-cms-schema.mjs && node scripts/check-diary-freshness.mjs && node --experimental-strip-types --no-warnings scripts/check-calendar.mjs && astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "check:diary": "node scripts/check-diary-freshness.mjs"
+    "check:diary": "node scripts/check-diary-freshness.mjs",
+    "check:calendar": "node --experimental-strip-types --no-warnings scripts/check-calendar.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.5",
@@ -20,6 +21,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.1",
     "daisyui": "^5.7.16",
+    "node-ical": "^0.27.2",
     "sharp": "^0.35.0",
     "tailwindcss": "^4.3.3"
   },

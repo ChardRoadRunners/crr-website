@@ -5,8 +5,24 @@ import FormattedDate from '../components/FormattedDate.astro';
 import ImageFallback from '../components/ImageFallback.astro';
 import { formatDistance } from '../utils/distance';
 import Layout from '../layouts/Layout.astro';
+import { resolveRaceDate } from '../utils/calendar';
 
-const races = (await getCollection('races')).sort((a, b) => a.data.order - b.data.order);
+const now = new Date();
+
+/*
+  The date comes from the club-races calendar, which is what the committee
+  actually edits and what carries a start time. A race's content file can still
+  name a date for one the calendar has not got yet; if both exist and disagree,
+  resolveRaceDate fails the build rather than quietly picking one.
+*/
+const races = await Promise.all(
+	(await getCollection('races'))
+		.sort((a, b) => a.data.order - b.data.order)
+		.map(async (race) => ({
+			race,
+			when: await resolveRaceDate(race.data.title, race.data.nextDate, now),
+		})),
+);
 ---
 
 <Layout title="Our Races" description="The Chard Flyer and Forde Abbey 10k, hosted by Chard Road Runners.">
@@ -14,7 +30,7 @@ const races = (await getCollection('races')).sort((a, b) => a.data.order - b.dat
 		<h1 class="text-center text-4xl font-bold text-primary">Our Races</h1>
 		<ul class="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-2">
 			{
-				races.map((race) => {
+				races.map(({ race, when }) => {
 					const { data } = race;
 					const note = data.seriesNote || data.juniorRaceNote;
 					return (
@@ -38,7 +54,14 @@ const races = (await getCollection('races')).sort((a, b) => a.data.order - b.dat
 									{data.juniorRace && <span class="badge badge-purple">Junior race</span>}
 								</div>
 								<p class="mt-1 text-sm text-base-content/60">
-									{data.nextDate ? <FormattedDate date={data.nextDate} /> : 'Date to be confirmed'}
+									{when.date ? (
+										<FormattedDate
+											date={when.date}
+											timeZone={when.showTime ? 'Europe/London' : 'UTC'}
+										/>
+									) : (
+										'Date to be confirmed'
+									)}
 									{' · '}
 									{formatDistance(data.distance)}
 									{data.venue && ` · ${data.venue}`}

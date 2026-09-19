@@ -68,6 +68,7 @@ upcoming:
   heading: Coming up
   linkLabel: Full race calendar
   emptyState: Nothing on the calendar just now. See the calendar page for what's being planned.
+  championshipLabel: Championship
 ourRaces:
   heading: Our races
   intro: |-

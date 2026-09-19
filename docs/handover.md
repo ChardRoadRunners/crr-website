@@ -109,6 +109,40 @@ There is a separate, unresolved question about the personal address that was
 published before this, which is still in the git history. That is the
 maintainer's decision and nothing here touches it.
 
+## The map on the contact page
+
+`src/assets/chard-cricket-club-map.png` is a picture of a map, not an embedded
+one. That is deliberate: an iframe from a map provider would put a third-party
+script on the page that also carries the welfare address, set cookies, and need
+its own line on the privacy page — all for a view that never changes.
+
+It is drawn from OpenStreetMap, which is free to use **provided the credit
+stays**. "© OpenStreetMap contributors" appears under the image and is a
+licence condition, not decoration. It is a required field in the CMS so it
+cannot be emptied by accident, but it could still be edited to something wrong.
+Leave it alone.
+
+**To redraw it** — only needed if the club moves, or the map itself is wrong:
+
+1. Tiles come from `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, zoom 17,
+   centred on 50.8745829, -2.9647888. Those are the cricket ground's own
+   coordinates in OpenStreetMap, not the postcode, which sits about 200m
+   northeast and would have put the marker in the wrong field.
+2. The image is 5x3 tiles cropped to 1024x576, covering roughly 772m across.
+3. The marker is drawn on afterwards, in the club purple. The tiles label the
+   rugby club but not the cricket ground, so without it nobody can tell which
+   green field is ours.
+4. Send a real `User-Agent` identifying the club when fetching tiles —
+   OpenStreetMap's usage policy requires it and blocks anonymous bulk fetching.
+
+Astro turns the PNG into three sized WebPs at build time, so the committed file
+being large does not matter to visitors.
+
+There is deliberately **no text baked into the image**, beyond the street names
+in the map itself. The address sits above it as real text, and the alt text
+describes where the club is rather than what the picture looks like — somebody
+who cannot see the map needs directions, not "a map of Chard".
+
 ## Who can edit the site
 
 Not listed here. This repository is public, so a list of names and GitHub

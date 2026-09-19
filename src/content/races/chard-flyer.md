@@ -3,7 +3,6 @@ title: "Chard Flyer"
 slug: "chard-flyer"
 distance: { value: 10, unit: "km" }
 # The Flyer is always New Year's Day. Update the year each autumn.
-nextDate: 2027-01-01
 startTime: "11:00:00"
 venue: "Chard Cricket Club"
 entriesOpen: false

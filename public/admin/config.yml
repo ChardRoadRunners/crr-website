@@ -666,6 +666,11 @@ collections:
               - label: Message when nothing is planned
                 name: emptyState
                 widget: markdown
+              - label: Championship badge
+                name: championshipLabel
+                widget: string
+                hint: >-
+                  The label on a race that counts towards the championship.
 
           - label: Our races section
             name: ourRaces
@@ -717,6 +722,40 @@ collections:
                     hint: >-
                       Line breaks are kept, so an address can go on several
                       lines. what3words references (///word.word.word) are fine.
+
+                  - label: Map
+                    name: map
+                    widget: object
+                    required: false
+                    collapsed: true
+                    hint: >-
+                      Only the step that says where we meet needs this. The map
+                      picture itself is a file in the repository, drawn from
+                      OpenStreetMap - only the wording is editable here.
+                    fields:
+                      - label: Description of the location
+                        name: alt
+                        widget: text
+                        hint: >-
+                          Read aloud to anyone who cannot see the map, so
+                          describe where the club is, not what the picture
+                          looks like.
+                      - label: Link text
+                        name: linkLabel
+                        widget: string
+                      - label: Map link
+                        name: url
+                        widget: string
+                        pattern:
+                          - "^https?://.+"
+                          - "Enter a full web address starting with https://"
+                      - label: Map credit
+                        name: credit
+                        widget: string
+                        hint: >-
+                          Required by OpenStreetMap's licence, which is what
+                          lets us use the map at all. Leave it as it is.
+
               - label: Reassurance
                 name: reassurance
                 widget: markdown
@@ -807,6 +846,99 @@ collections:
                 name: body
                 widget: markdown
 
+      - name: calendar
+        label: Calendar page
+        file: src/content/pages/calendar.md
+        fields:
+          - { name: page, widget: hidden, default: calendar }
+
+          - label: Top of the page
+            name: hero
+            widget: object
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Strapline, name: strapline, widget: text }
+
+          - label: Search and sharing
+            name: seo
+            widget: object
+            fields:
+              - label: Description
+                name: description
+                widget: text
+                hint: >-
+                  One sentence, shown under the page title in search results
+                  and when the page is shared.
+
+          - label: Club nights
+            name: clubNights
+            widget: object
+            hint: >-
+              The nights themselves come from the club's Google calendar, not
+              from here. This is the wording around them.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Introduction, name: intro, widget: text }
+              - label: If there is nothing to show
+                name: emptyState
+                widget: text
+                hint: >-
+                  Shown when the calendar has no club nights in it. Write
+                  something a visitor can actually use - they still want to
+                  know when we meet.
+
+          - label: Socials
+            name: socials
+            widget: object
+            hint: >-
+              Read from the socials calendar in Google. This is the wording
+              around them.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Introduction, name: intro, widget: text }
+              - label: If there is nothing to show
+                name: emptyState
+                widget: text
+                hint: >-
+                  Shown when there are no socials in the calendar, which will
+                  often be true. Point somebody somewhere useful rather than
+                  leaving them with nothing.
+
+          - label: Races coming up
+            name: races
+            widget: object
+            hint: >-
+              Read from the race, championship and club race calendars in
+              Google. This is the wording around them.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Introduction, name: intro, widget: text }
+              - label: If there is nothing to show
+                name: emptyState
+                widget: text
+
+          - label: Championship badge
+            name: championshipLabel
+            widget: string
+            hint: The label on a race that counts towards the championship.
+
+          - label: Entry link wording
+            name: entryLabel
+            widget: string
+            hint: >-
+              The wording of the link to a race's own entry page, used wherever
+              a race has one.
+
+          - label: Race diary
+            name: raceDiary
+            widget: object
+            hint: >-
+              The diary below the calendar, worked out from past race reports.
+              Wording only - the entries come from the race diary itself.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Introduction, name: intro, widget: text }
+
       - name: contact
         label: Contact page
         file: src/content/pages/contact.md
@@ -880,6 +1012,47 @@ collections:
               - label: What to use it for
                 name: detail
                 widget: markdown
+
+          - label: Where we are
+            name: whereWeAre
+            widget: object
+            hint: >-
+              The map picture itself is not editable here - it is a file in the
+              repository, drawn from OpenStreetMap. Everything else on this
+              block is.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - label: Address
+                name: address
+                widget: text
+                hint: >-
+                  One line each. This is also on the join us page - if it
+                  changes, change it in both places.
+              - label: Description of the location
+                name: mapAlt
+                widget: text
+                hint: >-
+                  Read aloud to anyone who cannot see the map, so describe
+                  where the club is, not what the picture looks like. Never
+                  "a map of Chard".
+              - label: Link text
+                name: linkLabel
+                widget: string
+                hint: >-
+                  The wording of the link under the map, for example "Open in
+                  Google Maps".
+              - label: Map link
+                name: mapUrl
+                widget: string
+                pattern:
+                  - "^https?://.+"
+                  - "Enter a full web address starting with https://"
+              - label: Map credit
+                name: credit
+                widget: string
+                hint: >-
+                  Required by OpenStreetMap's licence, which is what lets us
+                  use the map at all. Leave it as it is.
 
           - label: The committee
             name: committee

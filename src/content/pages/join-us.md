@@ -24,6 +24,14 @@ firstVisit:
         TA20 1JL
 
         Club house: ///alleyway.revives.flicked
+      map:
+        alt: >-
+          Chard Cricket Club, on Dening Field off the south side of Zembard
+          Lane, between Holyrood Academy and Chard Rugby Club, about five
+          minutes north of Fore Street and the town centre.
+        linkLabel: "Open in Google Maps"
+        url: "https://www.google.com/maps/search/?api=1&query=Chard+Cricket+Club,+Dening+Field,+Zembard+Lane,+Chard,+TA20+1JL"
+        credit: "© OpenStreetMap contributors"
     - label: "Parking"
       detail: >
         There is often parking at the Cricket Club (gate to the car park

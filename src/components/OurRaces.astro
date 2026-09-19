@@ -5,6 +5,7 @@ import FormattedDate from './FormattedDate.astro';
 import ImageFallback from './ImageFallback.astro';
 import { formatDistance } from '../utils/distance';
 import RichText from './RichText.astro';
+import { resolveRaceDate } from '../utils/calendar';
 
 interface Props {
 	heading: string;
@@ -14,7 +15,18 @@ interface Props {
 
 const { heading, intro, linkLabel } = Astro.props;
 
-const races = (await getCollection('races')).sort((a, b) => a.data.order - b.data.order);
+const now = new Date();
+
+// Dates come from the club-races calendar — see resolveRaceDate, and the note
+// on the Our Races page.
+const races = await Promise.all(
+	(await getCollection('races'))
+		.sort((a, b) => a.data.order - b.data.order)
+		.map(async (race) => ({
+			race,
+			when: await resolveRaceDate(race.data.title, race.data.nextDate, now),
+		})),
+);
 ---
 
 <section class="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
@@ -24,7 +36,7 @@ const races = (await getCollection('races')).sort((a, b) => a.data.order - b.dat
 	</div>
 	<ul class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
 		{
-			races.map((race) => {
+			races.map(({ race, when }) => {
 				const note = race.data.seriesNote || race.data.juniorRaceNote;
 				return (
 					<li>
@@ -48,9 +60,13 @@ const races = (await getCollection('races')).sort((a, b) => a.data.order - b.dat
 							<div class="p-4">
 								<h3 class="text-lg font-bold text-base-content group-hover:underline">{race.data.title}</h3>
 								<p class="text-sm text-base-content/60">
-									{race.data.nextDate && (
+									{when.date && (
 										<>
-											<FormattedDate date={race.data.nextDate} /> ·{' '}
+											<FormattedDate
+												date={when.date}
+												timeZone={when.showTime ? 'Europe/London' : 'UTC'}
+											/>{' '}
+											·{' '}
 										</>
 									)}
 									{formatDistance(race.data.distance)}
