@@ -53,6 +53,17 @@ whichNight:
   tuesday: "Tuesday is the big social night. As many groups as we need to get everyone out for a comfortable run, then the bar is open afterwards. And don't forget the monthly handicap races where everyone has a chance to win the trophy and the famous bake off for afters."
   thursday: "Thursday is another club run night, usually one group and the same familiar route. Everyone welcome."
 
+# Pub runs. Wording only — the dates come from the socials calendar.
+pubRuns:
+  heading: Pub runs
+  body: Through the summer there is a pub run once a month, starting and finishing at a different pub. The club runs, then eats. You are welcome to do one and not the other.
+  linkLabel: More about pub runs
+  emptyState: None booked at the moment — they run through the summer, and appear here as soon as they are in the calendar.
+  # The day, the pub and the start time all come from the calendar entry, so
+  # they are not repeated here. It is omitted from the page while it starts
+  # with TODO.
+  note: TODO — whether non-members and guests can come on a pub run, and how the food is arranged.
+
 membership:
   heading: "Membership"
   intro: "Come for a few runs and make up your mind if you want to stay for longer with a club membership."

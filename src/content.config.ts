@@ -163,6 +163,23 @@ const draftable = z
     value?.trimStart().startsWith("TODO") ? undefined : value
   );
 
+// The pub runs teaser, on the homepage and on Join Us.
+//
+// Wording only. The dates are read from the socials calendar by
+// PubRuns.astro, so there is deliberately no day, pub or start-time field
+// here: hand-copying those from the calendar would give one fact two homes,
+// which is the drift /pub-runs exists to avoid.
+const pubRunsTeaser = z.object({
+  heading: z.string(),
+  body: z.string(),
+  linkLabel: z.string(),
+  // Shown when the calendar holds no pub runs, which is most of the year.
+  emptyState: z.string(),
+  // Anything standing that the calendar cannot say. draftable, so a "TODO —"
+  // placeholder is stripped rather than published.
+  note: draftable,
+});
+
 // src/content/pages/home.md
 const homePage = z.object({
   page: z.literal("home"),
@@ -182,6 +199,7 @@ const homePage = z.object({
     heading: z.string(),
     body: z.string(),
   }),
+  pubRuns: pubRunsTeaser,
   couchTo5k: z.object({
     heading: z.string(),
     body: z.string(),
@@ -259,6 +277,7 @@ const joinUsPage = z.object({
     tuesday: z.string(),
     thursday: z.string(),
   }),
+  pubRuns: pubRunsTeaser,
   membership: z.object({
     heading: z.string(),
     intro: draftable,

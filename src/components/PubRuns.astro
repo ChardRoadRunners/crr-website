@@ -1,0 +1,90 @@
+---
+/**
+ * The pub runs teaser, shared by the homepage and Join Us.
+ *
+ * The prose comes from each page's own content file, so the two can say
+ * different things — the homepage is introducing the idea, Join Us is
+ * answering "what else happens?".
+ *
+ * The DATES do not come from either. They are read from the socials calendar,
+ * the same source /pub-runs uses, because a date written into a page is a
+ * second home for a fact the calendar already holds — and the two drift. So
+ * nothing here needs updating when a pub run is booked: Lizzie adds it to the
+ * calendar and it appears in all three places at the next build.
+ *
+ * That is also why there are no day, pub or start-time fields. Inventing them
+ * was off the table, and hand-copying them from the calendar would recreate
+ * exactly the drift the pub runs page was built to avoid. `note` is there for
+ * anything the calendar genuinely cannot say.
+ */
+import { formatEventWhen, getUpcoming, isPubRun, machineDate } from '../utils/calendar';
+
+interface Props {
+	heading: string;
+	body: string;
+	linkLabel: string;
+	/** Shown when the calendar has no pub runs — the normal state in winter. */
+	emptyState: string;
+	/**
+	 * Optional standing note. Stripped by the schema while it still starts with
+	 * TODO, so an unanswered placeholder never reaches a visitor.
+	 */
+	note?: string;
+	class?: string;
+}
+
+const { heading, body, linkLabel, emptyState, note, class: className } = Astro.props;
+
+const HOW_MANY = 2;
+
+const now = new Date();
+const next = (await getUpcoming(['socials'], { now })).filter(isPubRun).slice(0, HOW_MANY);
+---
+
+<section id="pub-runs" class:list={['bg-base-200', className]}>
+	<div class="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
+		<h2 class="text-center text-3xl font-bold text-base-content sm:text-4xl">{heading}</h2>
+		<p class="mt-4 text-center text-base-content/80">{body}</p>
+
+		{
+			next.length > 0 ? (
+				<ul class="mx-auto mt-8 flex max-w-md flex-col gap-3">
+					{next.map((event) => (
+						<li class="pub-run-entry">
+							{/*
+							  The same pair EventList uses on /pub-runs and /calendar, rather
+							  than FormattedDate: machineDate emits a date-only datetime for an
+							  all-day event, where FormattedDate would claim midnight UTC for
+							  something that has no time at all.
+							*/}
+							<strong class="block text-sm text-primary">
+								<time datetime={machineDate(event)}>{formatEventWhen(event, now)}</time>
+							</strong>
+							<span class="font-bold text-base-content">{event.title}</span>
+							{event.location && (
+								<span class="block text-sm text-base-content/70">{event.location}</span>
+							)}
+						</li>
+					))}
+				</ul>
+			) : (
+				<p class="mt-6 text-center text-base-content/70">{emptyState}</p>
+			)
+		}
+
+		{note && <p class="mt-6 text-center text-sm text-base-content/70">{note}</p>}
+
+		<div class="mt-8 text-center">
+			<a href="/pub-runs" class="btn btn-secondary">{linkLabel}</a>
+		</div>
+	</div>
+</section>
+
+<style>
+	/* The same left rule as the race diary and the calendar lists, so a date on
+	   this page reads as the same kind of thing as a date on those. */
+	.pub-run-entry {
+		padding: 0.5rem 0 0.5rem 0.85rem;
+		border-left: 3px solid var(--color-primary);
+	}
+</style>

@@ -621,6 +621,39 @@ collections:
                 name: body
                 widget: markdown
 
+          - label: Pub runs
+            name: pubRuns
+            widget: object
+            hint: >-
+              Wording only. The DATES are read from the CRR Socials calendar -
+              any event with "pub run" in its title - so there is nothing to
+              update here when one is booked. Add it to the calendar and it
+              appears here, on Join Us and on the pub runs page at the next
+              rebuild.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - label: Introduction
+                name: body
+                widget: text
+              - label: Button label
+                name: linkLabel
+                widget: string
+                hint: The wording on the button through to the pub runs page.
+              - label: If there is nothing booked
+                name: emptyState
+                widget: text
+                hint: >-
+                  Pub runs are a summer thing, so this is what shows for much
+                  of the year. Make it read like a season, not a fault.
+              - label: Standing note
+                name: note
+                widget: text
+                required: false
+                hint: >-
+                  Optional. The day, the pub and the start time all come from
+                  the calendar, so do not repeat them here. Anything starting
+                  with TODO is left off the page.
+
           - label: Couch to 5k
             name: couchTo5k
             widget: object
@@ -772,6 +805,39 @@ collections:
               - label: Thursday
                 name: thursday
                 widget: markdown
+
+          - label: Pub runs
+            name: pubRuns
+            widget: object
+            hint: >-
+              Wording only. The DATES are read from the CRR Socials calendar -
+              any event with "pub run" in its title - so there is nothing to
+              update here when one is booked. Add it to the calendar and it
+              appears here, on Join Us and on the pub runs page at the next
+              rebuild.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - label: Introduction
+                name: body
+                widget: text
+              - label: Button label
+                name: linkLabel
+                widget: string
+                hint: The wording on the button through to the pub runs page.
+              - label: If there is nothing booked
+                name: emptyState
+                widget: text
+                hint: >-
+                  Pub runs are a summer thing, so this is what shows for much
+                  of the year. Make it read like a season, not a fault.
+              - label: Standing note
+                name: note
+                widget: text
+                required: false
+                hint: >-
+                  Optional. The day, the pub and the start time all come from
+                  the calendar, so do not repeat them here. Anything starting
+                  with TODO is left off the page.
 
           - label: Membership
             name: membership

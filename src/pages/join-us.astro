@@ -3,6 +3,7 @@ import { getEntry } from 'astro:content';
 import { Image } from 'astro:assets';
 import Layout from '../layouts/Layout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import PubRuns from '../components/PubRuns.astro';
 import { splitWhat3Words } from '../utils/what3words';
 import RichText from '../components/RichText.astro';
 import ContourBackdrop from '../components/ContourBackdrop.astro';
@@ -15,7 +16,7 @@ const entry = await getEntry('pages', 'join-us');
 // join-us shape, so the sections below are type-checked.
 if (entry?.data.page !== 'join-us') throw new Error('Missing src/content/pages/join-us.md');
 
-const { hero, firstVisit, whichNight, membership, couchTo5k, questions } = entry.data;
+const { hero, firstVisit, whichNight, pubRuns, membership, couchTo5k, questions } = entry.data;
 ---
 
 <Layout title={hero.heading} description={hero.strapline}
@@ -111,6 +112,10 @@ const { hero, firstVisit, whichNight, membership, couchTo5k, questions } = entry
 			</ul>
 		</div>
 	</section>
+
+	{/* After the club nights, because this is the "what else happens?" question
+	    somebody asks once they know when we meet. */}
+	<PubRuns {...pubRuns} />
 
 	<section class="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
 		<div class="mx-auto max-w-2xl text-center">

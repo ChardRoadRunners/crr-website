@@ -5,6 +5,7 @@ import ComingUp from '../components/ComingUp.astro';
 import CouchTo5k from '../components/CouchTo5k.astro';
 import Handicap from '../components/Handicap.astro';
 import Hero from '../components/Hero.astro';
+import PubRuns from '../components/PubRuns.astro';
 import LatestRaceReports from '../components/LatestRaceReports.astro';
 import OurRaces from '../components/OurRaces.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
@@ -15,13 +16,15 @@ const home = await getEntry('pages', 'home');
 // home shape, so the sections below are type-checked.
 if (home?.data.page !== 'home') throw new Error('Missing src/content/pages/home.md');
 
-const { hero, clubNights, handicap, couchTo5k, latestReports, upcoming, ourRaces } = home.data;
+const { hero, clubNights, handicap, pubRuns, couchTo5k, latestReports, upcoming, ourRaces } =
+	home.data;
 ---
 
 <Layout title={SITE_TITLE} description={SITE_DESCRIPTION} overlayHeader hideLogoUntilScrolled>
 	<Hero {...hero} />
 	<ClubNights {...clubNights} />
 	<Handicap {...handicap} />
+	<PubRuns {...pubRuns} />
 	<CouchTo5k {...couchTo5k} />
 	<LatestRaceReports {...latestReports} />
 	<ComingUp {...upcoming} />
