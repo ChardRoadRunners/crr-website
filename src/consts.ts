@@ -70,7 +70,7 @@ export const ENGLAND_ATHLETICS_URL = 'https://www.englandathletics.org/';
 //
 // These are calendar IDs, not URLs. Each one's public feed is
 // `https://calendar.google.com/calendar/ical/<id>/public/basic.ics`, built in
-// one place in calendar.ts so the shape is not written out four times. Find an
+// one place in calendar.ts so the shape is not written out five times. Find an
 // ID in Google Calendar under Settings > (the calendar) > Integrate calendar.
 //
 // Every one of these must stay set to "Make available to public". If one is

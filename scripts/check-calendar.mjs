@@ -1,6 +1,6 @@
 // Guards the calendar parsing rules.
 //
-// `src/utils/calendar.ts` turns four Google feeds into one shape, and most of
+// `src/utils/calendar.ts` turns five Google feeds into one shape, and most of
 // what it does has a wrong answer that looks right. An all-day race showing
 // the day before, a 10am start rendering as 9am for half the year, a homepage
 // listing five consecutive Tuesdays — each of those ships silently and is only

@@ -1,7 +1,7 @@
 /**
  * The club's Google calendars, read at build time.
  *
- * Four public `.ics` feeds parsed into one shape, so a page never has to care
+ * Five public `.ics` feeds parsed into one shape, so a page never has to care
  * which calendar an event came from. The pages render ordinary HTML with no
  * client-side JavaScript, which is why the nightly rebuild exists: a static
  * build only knows what was true when it ran.
