@@ -63,6 +63,35 @@ export const SOCIAL_LINKS = {
 
 export const ENGLAND_ATHLETICS_URL = 'https://www.englandathletics.org/';
 
+// The club's four public Google calendars, read at build time by
+// `src/utils/calendar.ts` and rendered as ordinary HTML. No visitor's browser
+// ever talks to Google — the only request happens on the build machine, which
+// is the whole point of doing it this way rather than embedding an iframe.
+//
+// These are calendar IDs, not URLs. Each one's public feed is
+// `https://calendar.google.com/calendar/ical/<id>/public/basic.ics`, built in
+// one place in calendar.ts so the shape is not written out four times. Find an
+// ID in Google Calendar under Settings > (the calendar) > Integrate calendar.
+//
+// Every one of these must stay set to "Make available to public". If one is
+// turned private its feed 404s and THE BUILD FAILS, by design: a calendar
+// quietly serving nothing is worse than a red build, because a page of races
+// that silently empties is a page nobody checks.
+//
+// Because the site is built, not live, these are only as current as the last
+// build. The nightly rebuild in `workers/diary-rebuild/` is what keeps them
+// honest — see its README.
+export const CALENDAR_IDS = {
+	'club-nights':
+		'48e603a15900b03249e5f0e8c758ea0fd006441b66aba41a02bc7883e69792d8@group.calendar.google.com',
+	'race-calendar':
+		'5d4f7195bb23dea60fd8956b8082ecd3619221bb1731449e14225d54e92b7406@group.calendar.google.com',
+	'club-races':
+		'78dc42844390d900d7f73636253272e26ee9851256b4af745e6c0efa6f6243f8@group.calendar.google.com',
+	championship:
+		'a36807b7ef85ef1b9be2d386404124369e9f1db3066e24e2f36b0488a0ae90b0@group.calendar.google.com',
+} as const;
+
 // The club's Google Calendar, shown on /calendar above the race diary.
 //
 // A STOPGAP, and agreed as one. The intended version reads the calendar's .ics
