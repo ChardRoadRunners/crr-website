@@ -194,6 +194,10 @@ const homePage = z.object({
     heading: z.string(),
     linkLabel: z.string(),
     emptyState: z.string(),
+    // Shown on a race that counts towards the championship. The homepage
+    // carries its own wording rather than reading the calendar page's — each
+    // page owns what it says.
+    championshipLabel: z.string().min(1),
   }),
   ourRaces: z.object({
     heading: z.string(),

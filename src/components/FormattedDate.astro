@@ -1,17 +1,18 @@
 ---
+// Every date on the site goes through here, so they all read the same way.
+// See src/utils/date.ts for the form and why the year is always shown.
+import { formatDate } from '../utils/date';
+
 interface Props {
 	date: Date;
 	// True when the exact day isn't known — render month and year only.
 	approximate?: boolean;
+	// Frontmatter dates have no time of their own, so they are read in UTC.
+	// A real instant (a calendar event) should pass Europe/London.
+	timeZone?: string;
 }
 
-const { date, approximate = false } = Astro.props;
+const { date, approximate = false, timeZone = 'UTC' } = Astro.props;
 ---
 
-<time datetime={date.toISOString()}>
-	{
-		approximate
-			? date.toLocaleDateString('en-us', { year: 'numeric', month: 'long' })
-			: date.toLocaleDateString('en-us', { year: 'numeric', month: 'short', day: 'numeric' })
-	}
-</time>
+<time datetime={date.toISOString()}>{formatDate(date, { timeZone, monthOnly: approximate })}</time>

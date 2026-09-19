@@ -17,9 +17,10 @@ import assert from 'node:assert/strict';
 
 import ical from 'node-ical';
 
-const { normalise, formatEventWhen } = await import(
+const { normalise, formatEventWhen, isSameRace } = await import(
 	new URL('../src/utils/calendar.ts', import.meta.url).href
 );
+const { ordinal } = await import(new URL('../src/utils/date.ts', import.meta.url).href);
 
 const red = (s) => `\u001b[31m${s}\u001b[0m`;
 const green = (s) => `\u001b[32m${s}\u001b[0m`;
@@ -28,7 +29,12 @@ const dim = (s) => `\u001b[2m${s}\u001b[0m`;
 let failures = 0;
 const check = (name, fn) => {
 	try {
-		fn();
+		const result = fn();
+		if (result && typeof result.then === 'function') {
+			// `check` does not await, so an async body would report ok whatever
+			// its assertions did. Fail loudly rather than pass silently.
+			throw new Error('check() bodies must be synchronous - this one returned a promise');
+		}
 		console.log(`  ${green('ok')} ${name}`);
 	} catch (error) {
 		failures += 1;
@@ -75,7 +81,7 @@ check('a UTC-encoded 10am BST start renders as 10am, not 9am', () => {
 		WINDOW_TO,
 	);
 	const when = formatEventWhen(event, new Date('2026-06-01T00:00:00Z'));
-	assert.equal(when, 'Sun 18 Oct, 10:00 am');
+	assert.equal(when, '18th Oct 2026, 10:00 am');
 });
 
 check('a UTC-encoded 10am GMT start also renders as 10am', () => {
@@ -111,7 +117,7 @@ check('an all-day race in summer keeps its own date', () => {
 	);
 	assert.equal(event.allDay, true);
 	const when = formatEventWhen(event, new Date('2026-01-01T00:00:00Z'));
-	assert.ok(when.includes('4 Jul'), `expected 4 Jul, got "${when}"`);
+	assert.equal(when, '4th Jul 2026', `expected 4th Jul 2026, got "${when}"`);
 	assert.ok(!/\d:\d\d/.test(when), `all-day should show no time, got "${when}"`);
 });
 
@@ -128,7 +134,29 @@ check('an all-day race in winter keeps its own date', () => {
 		WINDOW_FROM,
 		WINDOW_TO,
 	);
-	assert.ok(formatEventWhen(event, new Date('2026-01-01T00:00:00Z')).includes('8 Nov'));
+	assert.equal(formatEventWhen(event, new Date('2026-01-01T00:00:00Z')), '8th Nov 2026');
+});
+
+check('the year is always shown, so a January race is not read as this one', () => {
+	const [event] = parse(
+		feed([
+			'UID:year@test',
+			'DTSTART:20270101T100000Z',
+			'SUMMARY:Chard Flyer 10k',
+			'STATUS:CONFIRMED',
+		]),
+		'club-races',
+		WINDOW_FROM,
+		WINDOW_TO,
+	);
+	assert.equal(formatEventWhen(event, new Date('2026-12-20T00:00:00Z')), '1st Jan 2027, 10:00 am');
+});
+
+check('ordinals are right for the awkward numbers', () => {
+	assert.deepEqual(
+		[1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 31].map(ordinal),
+		['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '31st'],
+	);
 });
 
 // ---------------------------------------------------------------------------
@@ -239,6 +267,31 @@ check('championship events are flagged, others are not', () => {
 	assert.equal(champ.isChampionship, true);
 	assert.equal(other.isChampionship, false);
 });
+
+// ---------------------------------------------------------------------------
+// Reconciling the two sources
+//
+// The homepage merges the Google calendars with the rule-based race diary, and
+// a race in both would otherwise appear twice. Matching too eagerly is worse
+// than matching too little: a missed duplicate is untidy, a wrong match hides
+// a real race.
+// ---------------------------------------------------------------------------
+
+const d = (iso) => new Date(iso);
+
+for (const [a, b, aDate, bDate, want, why] of [
+	['Chard Flyer 10k', 'Chard Flyer', '2027-01-01', '2027-01-01', true, 'calendar carries the distance'],
+	['Chard Flyer 10k', 'Chard Flyer', '2027-01-01', '2027-03-01', false, 'same name months apart is next year'],
+	['Chard Flyer 10k', 'Chard Half', '2027-01-01', '2027-01-01', false, 'different race, same venue'],
+	['Stockland Scamper 10k', 'Stockland Scamper', '2026-10-18', '2026-10-20', true, 'a few days out is still one race'],
+	['Forde Abbey 10k', 'Forde Abbey 10k and free Junior 1500m', '2027-06-23', '2027-06-24', true, 'diary name is the longer one'],
+	['Malaga Marathon', 'Marathon', '2026-11-08', '2026-11-08', false, 'a bare word must not swallow races'],
+	['Chard Flyer 10k', '', '2027-01-01', '2027-01-01', false, 'an empty name matches nothing'],
+]) {
+	check(`same race? ${why}`, () => {
+		assert.equal(isSameRace(a, b, d(aDate), d(bDate)), want);
+	});
+}
 
 console.log(
 	failures === 0

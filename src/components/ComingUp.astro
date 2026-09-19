@@ -1,30 +1,87 @@
 ---
-// The next three races from the diary.
-//
-// Same honesty rule as the full diary on /calendar: an entry whose date was
-// worked out from a rule shows "usually the last Sunday in November", never a
-// day. Only a confirmed or fixed date earns a real one.
+/**
+ * The next few races, from both places the club keeps them.
+ *
+ * Two sources that answer different questions, deliberately merged rather than
+ * one replacing the other:
+ *
+ * - The **Google race calendars** hold dates somebody has confirmed. Few
+ *   entries, all exact.
+ * - The **race diary** holds rules worked out from past race reports — "the
+ *   last Sunday in November". Many entries, most approximate.
+ *
+ * Showing only the calendar would empty the homepage whenever the committee
+ * were behind. Showing only the diary would hide a race that has actually been
+ * booked. So both, with the same honesty rule applied throughout: an exact
+ * date prints as a day, a worked-out one says how it is worked out.
+ *
+ * Where a race is in both — the Chard Flyer is — the calendar wins, because a
+ * confirmed date beats an inferred one. See `isSameRace` in utils/calendar for
+ * how that is matched, and why it is deliberately cautious.
+ */
 import { getCollection } from 'astro:content';
+
 import FormattedDate from './FormattedDate.astro';
+import { getUpcoming, isSameRace } from '../utils/calendar';
 import { describeTiming, hasExactDate, isRunning, nextOccurrence } from '../utils/race-diary';
 
 interface Props {
 	heading: string;
 	linkLabel: string;
-	// Shown when the diary is empty, which should only happen before any races
-	// are entered — every entry rolls to next year rather than running out.
+	/** Shown when both sources are empty. */
 	emptyState: string;
+	championshipLabel: string;
 }
 
-const { heading, linkLabel, emptyState } = Astro.props;
+const { heading, linkLabel, emptyState, championshipLabel } = Astro.props;
 
 const now = new Date();
-const next = (await getCollection('calendar-events'))
+
+interface Entry {
+	key: string;
+	name: string;
+	date: Date;
+	/** True when the day itself is known, rather than worked out from a rule. */
+	exact: boolean;
+	/** How an approximate date is described, e.g. "usually mid-November". */
+	timing: string | null;
+	championship: boolean;
+	/** Timed calendar events carry a time; diary entries and all-day ones don't. */
+	showTime: boolean;
+}
+
+const fromCalendar: Entry[] = (
+	await getUpcoming(['race-calendar', 'championship', 'club-races'], { now })
+).map((event) => ({
+	key: event.uid,
+	name: event.title,
+	date: event.start,
+	exact: true,
+	timing: null,
+	championship: event.isChampionship,
+	showTime: !event.allDay,
+}));
+
+const fromDiary: Entry[] = (await getCollection('calendar-events'))
 	.filter((event) => isRunning(event.data))
 	.map((event) => ({ event, date: nextOccurrence(event.data, now) }))
 	.filter((item): item is { event: (typeof item)['event']; date: Date } => Boolean(item.date))
+	.map(({ event, date }) => ({
+		key: `diary:${event.id}`,
+		name: event.data.name,
+		date,
+		exact: hasExactDate(event.data, now),
+		timing: describeTiming(event.data),
+		championship: event.data.championship,
+		showTime: false,
+	}))
+	// A race the committee has actually booked is the better record of it.
+	// isSameRace explains how the two sources' names are reconciled.
+	.filter((entry) => !fromCalendar.some((c) => isSameRace(c.name, entry.name, c.date, entry.date)));
+
+const next = [...fromCalendar, ...fromDiary]
 	.sort((a, b) => a.date.getTime() - b.date.getTime())
-	.slice(0, 3);
+	.slice(0, 4);
 ---
 
 <section class="bg-base-200">
@@ -36,23 +93,28 @@ const next = (await getCollection('calendar-events'))
 				<p class="mt-4 text-center text-base-content/70">{emptyState}</p>
 			) : (
 				<ul class="mx-auto mt-8 flex max-w-md flex-col gap-3">
-					{next.map(({ event, date }) => {
-						const exact = hasExactDate(event.data, now);
-						return (
-							<li class:list={['coming-up-entry', exact ? 'is-exact' : 'is-approximate']}>
-								<span class="font-bold text-primary">{event.data.name}</span>
-								<span class="block text-sm text-base-content/80">
-									{exact ? (
-										<strong>
-											<FormattedDate date={date} />
-										</strong>
-									) : (
-										describeTiming(event.data)
-									)}
+					{next.map((entry) => (
+						<li class:list={['coming-up-entry', entry.exact ? 'is-exact' : 'is-approximate']}>
+							<span class="font-bold text-primary">{entry.name}</span>
+							{entry.championship && (
+								<span class="badge badge-purple badge-wrap ml-2 align-middle">
+									{championshipLabel}
 								</span>
-							</li>
-						);
-					})}
+							)}
+							<span class="block text-sm text-base-content/80">
+								{entry.exact ? (
+									<strong>
+										<FormattedDate
+											date={entry.date}
+											timeZone={entry.showTime ? 'Europe/London' : 'UTC'}
+										/>
+									</strong>
+								) : (
+									entry.timing
+								)}
+							</span>
+						</li>
+					))}
 				</ul>
 			)
 		}

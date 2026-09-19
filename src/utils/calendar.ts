@@ -18,6 +18,7 @@
 import ical from 'node-ical';
 
 import { CALENDAR_IDS } from '../consts.ts';
+import { formatDate, formatTime } from './date.ts';
 
 export type CalendarSource = keyof typeof CALENDAR_IDS;
 
@@ -280,61 +281,63 @@ export async function getUpcoming(
 	return typeof limit === 'number' ? collapsed.slice(0, limit) : collapsed;
 }
 
+/**
+ * Is this calendar event and this diary entry the same race?
+ *
+ * The two sources name races slightly differently — the calendar has "Chard
+ * Flyer 10k" where the diary might have "Chard Flyer" — so the homepage would
+ * otherwise list both.
+ *
+ * Deliberately cautious. One name must be the whole of the other or its
+ * opening words: a plain "contains" would let a stray "10k" or "Marathon"
+ * swallow unrelated races. The dates must also land near each other, because
+ * the diary's are worked out rather than confirmed and the same race runs
+ * once a year — two entries months apart are two different runnings.
+ */
+const NEAR_ENOUGH_DAYS = 28;
+
+const normaliseName = (value: string) =>
+	value
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, ' ')
+		.trim();
+
+export function isSameRace(
+	aName: string,
+	bName: string,
+	aDate: Date,
+	bDate: Date,
+): boolean {
+	const [x, y] = [normaliseName(aName), normaliseName(bName)];
+	if (!x || !y) return false;
+
+	const namesMatch = x === y || x.startsWith(`${y} `) || y.startsWith(`${x} `);
+	if (!namesMatch) return false;
+
+	return Math.abs(aDate.getTime() - bDate.getTime()) / 86_400_000 <= NEAR_ENOUGH_DAYS;
+}
+
 const LONDON = 'Europe/London';
 
 /**
  * Formats an event's date and time for display.
  *
- * Two rules, both of which have a wrong answer that looks plausible:
+ * Two rules, each with a wrong answer that looks right:
  *
- * 1. Timed events format in Europe/London, never the build machine's zone.
+ * 1. Timed events read in Europe/London, never the build machine's zone.
  *    Cloudflare builds in UTC, and the Stockland Scamper is stored as
- *    `20261018T090000Z` — which is 10am BST. Formatted in UTC it reads 9am,
- *    an hour early, and only in summer.
+ *    `20261018T090000Z` — which is 10am BST. Read as UTC it says 9am: an hour
+ *    early, and only in summer.
  *
- * 2. All-day events format in UTC, because that is how the calendar date was
- *    encoded: node-ical turns `VALUE=DATE:20261108` into midnight UTC. Running
- *    that through a timezone is how an all-day race ends up showing the day
+ * 2. All-day events read in UTC, because that is how the calendar date was
+ *    encoded — node-ical turns `VALUE=DATE:20261108` into midnight UTC.
+ *    Running that through a timezone is how an all-day race shows the day
  *    before.
  */
-export function formatEventWhen(event: ClubEvent, now = new Date()): string {
-	const sameYear =
-		new Intl.DateTimeFormat('en-GB', { timeZone: LONDON, year: 'numeric' }).format(
-			event.start,
-		) ===
-		new Intl.DateTimeFormat('en-GB', { timeZone: LONDON, year: 'numeric' }).format(now);
+export function formatEventWhen(event: ClubEvent, _now = new Date()): string {
+	const date = formatDate(event.start, { timeZone: event.allDay ? 'UTC' : LONDON });
 
-	// Assembled from parts rather than taking Intl's own string: en-GB adds a
-	// comma after the weekday only when a year is present, so the two forms
-	// would read "Sun 18 Oct" and "Fri, 1 Jan 2027" in the same list.
-	const parts = new Intl.DateTimeFormat('en-GB', {
-		timeZone: event.allDay ? 'UTC' : LONDON,
-		weekday: 'short',
-		day: 'numeric',
-		month: 'short',
-		...(sameYear ? {} : { year: 'numeric' }),
-	}).formatToParts(event.start);
-
-	const part = (type: Intl.DateTimeFormatPartTypes) =>
-		parts.find((p) => p.type === type)?.value ?? '';
-
-	const date = [part('weekday'), part('day'), part('month'), part('year')]
-		.filter(Boolean)
-		.join(' ');
-
-	if (event.allDay) return date;
-
-	const time = new Intl.DateTimeFormat('en-GB', {
-		timeZone: LONDON,
-		hour: 'numeric',
-		minute: '2-digit',
-		hour12: true,
-	})
-		.format(event.start)
-		// "7:00 pm" reads better than "7:00 pm" with a narrow no-break space.
-		.replace(/ /g, ' ');
-
-	return `${date}, ${time}`;
+	return event.allDay ? date : `${date}, ${formatTime(event.start, LONDON)}`;
 }
 
 /** ISO date for a <time datetime="..."> attribute. */

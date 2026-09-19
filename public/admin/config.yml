@@ -666,6 +666,11 @@ collections:
               - label: Message when nothing is planned
                 name: emptyState
                 widget: markdown
+              - label: Championship badge
+                name: championshipLabel
+                widget: string
+                hint: >-
+                  The label on a race that counts towards the championship.
 
           - label: Our races section
             name: ourRaces
