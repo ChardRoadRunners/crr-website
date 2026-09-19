@@ -717,6 +717,40 @@ collections:
                     hint: >-
                       Line breaks are kept, so an address can go on several
                       lines. what3words references (///word.word.word) are fine.
+
+                  - label: Map
+                    name: map
+                    widget: object
+                    required: false
+                    collapsed: true
+                    hint: >-
+                      Only the step that says where we meet needs this. The map
+                      picture itself is a file in the repository, drawn from
+                      OpenStreetMap - only the wording is editable here.
+                    fields:
+                      - label: Description of the location
+                        name: alt
+                        widget: text
+                        hint: >-
+                          Read aloud to anyone who cannot see the map, so
+                          describe where the club is, not what the picture
+                          looks like.
+                      - label: Link text
+                        name: linkLabel
+                        widget: string
+                      - label: Map link
+                        name: url
+                        widget: string
+                        pattern:
+                          - "^https?://.+"
+                          - "Enter a full web address starting with https://"
+                      - label: Map credit
+                        name: credit
+                        widget: string
+                        hint: >-
+                          Required by OpenStreetMap's licence, which is what
+                          lets us use the map at all. Leave it as it is.
+
               - label: Reassurance
                 name: reassurance
                 widget: markdown

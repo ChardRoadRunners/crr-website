@@ -215,7 +215,29 @@ const joinUsPage = z.object({
     // Rendered as a labelled list. `detail` may hold what3words references
     // (///word.word.word) and, for the address, meaningful line breaks.
     steps: z
-      .array(z.object({ label: z.string(), detail: z.string() }))
+      .array(
+        z.object({
+          label: z.string(),
+          detail: z.string(),
+          // Optional, and per step rather than per page, so the map sits with
+          // whichever step describes the place and travels with it if the
+          // steps are reordered. Only "Where" carries one today. The picture
+          // is a file in the repository — this is just the copy around it.
+          map: z
+            .object({
+              // Describes the place, not the picture.
+              alt: z.string().min(1),
+              // The anchor's own text, so the link reads as a link with
+              // images off.
+              linkLabel: z.string().min(1),
+              url: z.string().url(),
+              // OpenStreetMap's licence requires attribution wherever the
+              // map appears.
+              credit: z.string().min(1),
+            })
+            .optional(),
+        })
+      )
       .min(1),
     reassurance: z.string(),
   }),
