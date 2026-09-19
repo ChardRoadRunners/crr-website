@@ -45,27 +45,31 @@ cta:
   label: "Join us"
   href: "/join-us"
 
-# The footer, in columns. Welfare stays first in its group and the group stays
-# first in the footer: CLAUDE.md requires the welfare contact to be findable in
-# one click from every page, and this is what delivers that.
+# The footer, in three columns.
+#
+# Welfare stays first in the first column: CLAUDE.md requires the welfare
+# contact to be findable in one click from every page, and the footer is what
+# delivers that on the pages that have nothing else.
+#
+# Race Calendar is deliberately gone. It pointed at /calendar#race-calendar
+# while the top menu already carried Calendar, so the footer was offering a
+# second route to a page the menu covers.
 footerGroups:
-  - label: "Club"
+  - label: "Looking after you"
     links:
       - label: "Welfare"
         href: "/welfare"
       - label: "Inclusion"
         href: "/inclusion"
-      - label: "Rules & Constitution"
-        href: "/rules-and-constitution"
       - label: "Privacy"
         href: "/privacy"
-      - label: "Club Kit"
+  - label: "The Club"
+    links:
+      - label: "Rules & constitution"
+        href: "/rules-and-constitution"
+      - label: "Club kit"
         href: "/club-kit"
-      # The diary specifically, not the top of the page — the label promises
-      # races and the club calendar is what sits above it.
-      - label: "Race Calendar"
-        href: "/calendar#race-calendar"
-      - label: "Pub Runs"
+      - label: "Pub runs"
         href: "/pub-runs"
   - label: "Connect"
     links:
@@ -73,6 +77,7 @@ footerGroups:
         href: "https://www.facebook.com/groups/161908423862991/"
       - label: "Strava"
         href: "https://www.strava.com/clubs/246805/leaderboard"
-      - label: "England Athletics affiliated"
+      - label: "England Athletics"
         href: "https://www.englandathletics.org/"
+
 ---
