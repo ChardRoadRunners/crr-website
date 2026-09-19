@@ -19,7 +19,7 @@ interface Props {
 
 const { overlay = false, hideLogo = false } = Astro.props;
 
-const { primary } = await getNavigation();
+const { primary, cta } = await getNavigation();
 ---
 
 <header
@@ -75,8 +75,13 @@ const { primary } = await getNavigation();
 			<span class="site-logo" aria-hidden="true" set:html={logoMark} />
 		</a>
 	</div>
-	<div class="navbar-end hidden w-auto flex-1 lg:flex">
-		<ul class="menu menu-horizontal gap-1 px-1">
+	{/*
+	  The menu hides below lg; the button does not. Joining is the one thing
+	  this site is asking anybody to do, and behind a hamburger it is two taps
+	  away on the pages most likely to be somebody's first.
+	*/}
+	<div class="navbar-end w-auto flex-1 gap-2">
+		<ul class="menu menu-horizontal hidden gap-1 px-1 lg:flex">
 			{
 				primary.map((link) => (
 					<li>
@@ -85,6 +90,28 @@ const { primary } = await getNavigation();
 				))
 			}
 		</ul>
+
+		{/*
+		  PLACEHOLDER COLOUR — REVISIT WHEN THE ACCENT IS DECIDED.
+		
+		  btn-secondary is the pale blue fill with dark purple text, measured at
+		  6.34:1. That passes AA comfortably and is the brief's choice for now.
+		
+		  The sky blue accent measures 8.67:1 in the same arrangement and is what
+		  CLAUDE.md currently names as the call-to-action colour. If that decision
+		  sticks, this becomes btn-accent and gains 2.3 points of contrast. It is
+		  one class either way; the reason it is not btn-accent already is that
+		  the accent is still open.
+		
+		  Whichever wins, it stays a FILL. Neither blue is readable as text on a
+		  light ground — the sky is 1.76:1, the pale blue 2.41:1.
+		*/}
+		<a
+			href={cta.href}
+			class="btn btn-secondary btn-sm sm:btn-md focus-visible:outline-white"
+		>
+			{cta.label}
+		</a>
 	</div>
 </header>
 

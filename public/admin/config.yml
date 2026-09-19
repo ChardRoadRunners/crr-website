@@ -1266,6 +1266,20 @@ collections:
                   /join-us. The build fails if it points at a page that does
                   not exist, so a typo here cannot reach the live site.
 
+          - label: Header button
+            name: cta
+            widget: object
+            hint: >-
+              The button in the top bar, shown on every page at every screen
+              size. This is the site's main call to action, so keep the label
+              short - two words at most, or it wraps on a phone.
+            fields:
+              - { label: Label, name: label, widget: string }
+              - label: Address
+                name: href
+                widget: string
+                hint: A page on this site, starting with a slash.
+
           - label: Footer columns
             name: footerGroups
             widget: list

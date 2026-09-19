@@ -36,6 +36,15 @@ primary:
   - label: "Contact"
     href: "/contact"
 
+# The button in the header, on every page at every width.
+#
+# Joining is the one thing the site is actually asking a visitor to do, and on
+# a phone the whole menu is behind a hamburger - so without this the primary
+# call to action is two taps away everywhere except the homepage.
+cta:
+  label: "Join us"
+  href: "/join-us"
+
 # The footer, in columns. Welfare stays first in its group and the group stays
 # first in the footer: CLAUDE.md requires the welfare contact to be findable in
 # one click from every page, and this is what delivers that.

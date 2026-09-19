@@ -435,6 +435,7 @@ const navigation = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/navigation" }),
   schema: z.object({
     primary: z.array(navLink).min(1),
+    cta: navLink,
     footerGroups: z
       .array(
         z.object({

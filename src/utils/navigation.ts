@@ -26,6 +26,8 @@ export interface FooterGroup {
 
 export interface SiteNavigation {
 	primary: NavLink[];
+	/** The header's call-to-action button, shown on every page. */
+	cta: NavLink;
 	footerGroups: FooterGroup[];
 }
 
