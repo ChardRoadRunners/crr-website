@@ -17,6 +17,22 @@ welfare:
 races:
   label: Our races
   detail: Entries, road closures, parking, volunteering, or the junior race.
+whereWeAre:
+  heading: Where we are
+  address: |
+    Chard Cricket Club
+    Dening Field
+    Zembard Lane
+    Chard
+    Somerset
+    TA20 1JL
+  mapAlt: >-
+    Chard Cricket Club sits on Dening Field, off the south side of Zembard
+    Lane in Chard, between Holyrood Academy and Chard Rugby Club, about five
+    minutes north of Fore Street and the town centre.
+  linkLabel: Open in Google Maps
+  mapUrl: https://www.google.com/maps/search/?api=1&query=Chard+Cricket+Club,+Dening+Field,+Zembard+Lane,+Chard,+TA20+1JL
+  credit: © OpenStreetMap contributors
 committee:
   heading: The committee
   body: TODO — names and roles, once the committee has confirmed who is happy to be listed. Roles only, no personal addresses.

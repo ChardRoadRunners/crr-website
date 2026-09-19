@@ -881,6 +881,47 @@ collections:
                 name: detail
                 widget: markdown
 
+          - label: Where we are
+            name: whereWeAre
+            widget: object
+            hint: >-
+              The map picture itself is not editable here - it is a file in the
+              repository, drawn from OpenStreetMap. Everything else on this
+              block is.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - label: Address
+                name: address
+                widget: text
+                hint: >-
+                  One line each. This is also on the join us page - if it
+                  changes, change it in both places.
+              - label: Description of the location
+                name: mapAlt
+                widget: text
+                hint: >-
+                  Read aloud to anyone who cannot see the map, so describe
+                  where the club is, not what the picture looks like. Never
+                  "a map of Chard".
+              - label: Link text
+                name: linkLabel
+                widget: string
+                hint: >-
+                  The wording of the link under the map, for example "Open in
+                  Google Maps".
+              - label: Map link
+                name: mapUrl
+                widget: string
+                pattern:
+                  - "^https?://.+"
+                  - "Enter a full web address starting with https://"
+              - label: Map credit
+                name: credit
+                widget: string
+                hint: >-
+                  Required by OpenStreetMap's licence, which is what lets us
+                  use the map at all. Leave it as it is.
+
           - label: The committee
             name: committee
             widget: object
