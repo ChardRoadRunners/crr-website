@@ -1,0 +1,102 @@
+---
+// The pub runs page.
+//
+// The slug is /pub-runs because that is what it was on the old Webador site,
+// so every link anybody has shared still lands somewhere.
+//
+// Where the dates come from: the socials calendar in Google, filtered to the
+// events whose titles say "pub run". A pub run is a social, the social
+// secretaries already keep that calendar, and so there is nothing new for
+// anybody to maintain — add a pub run there and it appears both here and in
+// the socials section of /calendar.
+//
+// The cost of that is a naming convention doing structural work, and a miss
+// is silent rather than loud. `isPubRun` is deliberately generous for exactly
+// that reason, its wordings are pinned in scripts/check-calendar.mjs, and the
+// build prints a note below if the calendar holds socials but none of them
+// look like pub runs — the one case where an empty page might mean a typo
+// rather than the end of summer.
+import { getEntry } from 'astro:content';
+
+import EventList from '../components/EventList.astro';
+import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import RichText from '../components/RichText.astro';
+import { getUpcoming, isPubRun } from '../utils/calendar';
+
+const page = await getEntry('pages', 'pub-runs');
+if (page?.data.page !== 'pub-runs') {
+	throw new Error('src/content/pages/pub-runs.md is missing or is not a pub-runs page.');
+}
+const { hero, seo, intro, upcoming, pubsRun, practicalities, footnote } = page.data;
+
+const now = new Date();
+
+const socials = await getUpcoming(['socials'], { now });
+const pubRuns = socials.filter(isPubRun);
+
+// Not a failure — an empty summer calendar in February is correct. But socials
+// in the calendar and no pub runs among them is the shape a misnamed event
+// makes, and this is the only place anybody would notice.
+if (socials.length > 0 && pubRuns.length === 0) {
+	console.log(
+		`\n[pub-runs] ${socials.length} social(s) in the calendar, none matching "pub run":\n` +
+			socials.map((event) => `  - ${event.title}`).join('\n') +
+			'\n  If one of those is a pub run, put "pub run" in its title and it will show.\n',
+	);
+}
+
+// The championship badge and entry-link wording belong to races. Neither can
+// occur on a social, but EventList asks for them, so the calendar page's own
+// wording is not borrowed — these say what they would mean here.
+const championshipLabel = 'Championship';
+const entryLabel = 'More about this one';
+---
+
+<Layout title={hero.heading} description={seo.description} overlayHeader>
+	<PageHeader heading={hero.heading} strapline={hero.strapline} />
+
+	<div class="mx-auto max-w-3xl px-4 pt-12 pb-16 sm:px-6 lg:px-8">
+		<RichText text={intro} class="text-base-content/80" />
+
+		<section id="coming-up" class="mt-12 scroll-mt-20">
+			<h2 class="text-3xl font-bold text-primary">{upcoming.heading}</h2>
+			<RichText text={upcoming.intro} class="mt-3 text-base-content/80" />
+			<EventList
+				events={pubRuns}
+				emptyState={upcoming.emptyState}
+				championshipLabel={championshipLabel}
+				entryLabel={entryLabel}
+				class="mt-6"
+			/>
+		</section>
+
+		<section id="pubs-run" class="mt-12 scroll-mt-20">
+			<h2 class="text-3xl font-bold text-primary">{pubsRun.heading}</h2>
+			<RichText text={pubsRun.body} class="mt-3 text-base-content/80" />
+		</section>
+
+		{/*
+		  Hidden entirely while empty, rather than a heading over nothing. The
+		  questions it answers are real and unanswered; a page that admits it
+		  does not know beats one that guesses on the club's behalf.
+		*/}
+		{
+			practicalities.items.length > 0 && (
+				<section id="before-you-come" class="mt-12 scroll-mt-20">
+					<h2 class="text-3xl font-bold text-primary">{practicalities.heading}</h2>
+					<dl class="mt-6 flex flex-col gap-5">
+						{practicalities.items.map((item) => (
+							<div>
+								<dt class="font-bold text-base-content">{item.question}</dt>
+								<dd class="mt-1 text-base-content/80">{item.answer}</dd>
+							</div>
+						))}
+					</dl>
+				</section>
+			)
+		}
+
+		<RichText text={footnote} class="mt-12 text-base-content/70" />
+	</div>
+</Layout>

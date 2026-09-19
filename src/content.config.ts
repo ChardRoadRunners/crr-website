@@ -377,12 +377,54 @@ const calendarPage = z.object({
   raceDiary: z.object({ heading: z.string(), intro: z.string() }),
 });
 
+// The pub runs page.
+//
+// Its dates are not here. They are read from the socials calendar in Google
+// and filtered by title, because a pub run IS a social and the secretaries
+// already keep that calendar — giving it a second home here would be the
+// two-dates-for-one-race problem that resolveRaceDate exists to catch. This
+// file holds the wording around them.
+const pubRunsPage = z.object({
+  page: z.literal("pub-runs"),
+  hero: z.object({ heading: z.string(), strapline: z.string() }),
+  seo: z.object({ description: z.string() }),
+
+  intro: z.string(),
+
+  upcoming: z.object({
+    heading: z.string(),
+    intro: z.string(),
+    emptyState: z.string(),
+  }),
+
+  pubsRun: z.object({ heading: z.string(), body: z.string() }),
+
+  // Pace, guests and food: the questions a newcomer asks, none of them
+  // confirmed at the time of writing. An empty list is a legitimate state
+  // and hides the section, rather than printing a heading over nothing or
+  // an invented answer.
+  practicalities: z.object({
+    heading: z.string(),
+    items: z
+      .array(z.object({ question: z.string(), answer: z.string() }))
+      .default([]),
+  }),
+
+  footnote: z.string(),
+});
+
 // One collection, one file per page, each page its own shape. The `page`
 // field picks the branch — which also means a validation error names the
 // field that's wrong instead of listing every page's fields at once.
 const pages = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/pages" }),
-  schema: z.discriminatedUnion("page", [homePage, joinUsPage, contactPage, calendarPage]),
+  schema: z.discriminatedUnion("page", [
+    homePage,
+    joinUsPage,
+    contactPage,
+    calendarPage,
+    pubRunsPage,
+  ]),
 });
 
 // Welfare, privacy, inclusion, and the rules and constitution. Deliberately

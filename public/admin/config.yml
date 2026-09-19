@@ -939,6 +939,90 @@ collections:
               - { label: Heading, name: heading, widget: string }
               - { label: Introduction, name: intro, widget: text }
 
+      - name: pub-runs
+        label: Pub Runs page
+        file: src/content/pages/pub-runs.md
+        fields:
+          - { name: page, widget: hidden, default: pub-runs }
+
+          - label: Top of the page
+            name: hero
+            widget: object
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Strapline, name: strapline, widget: text }
+
+          - label: Search and sharing
+            name: seo
+            widget: object
+            fields:
+              - label: Description
+                name: description
+                widget: text
+                hint: >-
+                  One sentence, shown under the page title in search results
+                  and when the page is shared.
+
+          - label: What a pub run is
+            name: intro
+            widget: markdown
+            hint: >-
+              The opening explanation - the format, and that neither the run
+              nor the dinner is compulsory.
+
+          - label: Coming up
+            name: upcoming
+            widget: object
+            hint: >-
+              IMPORTANT - the dates are NOT edited here. They come from the CRR
+              Socials calendar in Google, and any event with "pub run" in its
+              title is picked up automatically. Add a pub run the same way you
+              add any other social and it appears here and on the calendar
+              page. This is only the wording around the list.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Introduction, name: intro, widget: text }
+              - label: If there is nothing to show
+                name: emptyState
+                widget: text
+                hint: >-
+                  Pub runs are a summer thing, so this is what the page says
+                  for much of the year. Make it read like a normal state, not
+                  a fault, and point somebody somewhere useful.
+
+          - label: The annual Pubs Run
+            name: pubsRun
+            widget: object
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Body, name: body, widget: markdown }
+
+          - label: Before you come
+            name: practicalities
+            widget: object
+            hint: >-
+              The questions a newcomer asks. Start empty - the section only
+              appears once there is something in it, so nothing is guessed on
+              the club's behalf. Worth adding - how far and how fast a pub run
+              is, whether non-members and guests can come, and how the food
+              works.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - label: Questions
+                name: items
+                widget: list
+                required: false
+                label_singular: Question
+                summary: "{{fields.question}}"
+                fields:
+                  - { label: Question, name: question, widget: string }
+                  - { label: Answer, name: answer, widget: text }
+
+          - label: Closing line
+            name: footnote
+            widget: text
+            hint: Shown under the list. Markdown links work here.
+
       - name: contact
         label: Contact page
         file: src/content/pages/contact.md
