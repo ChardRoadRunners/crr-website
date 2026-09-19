@@ -1,0 +1,93 @@
+---
+/**
+ * A list of events read from the club's Google calendars.
+ *
+ * Shared by every page that shows them, so a race looks the same on the
+ * homepage as it does on the calendar. All of it is plain HTML rendered at
+ * build time — no script, and nothing here talks to Google from the browser.
+ *
+ * All the wording is passed in rather than written here, including the empty
+ * state and the championship badge: copy belongs in content files.
+ */
+import { formatEventWhen, machineDate, type ClubEvent } from '../utils/calendar';
+
+interface Props {
+	events: ClubEvent[];
+	/** Shown when there is nothing to list. A legitimate state, not a failure. */
+	emptyState: string;
+	/** Badge wording for a championship race. */
+	championshipLabel: string;
+	/** Link wording for an event that has an entry page. */
+	entryLabel: string;
+	class?: string;
+}
+
+const {
+	events,
+	emptyState,
+	championshipLabel,
+	entryLabel,
+	class: className,
+} = Astro.props;
+
+const now = new Date();
+---
+
+{
+	events.length === 0 ? (
+		<p class:list={['text-base-content/70', className]}>{emptyState}</p>
+	) : (
+		<ul class:list={['flex flex-col gap-4', className]}>
+			{events.map((event) => (
+				<li class="event-entry">
+					{/*
+					  The machine-readable date is the ISO instant for a timed event and
+					  the plain calendar date for an all-day one — the same distinction
+					  the formatting makes, so the two never disagree.
+					*/}
+					<time datetime={machineDate(event)} class="block text-sm font-bold text-primary">
+						{formatEventWhen(event, now)}
+					</time>
+
+					<p class="mt-0.5 font-bold text-base-content">
+						{event.title}
+						{event.isChampionship && (
+							<span class="badge badge-purple badge-wrap ml-2 align-middle">
+								{championshipLabel}
+							</span>
+						)}
+					</p>
+
+					{event.location && (
+						<p class="mt-0.5 text-sm text-base-content/70">{event.location}</p>
+					)}
+
+					{event.description && (
+						<p class="mt-1 text-sm text-base-content/70 whitespace-pre-line">
+							{event.description}
+						</p>
+					)}
+
+					{event.entryLink && (
+						<a
+							href={event.entryLink}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="link link-primary mt-1 inline-block text-sm font-medium wrap-anywhere"
+						>
+							{entryLabel}
+						</a>
+					)}
+				</li>
+			))}
+		</ul>
+	)
+}
+
+<style>
+	/* Matches the race diary's entries, so the two lists read as one system. */
+	.event-entry {
+		padding: 0.5rem 0 0.5rem 0.85rem;
+		border-left: 3px solid var(--color-primary);
+	}
+</style>

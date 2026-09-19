@@ -337,12 +337,42 @@ const contactPage = z.object({
   }),
 });
 
+// The calendar page.
+//
+// Two of its three sections are read from the club's Google calendars at
+// build time; the third is the rule-based race diary. The empty states are
+// real copy rather than "no events found" in a component, because an empty
+// calendar is a legitimate state somebody has to read.
+const calendarPage = z.object({
+  page: z.literal("calendar"),
+  hero: z.object({ heading: z.string(), strapline: z.string() }),
+  seo: z.object({ description: z.string() }),
+
+  clubNights: z.object({
+    heading: z.string(),
+    intro: z.string(),
+    emptyState: z.string(),
+  }),
+
+  races: z.object({
+    heading: z.string(),
+    intro: z.string(),
+    emptyState: z.string(),
+  }),
+
+  // Wording shown on individual events, shared by every page that lists them.
+  championshipLabel: z.string().min(1),
+  entryLabel: z.string().min(1),
+
+  raceDiary: z.object({ heading: z.string(), intro: z.string() }),
+});
+
 // One collection, one file per page, each page its own shape. The `page`
 // field picks the branch — which also means a validation error names the
 // field that's wrong instead of listing every page's fields at once.
 const pages = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/pages" }),
-  schema: z.discriminatedUnion("page", [homePage, joinUsPage, contactPage]),
+  schema: z.discriminatedUnion("page", [homePage, joinUsPage, contactPage, calendarPage]),
 });
 
 // Welfare, privacy, inclusion, and the rules and constitution. Deliberately

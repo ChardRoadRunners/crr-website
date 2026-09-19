@@ -1,116 +1,83 @@
 ---
-// Two calendars, deliberately in this order.
+// Three lists, deliberately in this order.
 //
-// The Google calendar is the club's own diary — club nights, socials, the
-// handicap, anything the committee puts in it. It changes week to week, so it
-// is live rather than built.
+// Club nights and races come from the club's Google calendars, read at build
+// time and rendered as ordinary HTML. They change week to week, which is what
+// the nightly rebuild is for.
 //
 // The race diary below is the opposite: rules worked out from race reports,
 // fixed at build time, and honest about not knowing exact dates. Keeping them
-// on one page and clearly separated means nobody has to guess which is which.
+// on one page and clearly separated means nobody has to guess which is which —
+// the calendar's dates are confirmed, the diary's mostly are not.
+//
+// This replaced a Google Calendar iframe. The embed put a third-party request
+// on the page for every visitor, which is the thing self-hosting the fonts was
+// meant to avoid, and it could not be styled or made to work without
+// JavaScript. Nothing on this page now talks to Google from a browser.
+import { getEntry } from 'astro:content';
+
 import ContourDivider from '../components/ContourDivider.astro';
-import RaceDiary from '../components/RaceDiary.astro';
+import EventList from '../components/EventList.astro';
 import Layout from '../layouts/Layout.astro';
 import PageHeader from '../components/PageHeader.astro';
-import { GOOGLE_CALENDAR_ID } from '../consts';
+import RaceDiary from '../components/RaceDiary.astro';
+import RichText from '../components/RichText.astro';
+import { getUpcoming } from '../utils/calendar';
 
-// Agenda view: a list of what is coming, which reads far better on a phone
-// than a month grid squeezed into 375px. Europe/London so times are shown in
-// local time whatever the visitor's own timezone is set to.
-const embedUrl = GOOGLE_CALENDAR_ID
-	? `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(
-			GOOGLE_CALENDAR_ID,
-		)}&ctz=Europe%2FLondon&mode=AGENDA&showTitle=0&showPrint=0&showTabs=0&showCalendars=0`
-	: undefined;
+const page = await getEntry('pages', 'calendar');
+if (page?.data.page !== 'calendar') {
+	throw new Error('src/content/pages/calendar.md is missing or is not a calendar page.');
+}
+const { hero, seo, clubNights, races, championshipLabel, entryLabel, raceDiary } = page.data;
+
+const now = new Date();
+
+// Fetched together so one broken feed names itself rather than failing on
+// whichever page happened to read it first.
+const [nights, upcomingRaces] = await Promise.all([
+	getUpcoming(['club-nights'], { now }),
+	getUpcoming(['race-calendar', 'championship', 'club-races'], { now }),
+]);
 ---
 
-<Layout
-	title="Calendar"
-	description="The club calendar, plus the race diary — what members are running over the next twelve months."
-	overlayHeader
->
-	<PageHeader
-		heading="Calendar"
-		strapline="Club nights, socials and the races members are heading for."
-	/>
+<Layout title={hero.heading} description={seo.description} overlayHeader>
+	<PageHeader heading={hero.heading} strapline={hero.strapline} />
 
 	<div class="mx-auto max-w-3xl px-4 pt-12 pb-10 sm:px-6 lg:px-8">
 		<section id="club-calendar" class="scroll-mt-20">
-			<h2 class="text-3xl font-bold text-primary">Club calendar</h2>
-			<p class="mt-3 text-base-content/80">
-				Club nights, the monthly handicap, socials and anything else the committee has put in
-				the diary.
-			</p>
-
-			{
-				embedUrl ? (
-					<div class="calendar-embed mt-6">
-						{/*
-						  A title is what a screen reader announces instead of "iframe", and
-						  loading="lazy" keeps the request to Google off the initial page load.
-						*/}
-						<iframe
-							src={embedUrl}
-							title="Chard Road Runners club calendar"
-							loading="lazy"
-							referrerpolicy="no-referrer"
-						/>
-					</div>
-				) : (
-					/*
-					  Not connected yet, and waiting on the .ics work rather than on somebody
-					  pasting an ID — see the note on GOOGLE_CALENDAR_ID in consts.ts. Says so
-					  plainly rather than rendering an iframe that would show Google's own
-					  permission error to every visitor.
-					*/
-					<p class="mt-6 rounded border border-dashed border-base-300 p-4 text-base-content/70">
-						The club calendar is not connected yet.
-					</p>
-				)
-			}
+			<h2 class="text-3xl font-bold text-primary">{clubNights.heading}</h2>
+			<RichText text={clubNights.intro} class="mt-3 text-base-content/80" />
+			<EventList
+				events={nights}
+				emptyState={clubNights.emptyState}
+				championshipLabel={championshipLabel}
+				entryLabel={entryLabel}
+				class="mt-6"
+			/>
 		</section>
 
+		<section id="races-coming-up" class="mt-12 scroll-mt-20">
+			<h2 class="text-3xl font-bold text-primary">{races.heading}</h2>
+			<RichText text={races.intro} class="mt-3 text-base-content/80" />
+			<EventList
+				events={upcomingRaces}
+				emptyState={races.emptyState}
+				championshipLabel={championshipLabel}
+				entryLabel={entryLabel}
+				class="mt-6"
+			/>
+		</section>
 	</div>
 
 	<ContourDivider />
 
 	<div class="mx-auto max-w-3xl px-4 pt-10 pb-12 sm:px-6 lg:px-8">
 		<section id="race-calendar" class="scroll-mt-20">
-			<h2 class="text-3xl font-bold text-primary">Race diary</h2>
-			<p class="mt-3 text-base-content/80">
-				Races the club runs, twelve months ahead. Most dates are worked out from the last time we
-				ran them, so they show as approximate — check with the organiser before entering. Where a
-				date has been confirmed, it says so.
-			</p>
+			<h2 class="text-3xl font-bold text-primary">{raceDiary.heading}</h2>
+			<RichText text={raceDiary.intro} class="mt-3 text-base-content/80" />
 			<div class="mt-8">
 				<RaceDiary />
 			</div>
 		</section>
 	</div>
 </Layout>
-
-<style>
-	/*
-	  Google's embed is a fixed-size page in an iframe, so it cannot be made
-	  responsive from out here. A tall box on a phone and a shorter, wider one
-	  on a desktop is the closest it gets; the iframe scrolls internally.
-	*/
-	.calendar-embed {
-		border: 1px solid var(--color-base-300);
-		border-radius: 0.5rem;
-		overflow: hidden;
-	}
-
-	.calendar-embed iframe {
-		display: block;
-		width: 100%;
-		height: 34rem;
-		border: 0;
-	}
-
-	@media (min-width: 640px) {
-		.calendar-embed iframe {
-			height: 38rem;
-		}
-	}
-</style>
