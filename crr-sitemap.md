@@ -6,26 +6,61 @@ Draft v1. Built from the existing Webador site content. Dates and details carrie
 
 ## Navigation
 
-Seven top-level items. Anything more and the mobile menu becomes a list nobody
+**The menus are content, not code.** They live in
+`src/content/navigation/navigation.md` and are editable in the CMS, so this
+section describes the intent — the file is what the site actually renders. The
+build fails if a menu item points at a page that does not exist.
+
+Six top-level items. Anything more and the mobile menu becomes a list nobody
 reads.
 
 ```
-Home
-Join Us
-Race Reports    (race reports + club news)
-Our Races       (Chard Flyer, Forde Abbey 10k)
-Calendar        (club calendar + race diary)
+Join us         (how to turn up, membership, Couch to 5k)
+Our races       (Chard Flyer, Forde Abbey 10k)
+Calendar        (club nights, socials, races, race diary)
 Results         (championship, handicap, records)
+Race reports    (race reports + club news)
 Contact
 ```
+
+Ordered by what a newcomer wants first: joining, then the club's own races,
+then when things happen, then how we did, then the writing, then how to ask.
+
+**No Home item.** The logo links to `/` from every page, which is where people
+look for it, and a menu item saying the same thing spent a slot. The 404 page
+writes its own Home button rather than picking one out of the menu.
 
 Calendar and Results were one item to begin with. They answer different
 questions — "when is the next race" and "how did we do" — and a single page
 doing both buried the calendar under standings tables.
 
-**Footer:** Welfare · Rules & Constitution · Privacy · Club Kit · Facebook · Strava · Race Calendar · England Athletics affiliation
+**Join us is also a button in the header,** shown on every page at every width.
+The menu hides behind a hamburger below 1024px, and joining is the one thing
+the site is actually asking a visitor to do. Pale blue fill, dark purple text,
+measured 6.34:1 — a placeholder until the accent colour is settled, at which
+point it may become the sky blue's 8.67:1.
 
-Moving "Boring legal stuff" to the footer frees a nav slot without hiding anything. Welfare gets its own footer link rather than being buried — it should be findable in one click from any page.
+### Footer
+
+Three columns, wrapped in one `<nav aria-label="Footer">`:
+
+| Looking after you | The Club | Connect |
+|---|---|---|
+| Welfare | Rules & constitution | Facebook |
+| Inclusion | Club kit | Strava |
+| Privacy | Pub runs | England Athletics |
+
+Moving "Boring legal stuff" to the footer frees a nav slot without hiding
+anything. Welfare stays first in the first column — it should be findable in
+one click from any page.
+
+Race Calendar is deliberately gone: it pointed at `/calendar#race-calendar`
+while the top menu already carries Calendar.
+
+The column headings are styled text rather than `<h3>`, because as headings
+they would put a 1 → 3 skip into the outline of every page — `/club-kit` has an
+h1 and nothing else. Each list is named by its heading through
+`aria-labelledby` instead, so the groups are announced without that cost.
 
 ---
 
@@ -89,11 +124,11 @@ Each race page: date, distance, entry link, route map and elevation, start time,
 Two calendars, in this order, kept visibly separate so nobody has to guess
 which is which.
 
-- **Club calendar** — the committee's own Google Calendar, embedded. Club
-  nights, socials, the monthly handicap. Live, because it changes week to week.
-  Its ID is `GOOGLE_CALENDAR_ID` in `src/consts.ts`; empty until somebody sets
-  it, and the page renders the race diary alone until then. It is a third-party
-  embed, so it needs a line on the privacy page before launch.
+- **Club calendars** — five public Google calendars (club nights, socials,
+  races, championship, club races), read at build time and rendered as ordinary
+  HTML. No iframe and no third-party request: the only fetch happens on the
+  build machine. IDs are `CALENDAR_IDS` in `src/consts.ts`. A feed that stops
+  being public fails the build rather than emptying a page quietly.
 - **Race diary** — from the `calendar-events` collection. Twelve months rolling,
   grouped by month, each entry linked to the race reports that mention it.
   Dates worked out from a rule are shown as approximate and never as a specific
@@ -125,9 +160,13 @@ Everything here reads from Google Sheets, so you keep editing where you already 
 ## Footer pages
 
 - **Welfare** — policy plus the welfare officer's contact
+- **Inclusion** — carried over as-is
 - **Rules and Constitution** — carried over as-is
 - **Privacy** — needed once you have any form or photo of a member
 - **Club Kit** — photos, sizes, prices, Pantone-correct colours, order by email
+- **Pub Runs** — the monthly summer pub runs and the annual Pubs Run. Kept at
+  `/pub-runs`, the slug the old Webador site used. Dates come from the socials
+  calendar; see `docs/pub-runs.md`.
 
 ---
 
