@@ -123,9 +123,11 @@ In order, because each step needs the one before it:
    registration has not.
 5. **Move the GitHub repository** to the club's own GitHub account, and
    reconnect Workers Builds to it so that a push still deploys. **Done** — it
-   is `ChardRoadRunners/crr-website`, and the site's own Workers Build is
-   confirmed working, because a push to `main` reached the live site. The
-   `diary-rebuild` build is the one still to confirm; see below.
+   is `ChardRoadRunners/crr-website`, and both Workers Builds are connected and
+   checked: the site's because a push to `main` reached the live site, and
+   `diary-rebuild`'s because the code deployed on it is this repository's and
+   not the placeholder. Its first scheduled run is the one proof still
+   outstanding.
 
 ### What the Cloudflare move breaks
 
@@ -214,6 +216,16 @@ to `workers/diary-rebuild`. Reconnect both. The one that is easy to forget is
 `diary-rebuild`, and it is also the one nobody would notice for weeks — it
 only runs at 04:00, so a broken connection shows up as the race diary quietly
 ceasing to roll forward.
+
+**Both were reconnected on 20 September 2026**, and `diary-rebuild` did not come
+good first time. It passed through several states on the way, and not one of
+them reported an error: connecting a repository does not trigger a build; a new
+Worker sits on Cloudflare's "Hello World" placeholder until one runs;
+`wrangler versions upload` deploys code without applying cron triggers; and a
+blank root directory would have deployed the site's own configuration over the
+live site. All four are written up in `workers/diary-rebuild/README.md` under
+**Four things that look like it worked**. Worth reading before reconnecting
+anything, rather than after.
 
 Also worth knowing, though neither lives in this repository:
 
@@ -318,5 +330,10 @@ source.
   time rather than embedding an iframe. See `backlog.md`.
 - **The 2017 Dark Valley race report** is still `draft: true` and is the only
   history that entry has.
-- **The weekly rebuild** (`workers/diary-rebuild/`) — confirm a Monday build
-  actually fired, in the Worker's Logs tab.
+- **The nightly rebuild** (`workers/diary-rebuild/`) — confirm a scheduled run
+  actually fired, in the Worker's Logs tab: "Rebuild requested" with a
+  timestamp, and a build appearing on `crr-website` a moment after. It runs at
+  04:00 UTC, which is 05:00 British Summer Time until the clocks change. Set up
+  on the club's Cloudflare account 20 September 2026, so the first run is the
+  night after. This entry asked for a *Monday* build until now, left over from
+  when the schedule was weekly.

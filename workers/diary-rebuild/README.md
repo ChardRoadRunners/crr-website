@@ -12,22 +12,45 @@ in `src/index.js`.
 
 ## How it is set up
 
-Done already, in the Cloudflare dashboard. Recorded here so the next person can
-see the shape of it, and rebuild it if it is ever lost.
+Set up on the club's Cloudflare account on 20 September 2026, when both Workers
+moved there. Recorded here so the next person can see the shape of it, and
+rebuild it if it is ever lost.
 
 1. **A deploy hook on the `crr-website` Worker**, under **Settings → Builds →
    Deploy hooks**, pointed at `main`. A deploy hook is a secret URL that starts
    a build when it receives a POST — anyone holding it can start builds, so it
    is treated as a password.
+
+   **A deploy hook belongs to one Worker on one account, and is not something to
+   carry across an account move.** The old account's hook keeps working, so
+   reusing it would ring the wrong bell: this Worker would rebuild the
+   superseded site every night while the live one quietly froze, logging
+   success the whole time. Generate a new one on the club account.
 2. **This Worker, named `diary-rebuild`**, created under **Workers & Pages →
-   Create application** with the `ChardRoadRunners/crr-website` repository connected
-   and **Root directory** set to `workers/diary-rebuild`. Cloudflare builds this
-   folder on its own machines and reads the `wrangler.jsonc` here, so the
-   schedule travels with the code.
-3. **The deploy hook URL stored as a secret** on this Worker, under **Settings →
+   Create application → Import a repository**, with
+   `ChardRoadRunners/crr-website` connected. Cloudflare builds this folder on
+   its own machines and reads the `wrangler.jsonc` here, so the schedule travels
+   with the code.
+3. **Its build settings**, under **Settings → Build**:
+
+   | Setting | Value |
+   | :------ | :---- |
+   | Root directory | `workers/diary-rebuild` |
+   | Build command | *empty* |
+   | Deploy command | `npx wrangler deploy` |
+   | Branch control | `main` |
+
+   Build command stays empty on purpose: there is no `package.json` in this
+   folder and nothing to compile, because Wrangler bundles the single file
+   itself. A default `npm install` here fails looking for a file that was never
+   meant to exist. The other three each have a failure mode of their own — see
+   the next section.
+4. **The deploy hook URL stored as a secret** on this Worker, under **Settings →
    Variables and Secrets**, named `DEPLOY_HOOK_URL`. The code refuses to run
    without it — a missing secret throws rather than logging quietly, so a
    half-finished setup fails loudly instead of looking healthy for months.
+   Deleting and recreating the Worker takes the secret with it, so it has to be
+   set again afterwards rather than assumed.
 
 **`name` in `wrangler.jsonc` must match the Worker's name in the dashboard.**
 Wrangler deploys to whatever the file says, and a mismatch is not an error: it
@@ -37,6 +60,52 @@ secret — untouched and never running. The dashboard flags this if the two drif
 One side effect of connecting the repository: every push to `main` rebuilds this
 Worker as well as the site. Harmless, and it builds in seconds, but it shows up
 as a second build every time.
+
+## Four things that look like it worked
+
+All four were hit setting this up on the club's account, in one afternoon. Not
+one of them produces an error, which is why they are written down: each leaves a
+dashboard that reads as finished.
+
+**Connecting the repository does not build anything.** Workers Builds runs on a
+push event to the production branch. Connecting the repository only arranges for
+that to happen next time — so connect it on a quiet afternoon and nothing builds
+at all until somebody pushes. Trigger one from the **Builds** tab, or push to
+`main`.
+
+**A new Worker starts as Cloudflare's "Hello World".** Creating it deploys a
+placeholder straight away, so until the first real build lands, the Worker
+exists, carries the right name, shows no error, and contains none of this code.
+Check the code, not the name.
+
+**`wrangler versions upload` does not apply cron triggers.** It uploads the code
+and leaves the schedule alone, so the Worker arrives complete and never runs.
+Only `wrangler deploy`, or `wrangler triggers deploy`, applies them. It is the
+default deploy command for non-production branch builds, so before concluding a
+schedule is set, confirm the production branch is `main` and the deploy command
+is `npx wrangler deploy`.
+
+**Root directory left blank deploys the wrong thing.** The deploy command runs
+wherever the root directory points. At the repository root, `npx wrangler deploy`
+reads the *site's* `wrangler.jsonc`, whose `name` is `crr-website` — so a build
+of this Worker would push the site's configuration over the live site, and
+report success. The same trap as the name mismatch above, walked into from the
+other side.
+
+## Reading the schedule in the dashboard
+
+**Settings → Triggers → Cron Triggers** lists the next five runs rather than the
+rule. Read on a Sunday, the next five runs of a nightly job are Monday to
+Friday, which reads convincingly as "weekdays at 4am". It is not that.
+
+`0 4 * * *` is every day. The five fields are minute, hour, day of month, month
+and day of week, and it is that last `*` that makes it daily. Weekdays only
+would be `0 4 * * 1-5`. Read the same screen on a Wednesday and the preview runs
+Thursday to Monday, and the question does not come up.
+
+The time is **UTC**. It fires at 05:00 British Summer Time and 04:00 in winter,
+so a log timestamped an hour away from what you expected is the clocks, not a
+fault.
 
 ## Checking it works
 
