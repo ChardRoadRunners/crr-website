@@ -22,7 +22,7 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
 - **TypeScript**, strict
 - **Markdown** for all content
 - **Deployment: live.** Cloudflare Workers, connected to the GitHub repo
-  (`Smellyllama/crr-website`). Push to `main` and it builds and deploys itself.
+  (`ChardRoadRunners/crr-website`). Push to `main` and it builds and deploys itself.
   No manual `wrangler deploy` needed.
 - **Not announced yet.** `PRE_LAUNCH` in `src/consts.ts` puts a `noindex` tag on
   every page and makes `/robots.txt` disallow everything, so the site can be
@@ -48,7 +48,7 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
   handling. See `workers/diary-rebuild/README.md`.
 - **Sveltia CMS**, at `/admin`, so committee members can post without touching
   code. Loaded from a CDN by `public/admin/index.html` and configured by
-  `public/admin/config.yml`; it commits to `Smellyllama/crr-website` on `main`
+  `public/admin/config.yml`; it commits to `ChardRoadRunners/crr-website` on `main`
   through GitHub, which is what makes a post a normal commit and a deploy. This
   is why content stays in Markdown collections. `index.html` also holds the
   preSave hooks — the validation Sveltia's config format cannot express, such as

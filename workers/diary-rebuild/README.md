@@ -20,7 +20,7 @@ see the shape of it, and rebuild it if it is ever lost.
    a build when it receives a POST — anyone holding it can start builds, so it
    is treated as a password.
 2. **This Worker, named `diary-rebuild`**, created under **Workers & Pages →
-   Create application** with the `Smellyllama/crr-website` repository connected
+   Create application** with the `ChardRoadRunners/crr-website` repository connected
    and **Root directory** set to `workers/diary-rebuild`. Cloudflare builds this
    folder on its own machines and reads the `wrangler.jsonc` here, so the
    schedule travels with the code.
