@@ -131,10 +131,20 @@ Changing it to `chardroadrunners.com` breaks a working login.
 
 ## Status
 
-This folder is the canonical source. It was previously its own repository,
-`Smellyllama/crr-cms-auth`, which is to be archived so there is only one copy.
+This folder is the canonical source. It was previously its own repository —
+`Smellyllama/crr-cms-auth`, moved to `ChardRoadRunners/crr-cms-auth` with
+everything else — and that copy is to be archived so there is only one.
+Both paths are named here so an old link still leads somewhere.
 
-Two things for whoever holds the Cloudflare account:
+**It has no Workers Build of its own**, which is what makes retiring it safe:
+nothing deploys from it. This Worker is deployed by hand from this folder, as
+above. Archiving matters more than where it is archived — a read-only,
+visibly-dead repository is what stops somebody finding it in a year, taking it
+for the live source, and deploying from it. Two divergent copies of the thing
+that controls CMS sign-in is the failure worth preventing.
 
-1. Deploy once from here and confirm sign-in still works.
-2. Archive `Smellyllama/crr-cms-auth` on GitHub.
+Two things to finish it off, and they are not the same job:
+
+1. **Cloudflare** — deploy once from here and confirm sign-in still works.
+2. **GitHub** — archive `ChardRoadRunners/crr-cms-auth`, once it has been
+   transferred.

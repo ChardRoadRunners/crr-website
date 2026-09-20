@@ -151,6 +151,40 @@ now: widening the allow-list to cover previews would authorise every Worker on
 that subdomain, and the subdomain is about to change anyway. It gets fixed
 once, properly, as part of this move — and tested in the same pass.
 
+### What the GitHub move breaks
+
+Less than the Cloudflare move, but it is not nothing, and it is a different
+list — so do not assume the two are covered by the same pass.
+
+**`public/admin/config.yml` names the repository**, in `backend.repo`. That is
+the line the CMS uses to decide where to commit a race report. GitHub does
+redirect a transferred repository, so this may appear to keep working for a
+while, which is precisely what makes it worth changing on purpose rather than
+leaning on: the redirect is somebody else's convenience feature, not a promise
+to the club.
+
+Two Workers Builds are connected to this repository, not one:
+`crr-website` and `diary-rebuild`, the latter with its **Root directory** set
+to `workers/diary-rebuild`. Reconnect both. The one that is easy to forget is
+`diary-rebuild`, and it is also the one nobody would notice for weeks — it
+only runs at 04:00, so a broken connection shows up as the race diary quietly
+ceasing to roll forward.
+
+Also worth knowing, though neither lives in this repository:
+
+- **The Claude GitHub App** is installed per account, so it needs installing on
+  the organisation before it can open pull requests against the moved repo.
+- **The GitHub OAuth App** behind CMS sign-in is unaffected by the move — it is
+  bound to its callback URL, not to a repository. But whoever signs in to
+  `/admin` now needs write access at the new location.
+
+`workers/cms-auth/README.md` refers to `crr-cms-auth`. That is a **different**
+repository: a superseded duplicate of `workers/cms-auth/` in this one, with no
+Workers Build of its own, which is what makes it safe to retire. It moves to
+the organisation alongside this repository and is then **archived**, so there
+is only one copy and nobody later mistakes the read-only leftover for the live
+source.
+
 ---
 
 ## Before the day

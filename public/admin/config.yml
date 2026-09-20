@@ -29,7 +29,7 @@ logo:
 
 backend:
   name: github
-  repo: Smellyllama/crr-website
+  repo: ChardRoadRunners/crr-website
   branch: main
   # These are what the History panel in the entry editor lists, so they are
   # read by committee members, not just in Git. Set explicitly rather than
