@@ -119,8 +119,9 @@ In order, because each step needs the one before it:
    requires — that test is the proof this section actually happened.
 4. **Open the CRR Cloudflare account from the CRR Gmail account**, then move
    the domain registration and the Workers into it. See what this breaks,
-   below — it is more than it looks. **The Workers have moved**; the domain
-   registration has not.
+   below — it is more than it looks. **The Workers have moved**, and the old
+   ones are deleted. The domain is deliberately last: it waits on the
+   committee's green light rather than on anybody's time.
 5. **Move the GitHub repository** to the club's own GitHub account, and
    reconnect Workers Builds to it so that a push still deploys. **Done** — it
    is `ChardRoadRunners/crr-website`, and both Workers Builds are connected and
@@ -160,32 +161,45 @@ Get any one of these wrong and the website is completely fine while the
 committee cannot sign in to edit it. Which is why the end-to-end `/admin` test
 is what proves this section happened, and the site loading is not.
 
-#### The old Workers are both still live
+#### ~~The old Workers are both still live~~
 
-Checked 20 September 2026. Neither is wired to anything any more, and both
-should be deleted:
+**Done — both deleted 20 September 2026**, and both addresses now return
+Cloudflare's error code 1042 rather than a copy of anything. Kept here rather
+than removed, because the reason they mattered is worth a future reader's
+attention.
 
-- `crr-cms-auth.buddygoestravelling.workers.dev` — the superseded
-  authenticator.
-- `crr-website.buddygoestravelling.workers.dev` — a second, **stale** copy of
-  the website. It has stopped building from this repository: it was still
-  serving homepage wording that commit `8bc1086` had already changed, so it is
-  frozen rather than divergent-and-live. It carries `noindex` like everything
-  else while `PRE_LAUNCH` is `true`, and CMS sign-in from it now fails because
-  its hostname is no longer in `ALLOWED_DOMAINS`. Both of those are correct
-  behaviour, but it is still a public copy of the site at an address somebody
-  may have bookmarked.
+They were `crr-cms-auth.buddygoestravelling.workers.dev`, the superseded
+authenticator, and `crr-website.buddygoestravelling.workers.dev`, a second copy
+of the website. The second was the interesting one: it had stopped building
+from this repository, and was still serving homepage wording that commit
+`8bc1086` had already changed — frozen rather than divergent-and-live. It
+carried `noindex` like everything else while `PRE_LAUNCH` was `true`, and CMS
+sign-in from it already failed because its hostname was no longer in
+`ALLOWED_DOMAINS`. Both correct behaviour, and neither a reason to leave it up.
 
-The risk is the one `workers/cms-auth/README.md` describes for the duplicate
+The risk was the one `workers/cms-auth/README.md` describes for the duplicate
 repository, in a different place: not that a frozen copy does harm by itself,
-but that somebody finds it in a year and takes it for the live site.
+but that somebody finds it in a year and takes it for the live site. An account
+move leaves these behind by default — the old account keeps everything until
+somebody deletes it — so finishing a move means looking for what stayed
+behind, not just checking that the new thing works.
 
-#### Still to move: the domain registration
+#### The domain is held back on purpose
 
 `chardroadrunners.com` has no nameserver records at all and does not resolve
 (checked 20 September 2026), so nothing is served from it yet and the first two
-entries of `ALLOWED_DOMAINS` are waiting rather than wrong. See **DNS and the
-custom domain in Cloudflare** under Before the day.
+entries of `ALLOWED_DOMAINS` are waiting rather than wrong.
+
+**This is a decision, not an unfinished job.** The domain stays unpointed until
+the committee have given a green light and the maintainer is happy with the
+site. Anybody auditing this list should read an unresolving domain as the plan
+working, and should not "fix" it — pointing it early publishes the domain in
+public certificate transparency logs and starts the clock on being findable,
+which is the one thing `PRE_LAUNCH` exists to control.
+
+So this is the last piece of the Cloudflare move, and it is waiting on people
+rather than on work. See **DNS and the custom domain in Cloudflare** under
+Before the day.
 
 #### The preview-URL gap can now be decided
 
@@ -255,6 +269,10 @@ source.
   share links, RSS and the sitemap correct — but nothing resolves until the
   domain is attached. Attaching it also publishes the domain in public
   certificate transparency logs, so do it when you are ready to be findable.
+  **Gated on two things, both of them judgement rather than work:** the
+  committee giving a green light, and the maintainer being happy with the
+  site. Until both, an unresolving domain is the intended state — see **The
+  domain is held back on purpose** under the Cloudflare move.
 - **Redirects from the old Webador URLs.** Needs the list of old addresses
   captured *before* that site is switched off. Without them, every link anyone
   has ever shared breaks on launch day.

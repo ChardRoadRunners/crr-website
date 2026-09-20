@@ -80,8 +80,9 @@ The `workers.dev` subdomain belongs to the account, not to the Worker, so
 moving this Worker into the club's own Cloudflare account turned every
 `*.buddygoestravelling.workers.dev` address into `*.chardrunners.workers.dev`
 — this callback URL with them. The old
-`crr-cms-auth.buddygoestravelling.workers.dev` Worker is superseded and is
-being deleted.
+`crr-cms-auth.buddygoestravelling.workers.dev` Worker was deleted on
+20 September 2026, so that address now returns a Cloudflare error rather than
+an old copy of anything.
 
 The callback URL is one of three things that have to move together: it,
 `base_url` in `public/admin/config.yml`, and `ALLOWED_DOMAINS` below. All three

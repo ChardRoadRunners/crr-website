@@ -74,9 +74,16 @@ improves every time someone posts a report.
 **Feed the homepage.** The "coming up" section is currently a placeholder. Three
 next entries, same rules.
 
-**Schedule a rebuild.** A Cloudflare cron trigger, weekly, so the diary rolls
-forward on its own and past events drop off without anyone doing anything. That's
-what stops this lapsing the way the old hand-maintained calendar did.
+**Schedule a rebuild.** Built. A Cloudflare cron trigger, nightly at 04:00 UTC,
+so the diary rolls forward on its own and past events drop off without anyone
+doing anything. That's what stops this lapsing the way the old hand-maintained
+calendar did.
+
+It was weekly when this was written, and became nightly once the club's Google
+calendars were read at build time as well: a diary moves in weeks, but an event
+added to a calendar on a Tuesday shouldn't wait until the following Monday to
+appear. The Worker is in
+[workers/diary-rebuild/](../workers/diary-rebuild/README.md).
 
 ---
 
