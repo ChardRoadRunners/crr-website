@@ -52,7 +52,7 @@ backend:
     deleteMedia: 'Remove photo “{{path}}”'
   # GitHub OAuth proxy Worker, deployed separately from the site.
   # Source: crr-cms-auth/ in the project folder.
-  base_url: https://crr-cms-auth.buddygoestravelling.workers.dev
+  base_url: https://crr-cms-auth.chardrunners.workers.dev
 
 # Simple publishing: Save commits straight to main and Cloudflare rebuilds.
 # Editorial workflow is deliberately NOT enabled — it routes every post
