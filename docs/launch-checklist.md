@@ -45,13 +45,16 @@ flag, deliberately, so there is only one thing to remember.
 This is not security. Anyone with the address can read every page today, and
 this repository is public. It only stops the site being found by accident.
 
-### ~~And confirm ALLOWED_DOMAINS includes the live domain~~
+### And confirm ALLOWED_DOMAINS includes the live domain
 
-**Done — read from the live Worker on 18 September 2026, and already correct.
-Nothing to change on launch day.** Left here rather than deleted so a future
-reader can see it was checked, and knows where to look if sign-in ever breaks.
+**Checked once, then invalidated — it needs reading again.** It was read from
+the live Worker on 18 September 2026 and was correct at the time, but that was
+the old `crr-cms-auth.buddygoestravelling.workers.dev`. Sign-in now runs on
+`crr-cms-auth.chardrunners.workers.dev` in the club's Cloudflare account, and
+environment variables do not follow a Worker across accounts on their own. So
+this cannot be called done until it has been read from the *new* Worker.
 
-It is set to:
+What the old Worker had:
 
 ```
 chardroadrunners.com, *.chardroadrunners.com, crr-website.buddygoestravelling.workers.dev
@@ -60,7 +63,9 @@ chardroadrunners.com, *.chardroadrunners.com, crr-website.buddygoestravelling.wo
 The naked domain, its subdomains listed separately as they have to be, and the
 `workers.dev` hostname kept on while that address is still in use. Note the
 third is the *site's* hostname, not the authenticator's: what gets checked is
-the domain serving `/admin`, not the address the CMS calls.
+the domain serving `/admin`, not the address the CMS calls. So whether that
+third entry is still the right value depends on where the site is served from
+now — a separate question from this Worker having moved.
 
 **It is not dashboard-only, as this entry used to say.** Sveltia inlines the
 compiled patterns into every error response — the browser needs them to check
@@ -68,7 +73,7 @@ the origin of the `postMessage` it receives — so the list is public, and can b
 read again in one command without opening Cloudflare:
 
 ```
-curl -s 'https://crr-cms-auth.buddygoestravelling.workers.dev/auth' \
+curl -s 'https://crr-cms-auth.chardrunners.workers.dev/auth' \
   | grep -o 'trustedPatterns = .*;'
 ```
 
@@ -120,36 +125,52 @@ In order, because each step needs the one before it:
 
 ### What the Cloudflare move breaks
 
-Worth reading before it starts, because it is not obvious. **The `workers.dev`
-subdomain belongs to the account, not to the Worker.** Move to a CRR Cloudflare
-account and every `*.buddygoestravelling.workers.dev` address becomes
-`*.<whatever the new account's is>.workers.dev`.
+Worth reading, because it is not obvious and it is now **half done**. **The
+`workers.dev` subdomain belongs to the account, not to the Worker.** The CMS
+auth Worker has moved into the club's Cloudflare account, so every
+`*.buddygoestravelling.workers.dev` address it had became
+`*.chardrunners.workers.dev`. The old
+`crr-cms-auth.buddygoestravelling.workers.dev` Worker is superseded and is
+being deleted.
 
-Three things name the old address and stop working:
+Three things named the old address, and break if they are not moved with it:
 
-- `public/admin/config.yml` — `base_url`, the address the CMS calls
+- `public/admin/config.yml` — `base_url`, the address the CMS calls.
+  **Done:** it reads `https://crr-cms-auth.chardrunners.workers.dev`.
 - the GitHub OAuth App's **Authorization callback URL**, set on GitHub rather
-  than in this repository
-- `ALLOWED_DOMAINS` on `crr-cms-auth`, whose third entry is the old hostname
+  than in this repository. **Done:** the App is owned by the ChardRoadRunners
+  organisation and its callback is
+  `https://crr-cms-auth.chardrunners.workers.dev/callback`.
+- `ALLOWED_DOMAINS` on `crr-cms-auth`. **Still to confirm:** environment
+  variables do not follow a Worker across accounts on their own, so it has to
+  be read from the new Worker. See the entry above.
 
-And two more record it and go stale: `workers/cms-auth/README.md`, and this
-file's own ALLOWED_DOMAINS entry above.
+`workers/cms-auth/README.md` records these too, and has been updated with them.
 
-Note `workers/cms-auth/README.md` says the callback URL "does not change when
-the site's domain changes". That is true and stays true — but an account move
-is not a domain change, and it does change then.
+Note that README says the callback URL "does not change when the site's domain
+changes". That is true and stays true — but an account move is not a domain
+change, and it did change then.
 
 Get any one of these wrong and the website is completely fine while the
-committee cannot sign in to edit it. Change them together, then test `/admin`
-end to end from a browser with no live session, by somebody who is not the
-maintainer.
+committee cannot sign in to edit it. So test `/admin` end to end from a browser
+with no live session, by somebody who is not the maintainer — and do it
+**before the old Worker is deleted**, while there is still something to fall
+back to if it turns out something was still pointing at it.
 
-**This is also where the preview-URL gap gets closed.** Branch deployments get
+**The other half is the site's own Worker and the domain registration, and
+nobody has recorded here whether they have moved.** Establish that before
+treating this section as finished. If they are still on the old account then
+`crr-website.buddygoestravelling.workers.dev` is still the site's `workers.dev`
+hostname, and it becomes `crr-website.chardrunners.workers.dev` when they move
+— taking the third entry of `ALLOWED_DOMAINS` with it.
+
+**That is also where the preview-URL gap gets closed.** Branch deployments get
 a `workers.dev` hostname that `ALLOWED_DOMAINS` does not match, so CMS sign-in
 fails on a branch preview today. Left alone deliberately rather than patched
 now: widening the allow-list to cover previews would authorise every Worker on
-that subdomain, and the subdomain is about to change anyway. It gets fixed
-once, properly, as part of this move — and tested in the same pass.
+that subdomain. It turns on where the *site's* Worker is served from, which is
+the part of the move still outstanding, so it gets fixed and tested in that
+pass rather than this one.
 
 ### What the GitHub move breaks
 
@@ -174,9 +195,11 @@ Also worth knowing, though neither lives in this repository:
 
 - **The Claude GitHub App** is installed per account, so it needs installing on
   the organisation before it can open pull requests against the moved repo.
-- **The GitHub OAuth App** behind CMS sign-in is unaffected by the move — it is
-  bound to its callback URL, not to a repository. But whoever signs in to
-  `/admin` now needs write access at the new location.
+- **The GitHub OAuth App** behind CMS sign-in is unaffected by the *repository*
+  move — it is bound to its callback URL, not to a repository. It has moved
+  anyway, and separately: it is now owned by the **ChardRoadRunners**
+  organisation, so it belongs to the club rather than to an individual. But
+  whoever signs in to `/admin` still needs write access at the new location.
 
 `workers/cms-auth/README.md` refers to `crr-cms-auth`. That is a **different**
 repository: a superseded duplicate of `workers/cms-auth/` in this one, with no
