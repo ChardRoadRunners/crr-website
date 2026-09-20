@@ -84,8 +84,8 @@ moving this Worker into the club's own Cloudflare account turned every
 being deleted.
 
 The callback URL is one of three things that have to move together: it,
-`base_url` in `public/admin/config.yml`, and `ALLOWED_DOMAINS` below. The first
-two are done; `ALLOWED_DOMAINS` still needs confirming on the new Worker. See
+`base_url` in `public/admin/config.yml`, and `ALLOWED_DOMAINS` below. All three
+are done, and `/admin` sign-in has been tested against them. See
 `docs/launch-checklist.md` under November handover.
 
 ### Worker environment variables
