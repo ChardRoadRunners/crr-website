@@ -89,7 +89,7 @@ src/
 
 public/             served verbatim — favicons, logo, /admin
 scripts/            two build-time guards, described below
-workers/            a second, separate Cloudflare Worker (weekly rebuild)
+workers/            a second, separate Cloudflare Worker (nightly rebuild)
 docs/               the reference documents listed at the end
 ```
 
@@ -203,9 +203,10 @@ and bolts on the SSR adapter — which swaps the build-time Sharp pipeline for a
 runtime one and breaks every image on the site.
 
 **A second, separate Worker** lives in `workers/diary-rebuild/`. It runs on a
-weekly cron and pings a deploy hook, so the race diary rolls forward — past races
-drop off and the twelve-month window moves — without anyone touching it. It is
-deployed independently and shares nothing with the site. See
+nightly cron and pings a deploy hook, so the race diary rolls forward — past
+races drop off and the twelve-month window moves — and the club's Google
+calendars stay current, without anyone touching it. It is deployed
+independently and shares nothing with the site. See
 [workers/diary-rebuild/README.md](workers/diary-rebuild/README.md).
 
 ---
@@ -255,6 +256,13 @@ depended on it has been dropped.
 **`site` is `chardroadrunners.com`, which does not resolve yet.** DNS is not
 pointed there, so canonical URLs, RSS items and share links name a domain that is
 not live. Correct for a pre-launch site; resolves on launch day.
+
+This is **held deliberately**, not outstanding. The domain stays unpointed
+until the committee have given a green light and the maintainer is happy with
+the site — so an unresolving domain is the current state working as intended,
+not a job somebody has forgotten. Pointing it also publishes the domain in
+public certificate transparency logs, which is its own reason not to do it
+early.
 
 **Empty sections and `TODO` markers in content.** Three sections on the privacy
 page, a committee list, several race details. All deliberate: the project's rule
@@ -314,4 +322,4 @@ If a change alters a colour, measure it.
 | [docs/handover.md](docs/handover.md) | The CMS, and the things about it that have bitten us |
 | [docs/race-diary.md](docs/race-diary.md) | How the race diary works, and why it is deliberately vague about dates |
 | [crr-sitemap.md](crr-sitemap.md) | Page structure and the content plan |
-| [workers/diary-rebuild/README.md](workers/diary-rebuild/README.md) | The weekly rebuild, and how to set it up again |
+| [workers/diary-rebuild/README.md](workers/diary-rebuild/README.md) | The nightly rebuild, how to set it up again, and the four ways it can look set up when it is not |

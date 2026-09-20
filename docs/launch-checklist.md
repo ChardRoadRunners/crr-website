@@ -47,20 +47,26 @@ this repository is public. It only stops the site being found by accident.
 
 ### ~~And confirm ALLOWED_DOMAINS includes the live domain~~
 
-**Done — read from the live Worker on 18 September 2026, and already correct.
-Nothing to change on launch day.** Left here rather than deleted so a future
-reader can see it was checked, and knows where to look if sign-in ever breaks.
+**Done — read from the new Worker on 20 September 2026, and correct.** It was
+checked once before, on 18 September, but that reading came off the old
+`buddygoestravelling` authenticator and did not survive the account move:
+environment variables do not follow a Worker across accounts on their own, so
+the variable had to be set again rather than inherited. This reading came from
+`crr-cms-auth.chardrunners.workers.dev`, which is the Worker sign-in actually
+runs on, and `/admin` has since been tested end to end against it.
 
 It is set to:
 
 ```
-chardroadrunners.com, *.chardroadrunners.com, crr-website.buddygoestravelling.workers.dev
+chardroadrunners.com, *.chardroadrunners.com, crr-website.chardrunners.workers.dev
 ```
 
 The naked domain, its subdomains listed separately as they have to be, and the
 `workers.dev` hostname kept on while that address is still in use. Note the
 third is the *site's* hostname, not the authenticator's: what gets checked is
-the domain serving `/admin`, not the address the CMS calls.
+the domain serving `/admin`, not the address the CMS calls. It names the site's
+Worker on the club's account, which is the right value — the easy mistake is to
+"correct" it to the authenticator's own address, and it has been avoided here.
 
 **It is not dashboard-only, as this entry used to say.** Sveltia inlines the
 compiled patterns into every error response — the browser needs them to check
@@ -68,7 +74,7 @@ the origin of the `postMessage` it receives — so the list is public, and can b
 read again in one command without opening Cloudflare:
 
 ```
-curl -s 'https://crr-cms-auth.buddygoestravelling.workers.dev/auth' \
+curl -s 'https://crr-cms-auth.chardrunners.workers.dev/auth' \
   | grep -o 'trustedPatterns = .*;'
 ```
 
@@ -113,43 +119,98 @@ In order, because each step needs the one before it:
    requires — that test is the proof this section actually happened.
 4. **Open the CRR Cloudflare account from the CRR Gmail account**, then move
    the domain registration and the Workers into it. See what this breaks,
-   below — it is more than it looks.
+   below — it is more than it looks. **The Workers have moved**, and the old
+   ones are deleted. The domain is deliberately last: it waits on the
+   committee's green light rather than on anybody's time.
 5. **Move the GitHub repository** to the club's own GitHub account, and
-   reconnect Workers Builds to it so that a push still deploys. Which account
-   it moves to is not decided yet.
+   reconnect Workers Builds to it so that a push still deploys. **Done** — it
+   is `ChardRoadRunners/crr-website`, and both Workers Builds are connected and
+   checked: the site's because a push to `main` reached the live site, and
+   `diary-rebuild`'s because the code deployed on it is this repository's and
+   not the placeholder. Its first scheduled run is the one proof still
+   outstanding.
 
 ### What the Cloudflare move breaks
 
-Worth reading before it starts, because it is not obvious. **The `workers.dev`
-subdomain belongs to the account, not to the Worker.** Move to a CRR Cloudflare
-account and every `*.buddygoestravelling.workers.dev` address becomes
-`*.<whatever the new account's is>.workers.dev`.
+Worth reading, because it is not obvious — and the Workers part of it has now
+happened, so this is a record of what it took rather than a warning about what
+is coming. **The `workers.dev` subdomain belongs to the account, not to the
+Worker.** Both Workers moved into the club's Cloudflare account, so every
+`*.buddygoestravelling.workers.dev` address became
+`*.chardrunners.workers.dev`.
 
-Three things name the old address and stop working:
+Three things named the old address and break if they are not moved with it.
+All three are done, and `/admin` has been tested end to end against the result:
 
-- `public/admin/config.yml` — `base_url`, the address the CMS calls
+- `public/admin/config.yml` — `base_url`, the address the CMS calls. It reads
+  `https://crr-cms-auth.chardrunners.workers.dev`.
 - the GitHub OAuth App's **Authorization callback URL**, set on GitHub rather
-  than in this repository
-- `ALLOWED_DOMAINS` on `crr-cms-auth`, whose third entry is the old hostname
+  than in this repository. The App is owned by the ChardRoadRunners
+  organisation and its callback is
+  `https://crr-cms-auth.chardrunners.workers.dev/callback`.
+- `ALLOWED_DOMAINS` on `crr-cms-auth`, which had to be set again rather than
+  inherited. Confirmed on the new Worker — see the entry above.
 
-And two more record it and go stale: `workers/cms-auth/README.md`, and this
-file's own ALLOWED_DOMAINS entry above.
+`workers/cms-auth/README.md` records these too.
 
-Note `workers/cms-auth/README.md` says the callback URL "does not change when
-the site's domain changes". That is true and stays true — but an account move
-is not a domain change, and it does change then.
+Note that README says the callback URL "does not change when the site's domain
+changes". That is true and stays true — but an account move is not a domain
+change, and it did change then.
 
 Get any one of these wrong and the website is completely fine while the
-committee cannot sign in to edit it. Change them together, then test `/admin`
-end to end from a browser with no live session, by somebody who is not the
-maintainer.
+committee cannot sign in to edit it. Which is why the end-to-end `/admin` test
+is what proves this section happened, and the site loading is not.
 
-**This is also where the preview-URL gap gets closed.** Branch deployments get
-a `workers.dev` hostname that `ALLOWED_DOMAINS` does not match, so CMS sign-in
-fails on a branch preview today. Left alone deliberately rather than patched
-now: widening the allow-list to cover previews would authorise every Worker on
-that subdomain, and the subdomain is about to change anyway. It gets fixed
-once, properly, as part of this move — and tested in the same pass.
+#### ~~The old Workers are both still live~~
+
+**Done — both deleted 20 September 2026**, and both addresses now return
+Cloudflare's error code 1042 rather than a copy of anything. Kept here rather
+than removed, because the reason they mattered is worth a future reader's
+attention.
+
+They were `crr-cms-auth.buddygoestravelling.workers.dev`, the superseded
+authenticator, and `crr-website.buddygoestravelling.workers.dev`, a second copy
+of the website. The second was the interesting one: it had stopped building
+from this repository, and was still serving homepage wording that commit
+`8bc1086` had already changed — frozen rather than divergent-and-live. It
+carried `noindex` like everything else while `PRE_LAUNCH` was `true`, and CMS
+sign-in from it already failed because its hostname was no longer in
+`ALLOWED_DOMAINS`. Both correct behaviour, and neither a reason to leave it up.
+
+The risk was the one `workers/cms-auth/README.md` describes for the duplicate
+repository, in a different place: not that a frozen copy does harm by itself,
+but that somebody finds it in a year and takes it for the live site. An account
+move leaves these behind by default — the old account keeps everything until
+somebody deletes it — so finishing a move means looking for what stayed
+behind, not just checking that the new thing works.
+
+#### The domain is held back on purpose
+
+`chardroadrunners.com` has no nameserver records at all and does not resolve
+(checked 20 September 2026), so nothing is served from it yet and the first two
+entries of `ALLOWED_DOMAINS` are waiting rather than wrong.
+
+**This is a decision, not an unfinished job.** The domain stays unpointed until
+the committee have given a green light and the maintainer is happy with the
+site. Anybody auditing this list should read an unresolving domain as the plan
+working, and should not "fix" it — pointing it early publishes the domain in
+public certificate transparency logs and starts the clock on being findable,
+which is the one thing `PRE_LAUNCH` exists to control.
+
+So this is the last piece of the Cloudflare move, and it is waiting on people
+rather than on work. See **DNS and the custom domain in Cloudflare** under
+Before the day.
+
+#### The preview-URL gap can now be decided
+
+Branch deployments get a `workers.dev` hostname that `ALLOWED_DOMAINS` does not
+match, so CMS sign-in fails on a branch preview. It was deferred because the
+subdomain was about to change, and that reason has now expired — it has settled
+as `chardrunners.workers.dev`. The objection to widening the allow-list has
+weakened rather than vanished: `*.chardrunners.workers.dev` now covers only the
+club's own Workers instead of a personal account's, which is a smaller blast
+radius but not none. That is a decision rather than a typing job, so it is
+still recorded here rather than done.
 
 ### What the GitHub move breaks
 
@@ -170,13 +231,25 @@ to `workers/diary-rebuild`. Reconnect both. The one that is easy to forget is
 only runs at 04:00, so a broken connection shows up as the race diary quietly
 ceasing to roll forward.
 
+**Both were reconnected on 20 September 2026**, and `diary-rebuild` did not come
+good first time. It passed through several states on the way, and not one of
+them reported an error: connecting a repository does not trigger a build; a new
+Worker sits on Cloudflare's "Hello World" placeholder until one runs;
+`wrangler versions upload` deploys code without applying cron triggers; and a
+blank root directory would have deployed the site's own configuration over the
+live site. All four are written up in `workers/diary-rebuild/README.md` under
+**Four things that look like it worked**. Worth reading before reconnecting
+anything, rather than after.
+
 Also worth knowing, though neither lives in this repository:
 
 - **The Claude GitHub App** is installed per account, so it needs installing on
   the organisation before it can open pull requests against the moved repo.
-- **The GitHub OAuth App** behind CMS sign-in is unaffected by the move — it is
-  bound to its callback URL, not to a repository. But whoever signs in to
-  `/admin` now needs write access at the new location.
+- **The GitHub OAuth App** behind CMS sign-in is unaffected by the *repository*
+  move — it is bound to its callback URL, not to a repository. It has moved
+  anyway, and separately: it is now owned by the **ChardRoadRunners**
+  organisation, so it belongs to the club rather than to an individual. But
+  whoever signs in to `/admin` still needs write access at the new location.
 
 `workers/cms-auth/README.md` refers to `crr-cms-auth`. That is a **different**
 repository: a superseded duplicate of `workers/cms-auth/` in this one, with no
@@ -196,6 +269,10 @@ source.
   share links, RSS and the sitemap correct — but nothing resolves until the
   domain is attached. Attaching it also publishes the domain in public
   certificate transparency logs, so do it when you are ready to be findable.
+  **Gated on two things, both of them judgement rather than work:** the
+  committee giving a green light, and the maintainer being happy with the
+  site. Until both, an unresolving domain is the intended state — see **The
+  domain is held back on purpose** under the Cloudflare move.
 - **Redirects from the old Webador URLs.** Needs the list of old addresses
   captured *before* that site is switched off. Without them, every link anyone
   has ever shared breaks on launch day.
@@ -271,5 +348,10 @@ source.
   time rather than embedding an iframe. See `backlog.md`.
 - **The 2017 Dark Valley race report** is still `draft: true` and is the only
   history that entry has.
-- **The weekly rebuild** (`workers/diary-rebuild/`) — confirm a Monday build
-  actually fired, in the Worker's Logs tab.
+- **The nightly rebuild** (`workers/diary-rebuild/`) — confirm a scheduled run
+  actually fired, in the Worker's Logs tab: "Rebuild requested" with a
+  timestamp, and a build appearing on `crr-website` a moment after. It runs at
+  04:00 UTC, which is 05:00 British Summer Time until the clocks change. Set up
+  on the club's Cloudflare account 20 September 2026, so the first run is the
+  night after. This entry asked for a *Monday* build until now, left over from
+  when the schedule was weekly.

@@ -65,24 +65,29 @@ worth more here than matching the folder next door.
 
 ### The GitHub OAuth App
 
-Its **Authorization callback URL** is:
+Owned by the **ChardRoadRunners organisation**, so it belongs to the club
+rather than to whoever registered it. Its **Authorization callback URL** is:
 
 ```
-https://crr-cms-auth.buddygoestravelling.workers.dev/callback
+https://crr-cms-auth.chardrunners.workers.dev/callback
 ```
 
 That is this Worker's address, **not the website's**. It does not change when
 the site's domain changes.
 
-**It does change if the Cloudflare account changes.** The `workers.dev`
-subdomain belongs to the account, not to the Worker, so moving this Worker to
-the club's own Cloudflare account turns every
-`*.buddygoestravelling.workers.dev` address into
-`*.<the new account's>.workers.dev` — this callback URL with them. That is
-planned for the November handover, and the callback URL is one of three things
-that have to change together: it, `base_url` in `public/admin/config.yml`, and
-`ALLOWED_DOMAINS` below. See `docs/launch-checklist.md` under November
-handover.
+**It does change if the Cloudflare account changes**, and it already has once.
+The `workers.dev` subdomain belongs to the account, not to the Worker, so
+moving this Worker into the club's own Cloudflare account turned every
+`*.buddygoestravelling.workers.dev` address into `*.chardrunners.workers.dev`
+— this callback URL with them. The old
+`crr-cms-auth.buddygoestravelling.workers.dev` Worker was deleted on
+20 September 2026, so that address now returns a Cloudflare error rather than
+an old copy of anything.
+
+The callback URL is one of three things that have to move together: it,
+`base_url` in `public/admin/config.yml`, and `ALLOWED_DOMAINS` below. All three
+are done, and `/admin` sign-in has been tested against them. See
+`docs/launch-checklist.md` under November handover.
 
 ### Worker environment variables
 
@@ -122,11 +127,13 @@ when it bites.
 `base_url` in `public/admin/config.yml` points at **this Worker**:
 
 ```
-base_url: https://crr-cms-auth.buddygoestravelling.workers.dev
+base_url: https://crr-cms-auth.chardrunners.workers.dev
 ```
 
 It is not the website's address and it **does not change when the site's domain
-changes**. It will look wrong to somebody tidying up after the domain switch.
+changes**. It will look wrong to somebody tidying up after the domain switch —
+more so now that it carries the club's own name and so reads like something
+that ought to say `chardroadrunners.com`. It is not, and it must not.
 Changing it to `chardroadrunners.com` breaks a working login.
 
 ## Status
