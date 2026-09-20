@@ -48,6 +48,13 @@ export const MAIN_CONTENT_ID = 'main-content';
 // quietly serving nothing is worse than a red build, because a page of races
 // that silently empties is a page nobody checks.
 //
+// A 404 fails at once. A 429 does not: Google rate-limits by address, the
+// build machines share theirs, and on 20 September 2026 somebody else's
+// traffic failed a build of ours that had changed two CSS classes. Those are
+// retried with backoff before the build gives up — see fetchCalendar. The
+// distinction is the point: "no" is still loud and immediate, "not right now"
+// is waited out.
+//
 // Because the site is built, not live, these are only as current as the last
 // build. The nightly rebuild in `workers/diary-rebuild/` is what keeps them
 // honest — see its README.
