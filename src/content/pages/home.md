@@ -34,36 +34,29 @@ clubNights:
     - day: Thursday
       time: 7:00pm
       venue: Chard Cricket Club
-      summary: Shorter and slower, very suitable for beginners
+      summary: Shorter and slower, suitable for beginners
       detail: |-
         A relaxed pace run, normally around town of up to around 4 miles (7km) but there is always options to make it shorter if your not up for 4 miles just yet.
         The clubhouse and showers aren't open afterwards.
   reassurance: You don't need to be a member to come along, and you don't need to be fast. Come for a couple of runs and see what you think.
-# Pub runs. Wording only — the dates come from the socials calendar.
-pubRuns:
-  heading: Pub runs
-  body: Once a month through the summer we meet at a pub, run, and have dinner afterwards. Neither half is compulsory.
-  linkLabel: More about pub runs
-  emptyState: Nothing booked at the moment — they run through the summer.
-  # The day, the pub and the start time all come from the calendar entry, so
-  # they are not repeated here. Use this only for something standing that the
-  # calendar cannot say. It is omitted from the page while it starts with TODO.
-  note: TODO — anything standing that the calendar cannot say, such as whether non-members can come.
-
 handicap:
   heading: Last Tuesday of the Month
   body: |-
     Once a month we do something a bit different to the normal groups and have some kind of timed run, a good chance to race yourself from the previous month and build some speed! On this night we also have a bake off in the club house after the run, good if you like baking... or eating the baking. The cake is taken at least as seriously as the running.
 
-
     Our most common timed run format is a handicap 5km, we all run round the route together first and then everyone starts at a different time based on your 5Km time. The slowest goes off first, fastest last so in theory everyone finishes together. 
 
     Other handicap events include; The mile, 1500m, 3000m out and back.
+pubRuns:
+  heading: Pub Runs
+  body: Once a month through the summer we meet at a pub, run, and have dinner afterwards. Neither half is compulsory.
+  linkLabel: Pub Runs?
+  emptyState: The Pub runs start in the summer months and will be here as they get booked. The 'Pubs Run' is an annual event often in July or August.
+  note: TODO — anything standing that the calendar cannot say, such as whether non-members can come.
 couchTo5k:
   heading: Escape the couch, it's easier than you think!
   body: |-
     Our Couch to 5k takes people from nothing to a 5k finish line in just nine weeks, one session a week with us, the other two to do in your own time, using the _NHS couch to 5K_ app.
-
 
     It is led by a qualified run leader, with plenty of other club runners alongside you for support the whole way. Couch to 5k is an excellent way of avoiding injury when getting into running for the first time or getting back into it after an injury or extended period off.
     It's free, it's for over 18s, and there's a medal at the end, everyone loves a medal.
