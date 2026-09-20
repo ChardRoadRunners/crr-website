@@ -1,7 +1,8 @@
 ---
 import logoMark from '../assets/crr-logo-mark.svg?raw';
-import { NAV_LINKS, SITE_TITLE } from '../consts';
+import { SITE_TITLE } from '../consts';
 import HeaderLink from './HeaderLink.astro';
+import { getNavigation } from '../utils/navigation';
 
 interface Props {
 	/** Overlay transparently on a hero instead of sitting in normal flow. */
@@ -17,6 +18,8 @@ interface Props {
 }
 
 const { overlay = false, hideLogo = false } = Astro.props;
+
+const { primary, cta } = await getNavigation();
 ---
 
 <header
@@ -33,7 +36,7 @@ const { overlay = false, hideLogo = false } = Astro.props;
 	{/*
 	  w-auto, because daisyUI gives .navbar-start a flat 50% of the bar. At 1024px
 	  — the exact width the desktop nav appears at — that reserved 512px for a
-	  138px logo and left the seven nav items 500px to fit in, so they wrapped to
+	  138px logo and left the (then seven) nav items 500px to fit in, so they wrapped to
 	  a second row and the header grew from 64px to 108px. The logo takes what it
 	  needs and the nav takes the rest.
 	*/}
@@ -54,7 +57,7 @@ const { overlay = false, hideLogo = false } = Astro.props;
 				class="menu dropdown-content menu-sm z-10 mt-3 w-52 rounded-box bg-primary p-2 text-primary-content shadow-lg"
 			>
 				{
-					NAV_LINKS.map((link) => (
+					primary.map((link) => (
 						<li>
 							<HeaderLink href={link.href}>{link.label}</HeaderLink>
 						</li>
@@ -72,16 +75,41 @@ const { overlay = false, hideLogo = false } = Astro.props;
 			<span class="site-logo" aria-hidden="true" set:html={logoMark} />
 		</a>
 	</div>
-	<div class="navbar-end hidden w-auto flex-1 lg:flex">
-		<ul class="menu menu-horizontal gap-1 px-1">
+	{/*
+	  The menu hides below lg; the button does not. Joining is the one thing
+	  this site is asking anybody to do, and behind a hamburger it is two taps
+	  away on the pages most likely to be somebody's first.
+	*/}
+	<div class="navbar-end w-auto flex-1 gap-2">
+		<ul class="menu menu-horizontal hidden gap-1 px-1 lg:flex">
 			{
-				NAV_LINKS.map((link) => (
+				primary.map((link) => (
 					<li>
 						<HeaderLink href={link.href}>{link.label}</HeaderLink>
 					</li>
 				))
 			}
 		</ul>
+
+		{/*
+		  btn-accent: the logo's sky blue as a fill, dark purple text. MEASURED
+		  at 8.67:1 — the strongest pairing in the palette, and 2.3 points up on
+		  the pale blue btn-secondary this replaced.
+
+		  This is what CLAUDE.md already said a call to action should be, so the
+		  button was the outlier rather than the rule. Every other CTA on the
+		  site — the hero, Couch to 5k, the race entry links, the 404's way home
+		  — was already btn-accent.
+
+		  It stays a FILL. The same sky blue as text on a light ground is
+		  1.76:1, the worst number in the palette.
+		*/}
+		<a
+			href={cta.href}
+			class="btn btn-accent btn-sm sm:btn-md focus-visible:outline-white"
+		>
+			{cta.label}
+		</a>
 	</div>
 </header>
 
@@ -105,7 +133,8 @@ const { overlay = false, hideLogo = false } = Astro.props;
 
 	  visibility, not just opacity, so the link leaves the tab order while it
 	  is invisible: a keyboard user tabbing to a logo they cannot see has
-	  nowhere to look. The nav's own Home link covers the same destination.
+	  nowhere to look. Nothing is lost by that here — this only applies to the
+	  homepage, so the link they cannot reach points at the page they are on.
 	*/
 	.site-header--overlay {
 		transition:

@@ -621,6 +621,39 @@ collections:
                 name: body
                 widget: markdown
 
+          - label: Pub runs
+            name: pubRuns
+            widget: object
+            hint: >-
+              Wording only. The DATES are read from the CRR Socials calendar -
+              any event with "pub run" in its title - so there is nothing to
+              update here when one is booked. Add it to the calendar and it
+              appears here, on Join Us and on the pub runs page at the next
+              rebuild.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - label: Introduction
+                name: body
+                widget: text
+              - label: Button label
+                name: linkLabel
+                widget: string
+                hint: The wording on the button through to the pub runs page.
+              - label: If there is nothing booked
+                name: emptyState
+                widget: text
+                hint: >-
+                  Pub runs are a summer thing, so this is what shows for much
+                  of the year. Make it read like a season, not a fault.
+              - label: Standing note
+                name: note
+                widget: text
+                required: false
+                hint: >-
+                  Optional. The day, the pub and the start time all come from
+                  the calendar, so do not repeat them here. Anything starting
+                  with TODO is left off the page.
+
           - label: Couch to 5k
             name: couchTo5k
             widget: object
@@ -772,6 +805,39 @@ collections:
               - label: Thursday
                 name: thursday
                 widget: markdown
+
+          - label: Pub runs
+            name: pubRuns
+            widget: object
+            hint: >-
+              Wording only. The DATES are read from the CRR Socials calendar -
+              any event with "pub run" in its title - so there is nothing to
+              update here when one is booked. Add it to the calendar and it
+              appears here, on Join Us and on the pub runs page at the next
+              rebuild.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - label: Introduction
+                name: body
+                widget: text
+              - label: Button label
+                name: linkLabel
+                widget: string
+                hint: The wording on the button through to the pub runs page.
+              - label: If there is nothing booked
+                name: emptyState
+                widget: text
+                hint: >-
+                  Pub runs are a summer thing, so this is what shows for much
+                  of the year. Make it read like a season, not a fault.
+              - label: Standing note
+                name: note
+                widget: text
+                required: false
+                hint: >-
+                  Optional. The day, the pub and the start time all come from
+                  the calendar, so do not repeat them here. Anything starting
+                  with TODO is left off the page.
 
           - label: Membership
             name: membership
@@ -938,6 +1004,90 @@ collections:
             fields:
               - { label: Heading, name: heading, widget: string }
               - { label: Introduction, name: intro, widget: text }
+
+      - name: pub-runs
+        label: Pub Runs page
+        file: src/content/pages/pub-runs.md
+        fields:
+          - { name: page, widget: hidden, default: pub-runs }
+
+          - label: Top of the page
+            name: hero
+            widget: object
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Strapline, name: strapline, widget: text }
+
+          - label: Search and sharing
+            name: seo
+            widget: object
+            fields:
+              - label: Description
+                name: description
+                widget: text
+                hint: >-
+                  One sentence, shown under the page title in search results
+                  and when the page is shared.
+
+          - label: What a pub run is
+            name: intro
+            widget: markdown
+            hint: >-
+              The opening explanation - the format, and that neither the run
+              nor the dinner is compulsory.
+
+          - label: Coming up
+            name: upcoming
+            widget: object
+            hint: >-
+              IMPORTANT - the dates are NOT edited here. They come from the CRR
+              Socials calendar in Google, and any event with "pub run" in its
+              title is picked up automatically. Add a pub run the same way you
+              add any other social and it appears here and on the calendar
+              page. This is only the wording around the list.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Introduction, name: intro, widget: text }
+              - label: If there is nothing to show
+                name: emptyState
+                widget: text
+                hint: >-
+                  Pub runs are a summer thing, so this is what the page says
+                  for much of the year. Make it read like a normal state, not
+                  a fault, and point somebody somewhere useful.
+
+          - label: The annual Pubs Run
+            name: pubsRun
+            widget: object
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Body, name: body, widget: markdown }
+
+          - label: Before you come
+            name: practicalities
+            widget: object
+            hint: >-
+              The questions a newcomer asks. Start empty - the section only
+              appears once there is something in it, so nothing is guessed on
+              the club's behalf. Worth adding - how far and how fast a pub run
+              is, whether non-members and guests can come, and how the food
+              works.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - label: Questions
+                name: items
+                widget: list
+                required: false
+                label_singular: Question
+                summary: "{{fields.question}}"
+                fields:
+                  - { label: Question, name: question, widget: string }
+                  - { label: Answer, name: answer, widget: text }
+
+          - label: Closing line
+            name: footnote
+            widget: text
+            hint: Shown under the list. Markdown links work here.
 
       - name: contact
         label: Contact page
@@ -1152,6 +1302,75 @@ collections:
   # =========================================================================
   # RACE DIARY
   # =========================================================================
+  - name: navigation
+    label: Menus
+    label_singular: Menu
+    files:
+      - name: navigation
+        label: Site menus
+        file: src/content/navigation/navigation.md
+        description: >-
+          The top menu and the footer columns. Renaming or reordering an item
+          here changes it everywhere on the site.
+        fields:
+          - label: Top menu
+            name: primary
+            widget: list
+            label_singular: Menu item
+            summary: "{{fields.label}} -> {{fields.href}}"
+            hint: >-
+              The main menu across the top of every page. Keep it short - more
+              than about seven items and the menu on a phone becomes a list
+              nobody reads.
+            fields:
+              - { label: Label, name: label, widget: string }
+              - label: Address
+                name: href
+                widget: string
+                hint: >-
+                  A page on this site, starting with a slash - for example
+                  /join-us. The build fails if it points at a page that does
+                  not exist, so a typo here cannot reach the live site.
+
+          - label: Header button
+            name: cta
+            widget: object
+            hint: >-
+              The button in the top bar, shown on every page at every screen
+              size. This is the site's main call to action, so keep the label
+              short - two words at most, or it wraps on a phone.
+            fields:
+              - { label: Label, name: label, widget: string }
+              - label: Address
+                name: href
+                widget: string
+                hint: A page on this site, starting with a slash.
+
+          - label: Footer columns
+            name: footerGroups
+            widget: list
+            label_singular: Column
+            summary: "{{fields.label}}"
+            hint: >-
+              Each column has a heading and its own links. Welfare must stay
+              easy to find from every page, so leave it in the first column.
+            fields:
+              - { label: Column heading, name: label, widget: string }
+              - label: Links
+                name: links
+                widget: list
+                label_singular: Link
+                summary: "{{fields.label}} -> {{fields.href}}"
+                fields:
+                  - { label: Label, name: label, widget: string }
+                  - label: Address
+                    name: href
+                    widget: string
+                    hint: >-
+                      A page on this site (/club-kit) or a full web address
+                      (https://...). A full address opens in a new tab on its
+                      own - there is nothing to tick.
+
   - name: calendar-events
     label: Race diary
     label_singular: Race

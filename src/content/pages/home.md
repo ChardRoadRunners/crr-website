@@ -39,6 +39,17 @@ clubNights:
         A relaxed pace run, normally around town of up to around 4 miles (7km) but there is always options to make it shorter if your not up for 4 miles just yet.
         The clubhouse and showers aren't open afterwards.
   reassurance: You don't need to be a member to come along, and you don't need to be fast. Come for a couple of runs and see what you think.
+# Pub runs. Wording only — the dates come from the socials calendar.
+pubRuns:
+  heading: Pub runs
+  body: Once a month through the summer we meet at a pub, run, and have dinner afterwards. Neither half is compulsory.
+  linkLabel: More about pub runs
+  emptyState: Nothing booked at the moment — they run through the summer.
+  # The day, the pub and the start time all come from the calendar entry, so
+  # they are not repeated here. Use this only for something standing that the
+  # calendar cannot say. It is omitted from the page while it starts with TODO.
+  note: TODO — anything standing that the calendar cannot say, such as whether non-members can come.
+
 handicap:
   heading: Last Tuesday of the Month
   body: |-

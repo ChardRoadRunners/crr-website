@@ -55,45 +55,131 @@ const feedUrl = (source: CalendarSource) =>
 const feeds = new Map<CalendarSource, Promise<ical.CalendarResponse>>();
 
 /**
+ * Statuses worth trying again.
+ *
+ * 429 is Google saying "not right now", not "no". Cloudflare's builders come
+ * from a shared pool of addresses, so the rate limit can be spent by traffic
+ * that has nothing to do with this club — which is what took the build down on
+ * 20 September 2026, on a commit that changed two CSS classes.
+ *
+ * A 404 is deliberately NOT here. That means somebody turned off public
+ * sharing, it will 404 again in ten seconds, and the build should say so at
+ * once rather than spending half a minute pretending otherwise. Retrying the
+ * statuses that mean "later" is what keeps the loud failure meaningful: if the
+ * build still goes red after this, something is actually wrong.
+ */
+const RETRY_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+const MAX_ATTEMPTS = 4;
+const BACKOFF_MS = 1_000;
+/** Google has asked for a wait this long before; anything more is a real outage. */
+const MAX_BACKOFF_MS = 20_000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * How long to wait before attempt number `attempt` (1-based).
+ *
+ * Honours Retry-After when Google sends one, in either of its forms — a count
+ * of seconds, or an HTTP date. Falls back to doubling. Exported so the wait is
+ * testable without waiting.
+ */
+export function retryDelayMs(attempt: number, retryAfter?: string | null, now = Date.now()): number {
+	const backoff = Math.min(BACKOFF_MS * 2 ** (attempt - 1), MAX_BACKOFF_MS);
+	if (!retryAfter) return backoff;
+
+	const seconds = Number(retryAfter);
+	if (Number.isFinite(seconds)) {
+		return Math.min(Math.max(seconds, 0) * 1_000, MAX_BACKOFF_MS);
+	}
+
+	const when = Date.parse(retryAfter);
+	if (Number.isNaN(when)) return backoff;
+
+	return Math.min(Math.max(when - now, 0), MAX_BACKOFF_MS);
+}
+
+/**
+ * What a failing status actually means, in words aimed at whoever has to fix it.
+ *
+ * This used to say "a 404 here almost always means the calendar is no longer
+ * shared publicly" whatever the status — so a 429 was reported with advice
+ * about sharing permissions, and cost a morning chasing the wrong thing.
+ * Exported so the wording is pinned by the checks.
+ */
+export function describeStatus(source: CalendarSource, status: number, statusText: string): string {
+	const head = `Calendar "${source}" returned ${status} ${statusText}.`;
+
+	if (status === 404) {
+		return (
+			`${head} That almost always means the calendar is no longer shared ` +
+			'publicly in Google — check Settings > (the calendar) > Access permissions.'
+		);
+	}
+	if (RETRY_STATUSES.has(status)) {
+		return (
+			`${head} That is a "try later", and it was already retried ${MAX_ATTEMPTS} ` +
+			'times with backoff, so Google is still refusing. Nothing is wrong with the ' +
+			'calendar itself — a build machine sharing an address with noisy neighbours ' +
+			'can spend the rate limit. Re-run the build.'
+		);
+	}
+	return `${head} Check the calendar is still shared publicly in Google.`;
+}
+
+/**
  * Fetches and parses one feed.
  *
  * Fails loudly on purpose. A feed that 404s means somebody turned off public
  * sharing in Google, and the visible symptom would otherwise be a page that
  * quietly has nothing on it — which nobody notices until a member asks why the
  * races have gone.
+ *
+ * Transient refusals get up to MAX_ATTEMPTS tries with backoff first, because
+ * failing the whole site build on one 429 is a false alarm, and a build nobody
+ * trusts is as bad as a page nobody checks.
  */
 export function fetchCalendar(source: CalendarSource): Promise<ical.CalendarResponse> {
 	const cached = feeds.get(source);
 	if (cached) return cached;
 
 	const pending = (async () => {
-		let response: Response;
-		try {
-			response = await fetch(feedUrl(source));
-		} catch (cause) {
-			throw new Error(
-				`Calendar "${source}" could not be reached: ${(cause as Error).message}`,
-			);
+		let lastProblem = '';
+
+		for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+			let response: Response;
+			try {
+				response = await fetch(feedUrl(source));
+			} catch (cause) {
+				// A dropped connection is the same kind of "later" as a 429.
+				lastProblem = `Calendar "${source}" could not be reached: ${(cause as Error).message}`;
+				if (attempt === MAX_ATTEMPTS) break;
+				await sleep(retryDelayMs(attempt));
+				continue;
+			}
+
+			if (response.ok) {
+				const body = await response.text();
+				if (!body.trimStart().startsWith('BEGIN:VCALENDAR')) {
+					throw new Error(
+						`Calendar "${source}" did not return an iCalendar file. ` +
+							'Google serves an HTML error page when a feed is private, so this is the ' +
+							'same problem as a 404.',
+					);
+				}
+				return ical.async.parseICS(body);
+			}
+
+			lastProblem = describeStatus(source, response.status, response.statusText);
+
+			// Anything that is not a "try later" is a real answer. Say so now.
+			if (!RETRY_STATUSES.has(response.status)) throw new Error(lastProblem);
+
+			if (attempt === MAX_ATTEMPTS) break;
+			await sleep(retryDelayMs(attempt, response.headers.get('retry-after')));
 		}
 
-		if (!response.ok) {
-			throw new Error(
-				`Calendar "${source}" returned ${response.status} ${response.statusText}. ` +
-					'A 404 here almost always means the calendar is no longer shared publicly ' +
-					'in Google — check Settings > (the calendar) > Access permissions.',
-			);
-		}
-
-		const body = await response.text();
-		if (!body.trimStart().startsWith('BEGIN:VCALENDAR')) {
-			throw new Error(
-				`Calendar "${source}" did not return an iCalendar file. ` +
-					'Google serves an HTML error page when a feed is private, so this is the ' +
-					'same problem as a 404.',
-			);
-		}
-
-		return ical.async.parseICS(body);
+		throw new Error(lastProblem);
 	})();
 
 	feeds.set(source, pending);
@@ -319,6 +405,30 @@ export function isSameRace(
 
 	return Math.abs(aDate.getTime() - bDate.getTime()) / 86_400_000 <= NEAR_ENOUGH_DAYS;
 }
+
+/**
+ * Is this social a pub run?
+ *
+ * Pub runs live in the socials calendar alongside parties and quizzes, because
+ * that is the calendar the social secretaries already keep. Nothing marks one
+ * out except its title, so this is a naming convention doing structural work —
+ * the weakest joint in the pub runs page, and worth knowing about.
+ *
+ * Deliberately generous, because the failure is silent: a pub run the filter
+ * misses does not error, it just never appears. "Pub run", "Pub Run - The
+ * George", "July pub run" and the annual "Pubs Run" all match. Matching too
+ * widely only pulls a party onto a page about pub runs, which somebody will
+ * notice and report; matching too narrowly empties a page nobody is checking.
+ *
+ * `\b` on both ends keeps it honest: "pub quiz" and "club run" do not match,
+ * and neither does a word that merely ends in "pub".
+ *
+ * If this ever needs to be stricter, the honest fix is a field the secretaries
+ * fill in, not a cleverer regex — see docs/pub-runs.md.
+ */
+const PUB_RUN = /\bpubs?[\s-]*runs?\b/i;
+
+export const isPubRun = (event: ClubEvent): boolean => PUB_RUN.test(event.title);
 
 /**
  * The club's own next running of a race, from the club-races calendar.

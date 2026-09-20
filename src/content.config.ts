@@ -138,6 +138,13 @@ const races = defineCollection({
 
 const cta = z.object({ label: z.string(), href: z.string() });
 
+// One menu item. `href` is a site route or a full URL; the components decide
+// which by whether it starts with http, so there is no flag to forget.
+const navLink = z.object({
+  label: z.string().min(1),
+  href: z.string().min(1),
+});
+
 const night = z.object({
   day: z.string(),
   time: z.string(),
@@ -155,6 +162,23 @@ const draftable = z
   .transform((value) =>
     value?.trimStart().startsWith("TODO") ? undefined : value
   );
+
+// The pub runs teaser, on the homepage and on Join Us.
+//
+// Wording only. The dates are read from the socials calendar by
+// PubRuns.astro, so there is deliberately no day, pub or start-time field
+// here: hand-copying those from the calendar would give one fact two homes,
+// which is the drift /pub-runs exists to avoid.
+const pubRunsTeaser = z.object({
+  heading: z.string(),
+  body: z.string(),
+  linkLabel: z.string(),
+  // Shown when the calendar holds no pub runs, which is most of the year.
+  emptyState: z.string(),
+  // Anything standing that the calendar cannot say. draftable, so a "TODO —"
+  // placeholder is stripped rather than published.
+  note: draftable,
+});
 
 // src/content/pages/home.md
 const homePage = z.object({
@@ -175,6 +199,7 @@ const homePage = z.object({
     heading: z.string(),
     body: z.string(),
   }),
+  pubRuns: pubRunsTeaser,
   couchTo5k: z.object({
     heading: z.string(),
     body: z.string(),
@@ -252,6 +277,7 @@ const joinUsPage = z.object({
     tuesday: z.string(),
     thursday: z.string(),
   }),
+  pubRuns: pubRunsTeaser,
   membership: z.object({
     heading: z.string(),
     intro: draftable,
@@ -377,12 +403,81 @@ const calendarPage = z.object({
   raceDiary: z.object({ heading: z.string(), intro: z.string() }),
 });
 
+// The pub runs page.
+//
+// Its dates are not here. They are read from the socials calendar in Google
+// and filtered by title, because a pub run IS a social and the secretaries
+// already keep that calendar — giving it a second home here would be the
+// two-dates-for-one-race problem that resolveRaceDate exists to catch. This
+// file holds the wording around them.
+const pubRunsPage = z.object({
+  page: z.literal("pub-runs"),
+  hero: z.object({ heading: z.string(), strapline: z.string() }),
+  seo: z.object({ description: z.string() }),
+
+  intro: z.string(),
+
+  upcoming: z.object({
+    heading: z.string(),
+    intro: z.string(),
+    emptyState: z.string(),
+  }),
+
+  pubsRun: z.object({ heading: z.string(), body: z.string() }),
+
+  // Pace, guests and food: the questions a newcomer asks, none of them
+  // confirmed at the time of writing. An empty list is a legitimate state
+  // and hides the section, rather than printing a heading over nothing or
+  // an invented answer.
+  practicalities: z.object({
+    heading: z.string(),
+    items: z
+      .array(z.object({ question: z.string(), answer: z.string() }))
+      .default([]),
+  }),
+
+  footnote: z.string(),
+});
+
+// The site's menus.
+//
+// One file, holding the top bar and the footer columns. It lives in content
+// rather than consts.ts so the committee can rename and reorder items without
+// a developer — the old race calendar lapsed because only one person could
+// change it, and a menu is the same kind of thing.
+//
+// Routes sit beside their labels here. `scripts/check-cms-schema.mjs` resolves
+// every internal href against the built routes, so a menu pointing at a page
+// that does not exist fails the build rather than shipping a 404 in the
+// header.
+const navigation = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/navigation" }),
+  schema: z.object({
+    primary: z.array(navLink).min(1),
+    cta: navLink,
+    footerGroups: z
+      .array(
+        z.object({
+          label: z.string().min(1),
+          links: z.array(navLink).min(1),
+        }),
+      )
+      .min(1),
+  }),
+});
+
 // One collection, one file per page, each page its own shape. The `page`
 // field picks the branch — which also means a validation error names the
 // field that's wrong instead of listing every page's fields at once.
 const pages = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/pages" }),
-  schema: z.discriminatedUnion("page", [homePage, joinUsPage, contactPage, calendarPage]),
+  schema: z.discriminatedUnion("page", [
+    homePage,
+    joinUsPage,
+    contactPage,
+    calendarPage,
+    pubRunsPage,
+  ]),
 });
 
 // Welfare, privacy, inclusion, and the rules and constitution. Deliberately
@@ -392,7 +487,7 @@ const pages = defineCollection({
 // content whose Markdown body is rendered as the page.
 //
 // A file here gets its route automatically from src/pages/[legal].astro, but
-// its footer link still has to be added to FOOTER_PAGE_LINKS in consts.ts.
+// its footer link still has to be added to src/content/navigation/navigation.md.
 const legal = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/legal" }),
   schema: z.object({
@@ -520,4 +615,5 @@ export const collections = {
   pages,
   legal,
   "calendar-events": calendarEvents,
+  navigation,
 };

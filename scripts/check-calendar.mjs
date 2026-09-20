@@ -17,9 +17,8 @@ import assert from 'node:assert/strict';
 
 import ical from 'node-ical';
 
-const { normalise, formatEventWhen, isSameRace } = await import(
-	new URL('../src/utils/calendar.ts', import.meta.url).href
-);
+const { normalise, formatEventWhen, isSameRace, isPubRun, retryDelayMs, describeStatus, fetchCalendar } =
+	await import(new URL('../src/utils/calendar.ts', import.meta.url).href);
 const { ordinal } = await import(new URL('../src/utils/date.ts', import.meta.url).href);
 
 const red = (s) => `\u001b[31m${s}\u001b[0m`;
@@ -35,6 +34,18 @@ const check = (name, fn) => {
 			// its assertions did. Fail loudly rather than pass silently.
 			throw new Error('check() bodies must be synchronous - this one returned a promise');
 		}
+		console.log(`  ${green('ok')} ${name}`);
+	} catch (error) {
+		failures += 1;
+		console.log(`  ${red('FAIL')} ${name}`);
+		console.log(dim(`       ${error.message.split('\n')[0]}`));
+	}
+};
+
+/** Like check(), but for a rule that genuinely has to await something. */
+const checkAsync = async (name, fn) => {
+	try {
+		await fn();
 		console.log(`  ${green('ok')} ${name}`);
 	} catch (error) {
 		failures += 1;
@@ -307,6 +318,158 @@ for (const [a, b, aDate, bDate, want, why] of [
 		assert.equal(isSameRace(a, b, d(aDate), d(bDate)), want);
 	});
 }
+
+// ---------------------------------------------------------------------------
+// Which socials are pub runs
+//
+// The /pub-runs page reads the socials calendar and keeps the pub runs. There
+// is no field saying which those are, only the title, so this is a naming
+// convention holding up a page. A miss is silent — the run simply never
+// appears — which is why the match is generous and why the wordings the
+// secretaries actually use are pinned here rather than assumed.
+// ---------------------------------------------------------------------------
+
+for (const [title, want, why] of [
+	['Pub Run', true, 'the plain wording'],
+	['Pub run - The George', true, 'a pub named after a dash'],
+	['Pub Run: The Eagle Tavern', true, 'a colon instead'],
+	['July pub run', true, 'the month first'],
+	['Pub runs', true, 'plural'],
+	['Pubs Run', true, 'the annual one, pubs plural'],
+	['PUB RUN', true, 'shouted'],
+	['Pub-run', true, 'hyphenated'],
+	['Christmas party', false, 'an ordinary social'],
+	['Pub quiz', false, 'a pub, but nobody is running'],
+	['Club run', false, 'a run, but not to a pub'],
+	['Summer BBQ', false, 'no pub, no run'],
+]) {
+	check(`pub run? ${why}`, () => {
+		assert.equal(isPubRun({ title }), want, `"${title}"`);
+	});
+}
+
+// ---------------------------------------------------------------------------
+// Refusals from Google
+//
+// On 20 September 2026 a build died because Google answered one feed with 429
+// Too Many Requests. Cloudflare's builders share addresses, so the rate limit
+// can be spent by somebody else entirely, and the site build failed on a commit
+// that changed two CSS classes.
+//
+// The fix is not to swallow failures. It is to tell "not right now" apart from
+// "no": a 429 is retried, a 404 still fails at once, and the message says which
+// happened. These rules pin that line, because getting it wrong in either
+// direction is expensive — a swallowed 404 empties the race pages silently, and
+// a retried-forever 404 hides it behind a slow build.
+// ---------------------------------------------------------------------------
+
+check('a 404 is reported as a sharing problem', () => {
+	const message = describeStatus('socials', 404, 'Not Found');
+	assert.match(message, /no longer shared/);
+	assert.match(message, /Access permissions/);
+});
+
+check('a 429 is NOT reported as a sharing problem', () => {
+	// The bug this replaces: every status got the 404 advice, so a rate limit
+	// read as "somebody made the calendar private" and was chased as one.
+	const message = describeStatus('socials', 429, 'Too Many Requests');
+	assert.ok(!/Access permissions/.test(message), `got: ${message}`);
+	assert.match(message, /try later/);
+	assert.match(message, /Re-run the build/);
+});
+
+check('the status and its text are always quoted back', () => {
+	assert.match(describeStatus('club-nights', 503, 'Service Unavailable'), /503 Service Unavailable/);
+	assert.match(describeStatus('championship', 401, 'Unauthorized'), /401 Unauthorized/);
+});
+
+check('backoff doubles, and is capped', () => {
+	assert.equal(retryDelayMs(1), 1_000);
+	assert.equal(retryDelayMs(2), 2_000);
+	assert.equal(retryDelayMs(3), 4_000);
+	assert.equal(retryDelayMs(9), 20_000, 'must not grow without limit');
+});
+
+check('Retry-After in seconds is honoured', () => {
+	assert.equal(retryDelayMs(1, '5'), 5_000);
+	assert.equal(retryDelayMs(1, '0'), 0);
+	assert.equal(retryDelayMs(1, '9999'), 20_000, 'still capped');
+});
+
+check('Retry-After as an HTTP date is honoured', () => {
+	const now = Date.parse('2026-09-20T07:24:00Z');
+	assert.equal(retryDelayMs(1, 'Sun, 20 Sep 2026 07:24:03 GMT', now), 3_000);
+	// A date already past means go now, not a negative wait.
+	assert.equal(retryDelayMs(1, 'Sun, 20 Sep 2026 07:23:00 GMT', now), 0);
+});
+
+check('a nonsense Retry-After falls back to backoff', () => {
+	assert.equal(retryDelayMs(2, 'soon please'), 2_000);
+});
+
+// The behaviour itself, with fetch stubbed — the pure functions above say what
+// the policy is, these two say the policy is actually wired up. Each uses a
+// different source because fetchCalendar caches one promise per calendar.
+
+const withFetch = async (impl, run) => {
+	const real = globalThis.fetch;
+	globalThis.fetch = impl;
+	try {
+		return await run();
+	} finally {
+		globalThis.fetch = real;
+	}
+};
+
+const icsBody = feed([
+	'UID:stub@test',
+	'DTSTART:20270101T100000Z',
+	'SUMMARY:Stub',
+	'STATUS:CONFIRMED',
+]);
+
+await checkAsync('a 429 is retried and the build survives it', async () => {
+	let calls = 0;
+	const parsed = await withFetch(
+		async () => {
+			calls += 1;
+			if (calls === 1) {
+				return new Response('rate limited', {
+					status: 429,
+					statusText: 'Too Many Requests',
+					// Asked for immediately, so the rule does not sit here for a second.
+					headers: { 'retry-after': '0' },
+				});
+			}
+			return new Response(icsBody, { status: 200, statusText: 'OK' });
+		},
+		() => fetchCalendar('race-calendar'),
+	);
+
+	assert.equal(calls, 2, 'should have tried again after the 429');
+	assert.ok(parsed, 'should have parsed the feed on the second try');
+});
+
+await checkAsync('a 404 fails at once, without retrying', async () => {
+	let calls = 0;
+	await withFetch(
+		async () => {
+			calls += 1;
+			return new Response('gone', { status: 404, statusText: 'Not Found' });
+		},
+		async () => {
+			await assert.rejects(
+				() => fetchCalendar('championship'),
+				/no longer shared/,
+				'a 404 should report the sharing problem',
+			);
+		},
+	);
+
+	// The point of the whole exercise: a private calendar is still loud and
+	// immediate. Retrying it would only delay the news.
+	assert.equal(calls, 1, `a 404 should not be retried, but fetch ran ${calls} times`);
+});
 
 console.log(
 	failures === 0

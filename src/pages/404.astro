@@ -10,11 +10,12 @@
 // a 404 status rather than a 200. That needs `wrangler dev` or a deploy.
 import ContourBackdrop from '../components/ContourBackdrop.astro';
 import logoMark from '../assets/crr-logo-mark.svg?raw';
-import { NAV_LINKS } from '../consts';
 import Layout from '../layouts/Layout.astro';
+import { getNavigation } from '../utils/navigation';
 
 // The links are the site's own nav, so this page cannot fall out of step with
 // it — a new top-level page appears here the day it appears in the header.
+const { primary } = await getNavigation();
 ---
 
 <Layout
@@ -44,19 +45,24 @@ import Layout from '../layouts/Layout.astro';
 
 			<nav aria-label="Main pages">
 				<ul class="flex flex-wrap justify-center gap-3">
+					{/*
+					  Home is the way out for most people who land here, so it gets the
+					  filled button. It is written here rather than picked out of the
+					  menu, because the menu no longer carries a Home item — the logo
+					  does that job on a normal page, and a 404 needs the way home to
+					  be the most obvious thing on it.
+					*/}
+					<li>
+						<a href="/" class="btn btn-accent focus-visible:outline-white">
+							Home
+						</a>
+					</li>
 					{
-						NAV_LINKS.map((link) => (
+						primary.map((link) => (
 							<li>
 								<a
 									href={link.href}
-									class:list={[
-										'btn focus-visible:outline-white',
-										// Home is the way out for most people who land here, so it
-										// gets the filled button and the rest stay outlined.
-										link.href === '/'
-											? 'btn-accent'
-											: 'btn-outline border-primary-content/50 text-primary-content hover:bg-primary-content/10 hover:text-primary-content',
-									]}
+									class="btn btn-outline border-primary-content/50 text-primary-content hover:bg-primary-content/10 hover:text-primary-content focus-visible:outline-white"
 								>
 									{link.label}
 								</a>
