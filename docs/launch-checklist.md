@@ -178,9 +178,12 @@ Also worth knowing, though neither lives in this repository:
   bound to its callback URL, not to a repository. But whoever signs in to
   `/admin` now needs write access at the new location.
 
-`workers/cms-auth/README.md` refers to `Smellyllama/crr-cms-auth`. That is a
-**different** repository, already marked for archiving, and it is correct as
-written unless that one moves too.
+`workers/cms-auth/README.md` refers to `crr-cms-auth`. That is a **different**
+repository: a superseded duplicate of `workers/cms-auth/` in this one, with no
+Workers Build of its own, which is what makes it safe to retire. It moves to
+the organisation alongside this repository and is then **archived**, so there
+is only one copy and nobody later mistakes the read-only leftover for the live
+source.
 
 ---
 
