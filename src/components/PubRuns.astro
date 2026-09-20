@@ -75,7 +75,9 @@ const next = (await getUpcoming(['socials'], { now })).filter(isPubRun).slice(0,
 		{note && <p class="mt-6 text-center text-sm text-base-content/70">{note}</p>}
 
 		<div class="mt-8 text-center">
-			<a href="/pub-runs" class="btn btn-secondary">{linkLabel}</a>
+			{/* btn-accent, matching every other call to action on the site: the
+			    logo's sky blue as a fill with dark purple text, 8.67:1. */}
+			<a href="/pub-runs" class="btn btn-accent">{linkLabel}</a>
 		</div>
 	</div>
 </section>

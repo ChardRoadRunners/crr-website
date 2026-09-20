@@ -92,23 +92,21 @@ const { primary, cta } = await getNavigation();
 		</ul>
 
 		{/*
-		  PLACEHOLDER COLOUR — REVISIT WHEN THE ACCENT IS DECIDED.
-		
-		  btn-secondary is the pale blue fill with dark purple text, measured at
-		  6.34:1. That passes AA comfortably and is the brief's choice for now.
-		
-		  The sky blue accent measures 8.67:1 in the same arrangement and is what
-		  CLAUDE.md currently names as the call-to-action colour. If that decision
-		  sticks, this becomes btn-accent and gains 2.3 points of contrast. It is
-		  one class either way; the reason it is not btn-accent already is that
-		  the accent is still open.
-		
-		  Whichever wins, it stays a FILL. Neither blue is readable as text on a
-		  light ground — the sky is 1.76:1, the pale blue 2.41:1.
+		  btn-accent: the logo's sky blue as a fill, dark purple text. MEASURED
+		  at 8.67:1 — the strongest pairing in the palette, and 2.3 points up on
+		  the pale blue btn-secondary this replaced.
+
+		  This is what CLAUDE.md already said a call to action should be, so the
+		  button was the outlier rather than the rule. Every other CTA on the
+		  site — the hero, Couch to 5k, the race entry links, the 404's way home
+		  — was already btn-accent.
+
+		  It stays a FILL. The same sky blue as text on a light ground is
+		  1.76:1, the worst number in the palette.
 		*/}
 		<a
 			href={cta.href}
-			class="btn btn-secondary btn-sm sm:btn-md focus-visible:outline-white"
+			class="btn btn-accent btn-sm sm:btn-md focus-visible:outline-white"
 		>
 			{cta.label}
 		</a>

@@ -36,9 +36,9 @@ doing both buried the calendar under standings tables.
 
 **Join us is also a button in the header,** shown on every page at every width.
 The menu hides behind a hamburger below 1024px, and joining is the one thing
-the site is actually asking a visitor to do. Pale blue fill, dark purple text,
-measured 6.34:1 — a placeholder until the accent colour is settled, at which
-point it may become the sky blue's 8.67:1.
+the site is actually asking a visitor to do. `btn-accent` — the logo's sky blue
+as a fill, dark purple text, measured 8.67:1 — the same as every other call to
+action on the site.
 
 ### Footer
 
