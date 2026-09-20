@@ -49,7 +49,7 @@ handicap:
     Other handicap events include; The mile, 1500m, 3000m out and back.
 pubRuns:
   heading: Pub Runs
-  body: Once a month through the summer we meet at a pub, run, and have dinner afterwards. Neither half is compulsory.
+  body: Once a month throughout the summer we meet at a pub, run, and have dinner afterwards. Neither half is compulsory.
   linkLabel: Pub Runs?
   emptyState: The Pub runs start in the summer months and will be here as they get booked. The 'Pubs Run' is an annual event often in July or August.
   note: TODO — anything standing that the calendar cannot say, such as whether non-members can come.
