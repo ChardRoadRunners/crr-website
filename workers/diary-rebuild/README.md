@@ -80,10 +80,18 @@ Check the code, not the name.
 
 **`wrangler versions upload` does not apply cron triggers.** It uploads the code
 and leaves the schedule alone, so the Worker arrives complete and never runs.
-Only `wrangler deploy`, or `wrangler triggers deploy`, applies them. It is the
-default deploy command for non-production branch builds, so before concluding a
-schedule is set, confirm the production branch is `main` and the deploy command
-is `npx wrangler deploy`.
+Only `wrangler deploy`, or `wrangler triggers deploy`, applies them.
+
+This one is live here rather than hypothetical. **Non-production branch builds
+are enabled on this Worker**, and their deploy command is
+`npx wrangler versions upload` — so every push to a branch uploads a new version
+of `diary-rebuild` and posts a preview URL on the pull request. That does no
+harm, because a version is not a deployment: production carries on running
+whatever `wrangler deploy` last put there. It is worth knowing anyway, because
+a green build on a branch has not touched the schedule, and a schedule checked
+after one has not been checked at all. Before concluding a schedule is set,
+confirm the production branch is `main` and the deploy command is
+`npx wrangler deploy`.
 
 **Root directory left blank deploys the wrong thing.** The deploy command runs
 wherever the root directory points. At the repository root, `npx wrangler deploy`
