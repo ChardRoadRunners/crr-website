@@ -319,6 +319,29 @@ source.
 
 ### Decisions
 
+- **Whether the CMS should keep committing straight to `main`.**
+  `public/admin/config.yml` turns editorial workflow off on purpose, on the
+  grounds that routing every post through a pull request is "friction nobody
+  needs yet". That was written before committee members were posting.
+
+  What it costs became clear on 22 September: a race report whose photo never
+  uploaded took the build red, and two unrelated Join Us edits stayed
+  unpublished behind it for most of a day. The site was fine throughout — it
+  simply stopped updating, and the person who wrote the posts was told nothing.
+
+  Three ways to close it, and they are not exclusive:
+  1. **Turn editorial workflow on.** A bad post becomes a pull request that
+     fails rather than a `main` that fails. The cost is that every post then
+     needs approving, and there may not be anybody reliably around to approve.
+  2. **Turn on build notifications** so a failure emails somebody who can act.
+     This is a Cloudflare dashboard setting on `crr-website`, not a repository
+     change, and it is the cheapest of the three.
+  3. **Leave it, and rely on the runbook** now in `docs/handover.md` under
+     "When a post does not appear".
+
+  Doing nothing is a choice too, and a defensible one while the site is small
+  and somebody is watching it daily. It stops being defensible at handover.
+
 - **Which races count for the championship.** The 2026 list has been received,
   but it is the wrong year for this. The diary runs twelve months ahead, so a
   December 2026 launch shows December 2026 to December 2027, and almost

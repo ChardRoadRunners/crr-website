@@ -57,6 +57,33 @@ backend:
 # Simple publishing: Save commits straight to main and Cloudflare rebuilds.
 # Editorial workflow is deliberately NOT enabled — it routes every post
 # through a pull request needing approval, which is friction nobody needs yet.
+#
+# Note what that costs, because it is not nothing: a post the build rejects
+# stops the site updating for everybody until somebody fixes it in Git, and
+# the person who wrote it is told nothing at all. See "When a post does not
+# appear" in docs/handover.md.
+
+# Slugs become filenames, and filenames are hard to change later.
+#
+# Sveltia's default `encoding` is `unicode`, which keeps whatever the title
+# contains. "Last of the Summer... 5k series" became
+# 2026-09-09-last-of-the-summer...-5k-series.md — dots and all. Astro strips
+# them when building the URL, so that page is served fine, but the file on
+# disk keeps them. Upstream discussion #544 is about exactly this: titles
+# carrying ellipses, dashes and smart quotes into filenames and breaking
+# static builds.
+#
+# `ascii` narrows the allowed set to 0-9, a-z, A-Z, hyphen, underscore and
+# tilde; anything else becomes sanitize_replacement. clean_accents turns an
+# accented letter into its plain equivalent rather than a hyphen, which is
+# what you want for a race name like Duathlon Crêpe.
+#
+# This applies to entries created from now on. Existing filenames are left
+# alone on purpose — renaming one changes its URL and breaks every link to it.
+slug:
+  encoding: ascii
+  clean_accents: true
+  sanitize_replacement: '-'
 
 output:
   # Leave optional fields out of the file entirely when they are empty,
