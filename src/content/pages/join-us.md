@@ -30,16 +30,22 @@ firstVisit:
     - label: Parking
       detail: There is often parking at the Cricket Club (gate to the car park ///valley.flat.charts). If it's busy, parking is also available in Essex Close Public Parking (///cards.pounces.graph). If you live locally, we encourage runners to walk or run to the club.
     - label: Who to look for
-      detail: You'll find runners outside the cricket club house in the drier months, and often in the changing room foyer when it's less so.
+      detail: |-
+        You'll find runners outside the cricket club house in the drier months, and often in the changing room foyer when it's less so.
+
+        On a Thursday we generally just meet in the carpark as the clubhouse isn't open.
     - label: What to bring
       detail: Bring whatever you need to be comfortable running — trainers, water, a head torch if it's dark, a towel if you want to be dry after a shower.
     - label: Afterwards
-      detail: The club showers and bar are available after Tuesday runs. Thursday is run only.
-  reassurance: New runners are encouraged to try a few nights before considering joining the club, and we welcome runners of all paces. Club membership fees help cover the costs of the Clubhouse and Club insurance.
+      detail: |-
+        The club showers and bar are available after Tuesday runs, join us for some rehydration post run and a nice way to meet more of the club.
+
+        Thursday is run only.
+  reassurance: New runners are encouraged to try a few nights before considering joining the club, and we welcome runners of ALL paces. Club membership fees help cover the costs of the Clubhouse and Club insurance.
 whichNight:
   heading: Which night?
   tuesday: Tuesday is the big social night. As many groups as we need to get everyone out for a comfortable run, then the bar is open afterwards. And don't forget the monthly handicap races where everyone has a chance to win the trophy and the famous bake off for afters.
-  thursday: Thursday is another club run night, usually one group and the same familiar route. Everyone welcome.
+  thursday: Thursday is usually one group, maximum 4 miles (7km) with plenty of options to cut it shorter if needed, making it perfect for beginners and people returning to running after some time off. Everyone welcome.
 pubRuns:
   heading: Pub runs
   body: Through the summer there is a pub run once a month, starting and finishing at a different pub. The club runs, then eats. You are welcome to do one and not the other.
