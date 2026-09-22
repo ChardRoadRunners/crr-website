@@ -8,7 +8,10 @@ firstVisit:
   intro: Everyone has a 'first time'.
   steps:
     - label: When
-      detail: Tuesday or Thursday, training at 6:30pm, running at 7:00pm. Aim to arrive to run by 6:45 for the often humorous preamble.
+      detail: |-
+        Tuesday- warm up and drills at 6:30pm, running at 7:00pm. Aim to arrive to run by 6:45 for the often humorous preamble.
+
+        Thursday - 7:00pm
     - label: Where
       detail: |-
         Chard Cricket Club
