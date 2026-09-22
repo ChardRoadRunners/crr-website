@@ -45,6 +45,14 @@ rebuild it if it is ever lost.
    itself. A default `npm install` here fails looking for a file that was never
    meant to exist. The other three each have a failure mode of their own — see
    the next section.
+
+   One consequence worth knowing: with no `package.json` here, the deploy step
+   downloads Wrangler from npm on every build, so a flaky fetch can fail a
+   deploy with nothing wrong in the code. The site's own build no longer has
+   this problem — Wrangler is pinned in the root `package.json` — but this
+   Worker still does. Fixing it means adding a `package.json` here and a build
+   command in the dashboard to install from it. See "A build that fails with
+   nothing changed" in `docs/handover.md`.
 4. **The deploy hook URL stored as a secret** on this Worker, under **Settings →
    Variables and Secrets**, named `DEPLOY_HOOK_URL`. The code refuses to run
    without it — a missing secret throws rather than logging quietly, so a
