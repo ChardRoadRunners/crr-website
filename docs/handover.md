@@ -235,6 +235,36 @@ organisation name** (`ChardRoadRunners`). Organisations cannot be assigned
 issues, so nobody would be emailed. If it is ever blank the issue still opens,
 and says in bold that nobody was told.
 
+### The permission it needs
+
+Opening an issue is a write, and a workflow only gets what the default workflow
+permissions allow. Read-only is GitHub's default, and it caps what any workflow
+can be granted however politely the file asks — so the `issues: write` in
+`build-check.yml` is a request, not a guarantee.
+
+**It is an organisation setting, not a repository one.** On the repository's own
+page — Settings → Actions → General → Workflow permissions — the option appears
+greyed out rather than missing, which reads like a bug and is not one: an
+organisation default of read-only means no repository inside it may choose
+otherwise. The place to change it is
+
+    github.com/organizations/ChardRoadRunners/settings/actions
+
+under Workflow permissions, set to **Read and write permissions**. Done there on
+23 September 2026. GitHub's mobile site hides most of that page and the phone
+app leaves it out altogether, so it is a desk job rather than a five-minute one.
+
+**Leave "Allow GitHub Actions to create and approve pull requests" unticked.**
+Nothing here uses it — this workflow touches issues and nothing else. It is the
+sharper of the two settings, because approving pull requests is a way around
+branch protection, and granting it for an alert that never opens one buys
+nothing.
+
+Worth checking first if alerts ever stop arriving, because the failure is quiet
+in a particular way: the build still fails, the workflow still runs, and only
+the step that opens the issue dies. From outside, a broken alarm and a silent
+one look the same.
+
 ### Handing it over
 
 The aim is for alerts to go to `webmaster@chardroadrunners.com`, a forwarding
@@ -278,12 +308,6 @@ check that the issue closes itself.
 
 ### Good to know
 
-- **Actions has to be allowed to open issues.** The workflow asks for
-  `issues: write`, but a repository whose default workflow permissions are
-  read-only caps what any workflow can be granted, and the alert would then
-  fail to open anything. Settings → Actions → General → Workflow permissions.
-  Worth confirming once, because a silent alerting system is the thing this is
-  meant to prevent.
 - Editors whose save breaks the build may also get GitHub's own failure email,
   depending on their notification settings. Harmless, and theirs to turn off.
 - The check runs the same build Cloudflare runs, but it is not Cloudflare's
