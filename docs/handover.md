@@ -141,6 +141,37 @@ or are exported by hand. **If an upload spins for more than a few seconds, stop.
 Open the photo on your computer, re-save it as JPEG or WebP, and upload that
 instead.**
 
+### A build that fails with nothing changed
+
+On 22 September a merge to `main` failed to deploy. The identical tree had
+built and deployed from a branch four hours earlier, `npm run build` was green
+locally, and `wrangler deploy --dry-run` validated the config. Retrying the
+build, unchanged, succeeded.
+
+So: **a build that fails when nothing in the repository changed is worth one
+retry before anybody starts debugging.** If it fails twice, it is real and the
+log is worth reading properly.
+
+The likely cause was the deploy step reaching the network. Wrangler used to be
+downloaded fresh on every build — the log line reads `npm warn exec The
+following package was not found and will be installed: wrangler@4.136.3` — so
+one flaky fetch from npm could fail a deploy with nothing wrong in the code.
+It is pinned in `package.json` now and installed by `npm ci` alongside
+everything else, so the site's deploy no longer depends on npm being reachable
+at that moment.
+
+Note what this does *not* claim. The retry used the same Wrangler version as
+the failure, so the version was not at fault and pinning would not have
+prevented that particular build from failing. What it buys is a smaller
+surface for this to happen again, and a repository that records which version
+works.
+
+**`workers/diary-rebuild/` is still exposed.** That folder has no
+`package.json` on purpose, so its deploy step still downloads Wrangler every
+time. Closing that means adding one and setting a build command in the
+dashboard — a bigger change than it looks, and left as a decision rather than
+made quietly.
+
 ### The check that is not there yet
 
 The preSave hook in `public/admin/index.html` requires alt text whenever a photo
