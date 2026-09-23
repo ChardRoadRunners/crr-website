@@ -223,8 +223,12 @@ and emails them.
 
 ### Who gets it now
 
-Matthew, as the current web admin. `BUILD_ALERT_ASSIGNEE` holds his GitHub
-username.
+Matthew, as the current web admin — GitHub username `Smellyllama`, which is
+what `BUILD_ALERT_ASSIGNEE` should read.
+
+If the variable and this note ever disagree, **the variable is what decides who
+gets emailed** and this note is the one that is wrong. Check the variable, not
+the page.
 
 **The variable must be a person's username, or the club account's — never the
 organisation name** (`ChardRoadRunners`). Organisations cannot be assigned
