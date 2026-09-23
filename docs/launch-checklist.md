@@ -333,14 +333,36 @@ source.
   1. **Turn editorial workflow on.** A bad post becomes a pull request that
      fails rather than a `main` that fails. The cost is that every post then
      needs approving, and there may not be anybody reliably around to approve.
-  2. **Turn on build notifications** so a failure emails somebody who can act.
-     This is a Cloudflare dashboard setting on `crr-website`, not a repository
-     change, and it is the cheapest of the three.
+  2. **Get a failure in front of somebody.** Harder than it sounds — see
+     below.
   3. **Leave it, and rely on the runbook** now in `docs/handover.md` under
      "When a post does not appear".
 
   Doing nothing is a choice too, and a defensible one while the site is small
   and somebody is watching it daily. It stops being defensible at handover.
+
+  **On option 2, which this entry used to describe as a cheap dashboard
+  setting.** It is not one, and that was wrong. Cloudflare's build
+  notifications go through Queues Event Subscriptions: Workers Builds
+  publishes events to a Queue, and a Worker you write reads that Queue and
+  forwards them to Slack, email or a webhook. There is an official template,
+  but it means a Queue and **a third Worker** to hand over. That makes it the
+  most expensive of the three, not the cheapest.
+
+  Two cheaper things to rule out first:
+
+  - **GitHub notifications on failed checks.** The Workers Builds result is a
+    check run, and check runs attach to plain commits on `main`, so this
+    covers a CMS post. Whether GitHub emails for a third-party check rather
+    than its own Actions is untested — worth confirming before building
+    anything, because it costs nothing.
+  - **Not the Cloudflare bot's pull request comment.** That arrives by email
+    and looks like the answer. It is not: it only appears on pull requests, so
+    a CMS post to `main` produces none, and the bot edits one comment in place
+    as the status changes rather than posting again. GitHub does not email on
+    an edit, so the message that arrives says the build *started*. A
+    notification that fires on starting and stays silent on failing is worse
+    than none, because it feels like cover.
 
 - **Which races count for the championship.** The 2026 list has been received,
   but it is the wrong year for this. The diary runs twelve months ahead, so a
