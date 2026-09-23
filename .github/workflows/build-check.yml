@@ -1,0 +1,109 @@
+# Build check — emails one person when the website build breaks.
+#
+# Lives at: .github/workflows/build-check.yml
+#
+# On every push to main this runs the same build Cloudflare runs. If it fails,
+# it opens ONE GitHub issue titled "Website build failing" and assigns it to the
+# web admin — GitHub emails them. While that issue stays open, further failures
+# send nothing. The next passing build closes it automatically.
+#
+# WHO GETS THE EMAIL: the repo variable BUILD_ALERT_ASSIGNEE, which must be a
+# person's GitHub username (not the ChardRoadRunners organisation). Set it in
+# Settings → Secrets and variables → Actions → Variables. To hand over, change
+# the variable. No code change needed. If it's missing, the issue is still
+# opened but nobody is assigned, and the issue says so.
+
+name: Build check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: read
+  issues: write
+
+# Runs one at a time, so two quick pushes can't both open an issue.
+concurrency:
+  group: build-check
+
+env:
+  ALERT_TITLE: Website build failing
+  ASSIGNEE: ${{ vars.BUILD_ALERT_ASSIGNEE }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22 # keep in step with Cloudflare's build settings
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  report-failure:
+    needs: build
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const title = process.env.ALERT_TITLE;
+            const issues = await github.paginate(github.rest.issues.listForRepo,
+              { owner, repo, state: 'open', per_page: 100 });
+            const existing = issues.find(i => !i.pull_request && i.title === title);
+            if (existing) {
+              core.info(`Issue #${existing.number} already open, so no new email.`);
+              return;
+            }
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const commit = context.payload.head_commit;
+            const lines = [
+              'The website build failed. If Cloudflare hit the same error, this change has **not** gone live and the site is still showing the last version that built.',
+              '',
+              `- **Change:** ${commit ? commit.message.split('\n')[0] : context.sha}`,
+              `- **Made by:** ${context.payload.pusher?.name ?? context.actor}`,
+              `- **Commit:** ${context.sha.slice(0, 7)}`,
+              `- **Build log:** ${runUrl}`,
+              '',
+              'Open the build log and look for the step with a red cross to see the error.',
+              '',
+              'This issue closes itself when a later build passes. While it is open, further failures will not send more emails.',
+            ];
+            const assignee = process.env.ASSIGNEE;
+            if (!assignee) {
+              lines.push('', '> **Nobody was emailed about this.** Set the BUILD_ALERT_ASSIGNEE repository variable to the web admin\'s GitHub username.');
+              core.warning('BUILD_ALERT_ASSIGNEE is not set, so the issue is unassigned.');
+            }
+            await github.rest.issues.create({
+              owner, repo, title, body: lines.join('\n'),
+              assignees: assignee ? [assignee] : [],
+            });
+
+  report-recovery:
+    needs: build
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const title = process.env.ALERT_TITLE;
+            const issues = await github.paginate(github.rest.issues.listForRepo,
+              { owner, repo, state: 'open', per_page: 100 });
+            const existing = issues.find(i => !i.pull_request && i.title === title);
+            if (!existing) return;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            // One update = one email: note the fix in the body and close together.
+            await github.rest.issues.update({
+              owner, repo, issue_number: existing.number,
+              state: 'closed', state_reason: 'completed',
+              body: `${existing.body}\n\n---\n**Fixed:** build passed on ${context.sha.slice(0, 7)}. ${runUrl}`,
+            });

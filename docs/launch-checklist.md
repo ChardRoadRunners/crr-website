@@ -333,14 +333,38 @@ source.
   1. **Turn editorial workflow on.** A bad post becomes a pull request that
      fails rather than a `main` that fails. The cost is that every post then
      needs approving, and there may not be anybody reliably around to approve.
-  2. **Turn on build notifications** so a failure emails somebody who can act.
-     This is a Cloudflare dashboard setting on `crr-website`, not a repository
-     change, and it is the cheapest of the three.
-  3. **Leave it, and rely on the runbook** now in `docs/handover.md` under
-     "When a post does not appear".
+  2. ~~**Get a failure in front of somebody.**~~ **Done** — a GitHub Actions
+     workflow now runs the build on every push to `main` and, when it fails,
+     opens one issue assigned to the web admin, which emails them. It closes
+     itself when a later build passes. See **Build failure alerts** in
+     `docs/handover.md`. Two things still to do by hand: set the
+     `BUILD_ALERT_ASSIGNEE` repository variable, and confirm Actions is
+     allowed to open issues.
+  3. **Leave it, and rely on the runbook** in `docs/handover.md` under "When a
+     post does not appear".
 
-  Doing nothing is a choice too, and a defensible one while the site is small
-  and somebody is watching it daily. It stops being defensible at handover.
+  With 2 done, the remaining question is narrower: whether a post that breaks
+  the build should be prevented from reaching `main` at all, or whether being
+  told promptly is enough. Being told is enough while somebody reads the
+  email. That is a person, not a setting, which is what makes it a handover
+  question rather than a technical one.
+
+  **Two notification routes deliberately not taken**, recorded because both
+  look like the obvious answer:
+
+  - **Cloudflare's own build notifications.** An earlier version of this entry
+    called them a cheap dashboard setting. They are not. They go through
+    Queues Event Subscriptions: Workers Builds publishes to a Queue, and a
+    Worker you write reads it and forwards to Slack, email or a webhook.
+    There is an official template, but it still means a Queue and **a third
+    Worker** to hand over — the most expensive option, not the cheapest.
+  - **The Cloudflare bot's pull request comment.** It arrives by email and
+    looks like coverage. It is not: it only appears on pull requests, so a CMS
+    post to `main` produces none, and the bot edits one comment in place as
+    the status changes rather than posting again. GitHub does not email on an
+    edit, so the message that arrives says the build *started*. A notification
+    that fires on starting and stays silent on failing is worse than none,
+    because it feels like cover.
 
 - **Which races count for the championship.** The 2026 list has been received,
   but it is the wrong year for this. The diary runs twelve months ahead, so a

@@ -115,9 +115,11 @@ That is the failure to recognise: not a broken site, a frozen one.
 
 ### What to do
 
-1. **Look at the build.** Cloudflare dashboard → `crr-website` → Builds. A
-   failed one names the file and the field; `check-cms-schema.mjs` says which
-   photo in which post.
+1. **Look at the build.** Usually you will have been told already — see
+   **Build failure alerts** below — and the emailed issue links straight to the
+   log. Otherwise: Cloudflare dashboard → `crr-website` → Builds. A failed one
+   names the file and the field; `check-cms-schema.mjs` says which photo in
+   which post.
 2. **Try the CMS first.** Re-upload the photo on the post that failed and save
    again. That fixes it without anyone touching Git.
 3. **If it still fails, take the photo off the post and save.** The report
@@ -191,6 +193,103 @@ must not be blocked — editing an older post, and choosing a photo already in t
 media library — need trying against the real CMS rather than reasoning about.
 The build guard already stops a broken photo reaching the site. What is missing
 is telling the author, not protecting the site.
+
+## Build failure alerts
+
+### What it does
+
+Every time a change is saved to the website — from the CMS or in code — GitHub
+runs a check to see whether the site still builds. If the build breaks, GitHub
+opens an issue called **"Website build failing"**, assigns it to the web admin,
+and emails them.
+
+- **One email per problem, not one per save.** While that issue is open,
+  further failures send nothing.
+- **It clears itself.** When a later save builds successfully, the issue closes
+  automatically and sends one "fixed" email.
+- **A failed build does not take the site down.** Cloudflare keeps serving the
+  last version that worked; the new change simply has not appeared. That is the
+  failure described in **When a post does not appear** above, and the reason
+  these alerts exist: the site going quiet is invisible, so something has to
+  say so out loud.
+
+### Where it lives
+
+- The check: `.github/workflows/build-check.yml`
+- Who gets the email: the repository variable `BUILD_ALERT_ASSIGNEE`, under
+  GitHub → the repo → Settings → Secrets and variables → Actions → Variables
+- Past alerts: the repository's Issues tab, searching for "Website build
+  failing"
+
+### Who gets it now
+
+Matthew, as the current web admin — GitHub username `Smellyllama`, which is
+what `BUILD_ALERT_ASSIGNEE` should read.
+
+If the variable and this note ever disagree, **the variable is what decides who
+gets emailed** and this note is the one that is wrong. Check the variable, not
+the page.
+
+**The variable must be a person's username, or the club account's — never the
+organisation name** (`ChardRoadRunners`). Organisations cannot be assigned
+issues, so nobody would be emailed. If it is ever blank the issue still opens,
+and says in bold that nobody was told.
+
+### Handing it over
+
+The aim is for alerts to go to `webmaster@chardroadrunners.com`, a forwarding
+address that passes mail to whoever is web admin at the time. Handing over then
+means changing where that address forwards, rather than touching GitHub at all.
+
+One-off setup, done once:
+
+1. Make sure `webmaster@chardroadrunners.com` forwards to a real inbox. That
+   forwarding is set in Cloudflare — Email → Email Routing — not in the
+   website.
+2. Create a GitHub account for the club, signed up with
+   `webmaster@chardroadrunners.com`, and confirm the email GitHub sends.
+3. Add that account to the ChardRoadRunners organisation with at least write
+   access to `crr-website`.
+4. Change `BUILD_ALERT_ASSIGNEE` to that account's username.
+5. Test it, as below.
+
+After that, each new web admin needs only the webmaster@ forwarder pointed at
+their own inbox in Cloudflare.
+
+### When an alert arrives
+
+1. Open the issue and follow the **Build log** link.
+2. Look for the step with a red cross, which holds the error message.
+3. It is most often a CMS edit with a missing or wrongly formatted field — a
+   date, a distance without a number, an image path that does not exist. The
+   error usually names the file.
+4. Fix it in the CMS or in code and save. The next successful build closes the
+   issue.
+
+Read **A build that fails with nothing changed** above before digging in. A
+build that fails when nothing in the repository changed is worth one retry
+first, and the alert closes itself when the retry passes.
+
+### Testing it
+
+Save a deliberate mistake — a race report whose `raceDate` is not a date, say.
+Check that the issue opens and the email arrives. Then undo the change and
+check that the issue closes itself.
+
+### Good to know
+
+- **Actions has to be allowed to open issues.** The workflow asks for
+  `issues: write`, but a repository whose default workflow permissions are
+  read-only caps what any workflow can be granted, and the alert would then
+  fail to open anything. Settings → Actions → General → Workflow permissions.
+  Worth confirming once, because a silent alerting system is the thing this is
+  meant to prevent.
+- Editors whose save breaks the build may also get GitHub's own failure email,
+  depending on their notification settings. Harmless, and theirs to turn off.
+- The check runs the same build Cloudflare runs, but it is not Cloudflare's
+  build. A problem that only affects Cloudflare's deploy step will not trigger
+  it. Those are rare, and show as a red cross against the commit in GitHub.
+- The Node version in the workflow should match Cloudflare's build settings.
 
 ## Content notes
 
