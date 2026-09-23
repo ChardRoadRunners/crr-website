@@ -302,9 +302,33 @@ first, and the alert closes itself when the retry passes.
 
 ### Testing it
 
-Save a deliberate mistake — a race report whose `raceDate` is not a date, say.
-Check that the issue opens and the email arrives. Then undo the change and
-check that the issue closes itself.
+**Tested 23 September 2026, and it worked both ways.** Run 3 of the Build check
+workflow failed, the issue opened assigned to the web admin, and the email
+arrived. Run 4 passed and closed the issue by itself. The Actions tab keeps
+that history, so the evidence is still there to look at rather than take on
+trust.
+
+Worth having done, because until something actually failed, neither of the two
+things that can silently stop the alert — `BUILD_ALERT_ASSIGNEE` and the
+organisation permission above — had ever been exercised. A green build proves
+nothing about an alarm.
+
+**It cannot be tested from the CMS.** The obvious test, a race report whose
+date is not a date, is impossible: the date field is a picker, so there is
+nothing to mistype. The same goes for skipping a required field or entering a
+bad option in a dropdown — the CMS refuses all of them. That is the CMS doing
+its job, and it means a deliberate break has to come from Git.
+
+What was used: a race report whose `heroImage` pointed at a file that does not
+exist, merged and then deleted. The same failure that prompted all of this, so
+the alarm was tested against the fire it was built for. `check-cms-schema.mjs`
+catches it before Astro starts and the build exits 1, which is what the
+workflow reads.
+
+Repeating it, expect **two** red things rather than one: the Actions check and
+the Cloudflare build are separate systems running the same build. The site
+keeps serving the last good version throughout, which is the whole reason the
+alert exists.
 
 ### Good to know
 
