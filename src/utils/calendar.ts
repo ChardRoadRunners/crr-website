@@ -55,6 +55,25 @@ const feedUrl = (source: CalendarSource) =>
 const feeds = new Map<CalendarSource, Promise<ical.CalendarResponse>>();
 
 /**
+ * One request to Google at a time.
+ *
+ * /calendar asks for all five feeds in a single `Promise.all`, seventeen
+ * milliseconds into the build, so five requests left for the same host at the
+ * same instant from one address. Google refused some of them with 429, and
+ * which ones looked random — "2 of 3" on one build, "1 of 1" on the next.
+ *
+ * Retrying hid the shape of it rather than fixing it: every round re-fired the
+ * survivors together, so each attempt was another burst. Raising the attempt
+ * count from four to six on 26 September bought more waiting and still lost.
+ *
+ * Queueing costs about a second of build time across five small files and
+ * removes the burst entirely. It does not replace the backoff above: a shared
+ * build address can arrive already out of quota, which is a different problem
+ * with the same symptom.
+ */
+let queue: Promise<unknown> = Promise.resolve();
+
+/**
  * Statuses worth trying again.
  *
  * 429 is Google saying "not right now", not "no". Cloudflare's builders come
@@ -159,7 +178,7 @@ export function fetchCalendar(source: CalendarSource): Promise<ical.CalendarResp
 	const cached = feeds.get(source);
 	if (cached) return cached;
 
-	const pending = (async () => {
+	const work = async () => {
 		let lastProblem = '';
 
 		for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
@@ -196,7 +215,14 @@ export function fetchCalendar(source: CalendarSource): Promise<ical.CalendarResp
 		}
 
 		throw new Error(lastProblem);
-	})();
+	};
+
+	// Wait for whatever is already in flight, then go. `queue` swallows the
+	// result so one feed failing does not stop the feeds behind it from being
+	// tried — they each need to report their own problem, which is what lets
+	// the error name every broken feed at once rather than one per build.
+	const pending = queue.then(work);
+	queue = pending.catch(() => {});
 
 	feeds.set(source, pending);
 	return pending;
