@@ -9,25 +9,27 @@ races:
 dateApproximate: false
 category: Race Report
 clubRace: false
+heroImage: ./images/0c889ae8-6785-4229-b325-63627b4c8b2f.webp
+heroImageAlt: Considerably smaller bus for this outing!
 heroImagePosition: centre
-excerpt: A great evening out for CRR at the last yeovilton 5k race, PBs, SBs and awards across the board!
+excerpt: A great evening out for CRR at the last Yeovilton 5k race, PBs, SBs and awards across the board!
 draft: false
 ---
 
-The last race of the series at yeovilton bought a good group from CRR, one that had done 5/6 races of the series, some whose it was the first one of the summer. 
+The last race of the series at Yeovilton bought a good group from CRR, one that had done 5/6 races of the series, some whose it was the first one of the summer. 
 A lovely evening for racing round the familiar flat course, some nice evening sun but with significant cooler temperature than most the rest of the summer has been! With some of us chasing PBs and others just happy to be back racing from a long periods injured or not running.
- 
+
 It was a extremely successful night all round with PBs or SB almost across the board, plus one award for running 5 out of the 6 races of the series for Helen. 
 
-We have enjoyed another great summer of running fast at yeovilton, thanks to the organisers! Look forward to next year!
+We have enjoyed another great summer of running fast at Yeovilton, thanks to the organisers! Look forward to next year!
 
 Wayne Loveridge 16.05 SB
 Matt Robinson 18.03 SB
-Phil Goodridge-reynolds 18:06 SB
+Phil Goodridge-Reynolds 18:06 SB
 Kate Dobson 18.53 SB
 Jack Watson 19:49 PB
-Matt Shehan 21:15 (1 second off a PB!)
-Niel Tovey 21:30 PB
+Matt Sheahan 21:15 (1 second off a PB!)
+Neil Tovey 21:30 PB
 Sophie Cottey 21:35 PB
 Jen Loveridge 23:43 SB
 Maria Wadey 24.34 SB
