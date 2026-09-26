@@ -104,6 +104,18 @@ const RETRY_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
  * This makes losing less likely, not impossible. The real fix is for builds to
  * stop depending on Google at all, which is a decision on the launch checklist
  * rather than a number to tune.
+ *
+ * **Six is probably more than is needed now, and is kept on purpose.** It was
+ * raised to outlast a rate limit, on a reading of the problem that turned out
+ * to be wrong: the cause was the burst of five simultaneous requests, fixed
+ * later the same day by the queue above. The queue spaces the requests out by
+ * itself, so most of this patience now buys a slower failure rather than a
+ * better chance — five feeds all failing takes about two and a half minutes to
+ * report at six attempts, against thirty-five seconds at four.
+ *
+ * Left at six until the queue has a few weeks of quiet behind it. Dropping it
+ * at the same time would have changed two things at once and taught us nothing
+ * about which one was carrying the fix.
  */
 const MAX_ATTEMPTS = 6;
 const BACKOFF_MS = 1_000;
