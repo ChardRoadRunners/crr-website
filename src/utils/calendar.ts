@@ -70,7 +70,23 @@ const feeds = new Map<CalendarSource, Promise<ical.CalendarResponse>>();
  */
 const RETRY_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 
-const MAX_ATTEMPTS = 4;
+/**
+ * Six attempts, not four.
+ *
+ * The sleeps go between attempts and double from a second, so four attempts
+ * spent 1 + 2 + 4 = seven seconds of patience altogether. That reads like more
+ * than it is, and it is no match for a rate-limit window measured in minutes.
+ * Six gives 1 + 2 + 4 + 8 + 16 = thirty-one seconds.
+ *
+ * Raised on 26 September 2026, after the shared-address 429 described above
+ * took three builds down inside a week — once on 20 September, twice in one
+ * morning on the 26th — each on a commit with nothing wrong with it.
+ *
+ * This makes losing less likely, not impossible. The real fix is for builds to
+ * stop depending on Google at all, which is a decision on the launch checklist
+ * rather than a number to tune.
+ */
+const MAX_ATTEMPTS = 6;
 const BACKOFF_MS = 1_000;
 /** Google has asked for a wait this long before; anything more is a real outage. */
 const MAX_BACKOFF_MS = 20_000;

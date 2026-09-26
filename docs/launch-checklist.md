@@ -273,14 +273,20 @@ source.
   committee giving a green light, and the maintainer being happy with the
   site. Until both, an unresolving domain is the intended state — see **The
   domain is held back on purpose** under the Cloudflare move.
-- **Photo uploads through the CMS do not work.** No photo has ever reached
-  this repository through `/admin` — see **Photo uploads have never worked**
-  in `docs/handover.md` for the evidence. Two attempts in September both
-  saved the frontmatter path without the file, which fails the build and
-  stops the site updating until somebody removes the reference by hand.
-  Race reports are photo-led, so "the CMS works apart from photos" is not a
-  working CMS, and this is the one item here that undermines the reason the
-  CMS exists at all.
+- **Photo uploads may not work from a phone.** They work from a computer —
+  proved 26 September 2026 — and both failures so far were from mobile
+  Chrome, a week apart, each leaving the frontmatter pointing at a file that
+  was never committed. That fails the build and stops the site updating until
+  somebody removes the reference by hand.
+
+  Not yet proved to be the device: the failures and the success also differ by
+  account, photo and filename. The test is one person trying both ways on the
+  same account, and it is worth doing before launch rather than after. A
+  running club's photos arrive on phones, so "upload from a computer" is a
+  reasonable instruction for one webmaster and a poor one for a committee.
+
+  See **Photo uploads work from a computer, and have never worked from a
+  phone** in `docs/handover.md`.
 - **Redirects from the old Webador URLs.** Needs the list of old addresses
   captured *before* that site is switched off. Without them, every link anyone
   has ever shared breaks on launch day.
@@ -326,6 +332,32 @@ source.
 - **Join Us** — when membership renews.
 
 ### Decisions
+
+- **Whether the build should depend on Google Calendar at all.** Every build
+  fetches five calendars from Google, and Cloudflare's builders share a pool of
+  addresses, so the rate limit can be spent by traffic that has nothing to do
+  with this club. That has stopped the site deploying three times in a week —
+  once on 20 September, twice on the morning of the 26th — each time on a
+  commit with nothing wrong with it.
+
+  The retry budget went from four attempts to six on 26 September, buying
+  thirty-one seconds of patience instead of seven. That makes it rarer, not
+  impossible, and it is a parameter rather than a fix.
+
+  The fix is for builds to stop reaching Google: something on a schedule
+  fetches the `.ics` feeds and commits them, and the build reads the
+  repository. The nightly `diary-rebuild` Worker is already the right shape for
+  it.
+
+  Weigh that against what it costs. It is another moving part to hand over, and
+  a committed feed can go stale in a way a live one cannot — an event cancelled
+  in Google would keep showing until the next fetch. Failing loudly instead is
+  this project's usual preference, and that preference is what the current
+  design expresses.
+
+  Worth settling before launch rather than after, because the nightly rebuild
+  fires a build at 04:00 every night, and each one is another chance to lose
+  this particular coin toss.
 
 - **Whether the CMS should keep committing straight to `main`.**
   `public/admin/config.yml` turns editorial workflow off on purpose, on the
