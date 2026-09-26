@@ -126,39 +126,51 @@ That is the failure to recognise: not a broken site, a frozen one.
    publishes without it, everything queued behind it publishes too, and the
    photo can go back later. An unpublished post helps nobody.
 
-### Photo uploads have never worked
+### Photo uploads work from a computer, and have never worked from a phone
 
-**As of 24 September 2026 no photo has ever reached this repository through the
-CMS.** Two attempts on the same report a week apart both saved the frontmatter
-path and neither committed the file.
+**They do work.** On 26 September 2026 a photo went up through `/admin` on a
+desktop browser and committed correctly: the entry and a 205 KB WebP together
+in commit `605950b`.
 
-The evidence, worth setting out because this looks like bad luck and is not:
+**Both failures were from a phone.** Kate tried twice, a week apart, on mobile
+Chrome. Each time the path was written into the frontmatter and the file was
+not committed, which fails the build and stops the site updating until someone
+removes the reference by hand.
 
-- No commit in the history matches `Add photo …`, the message `config.yml`
-  gives `backend.commit_messages.uploadMedia`. One successful upload would
-  have left one.
-- All 24 images in `src/content/race-reports/images/` arrived in a single
-  commit, `776b4cd`, made from a terminal.
+So the working theory is the device, and it is only a theory. The failures and
+the success differ in more than that: different GitHub accounts, different
+photos, different filenames. Two failures on a phone and one success on a
+computer is suggestive, not proof.
 
-So it is not one photo, one post or one person. Nobody had tried to add a
-photo through the CMS until September, and the first person who tried was the
-first to find out.
+**The test that would settle it:** whoever succeeded on a computer tries again
+from their own phone, same account. Fails, and it is the device. Works, and
+look at the account or the photo instead.
 
-**A theory now ruled out.** Sveltia reads a photo's dimensions in the browser
-before uploading, and upstream issue #890 describes that read never returning
-for a file the browser cannot decode — an iPhone HEIC renamed to `.jpg`, say.
-It fitted the first failure well. It does not fit the second: the thumbnail
-rendered in the editor, so the browser read the file perfectly well.
+It matters because a running club's photos arrive on phones. "Upload from a
+computer" is a workable instruction for one webmaster and a poor one for a
+committee.
 
-**Still to diagnose**, and it needs the browser console open at `/admin` while
-a save runs, which cannot be done from outside the browser. One oddity to rule
-out first: `media_folder: public/uploads` near the top of `config.yml` names a
-folder that does not exist. The race-reports collection overrides it with an
-entry-relative folder, so it may be irrelevant — but it is cheap to check.
+### How to tell whether an upload worked
 
-Until it is fixed, any report that wants a photo needs somebody to add it in
-Git. That is a hole in the thing the CMS exists for, which is why it is on the
-launch checklist rather than in somebody's head.
+Look at the commit, not the editor. A save that carried a photo shows **two**
+files and a title ending `+1`:
+
+    Update Race report “…” +1
+      …/2026-09-09-….md
+      …/images/0c889ae8-….webp
+
+A save that lost the photo shows one file and no `+1`, with the `heroImage`
+line added to the frontmatter regardless. From inside the CMS the two look
+identical.
+
+**Do not search the history for `Add photo …`.** That is the message
+`config.yml` gives `backend.commit_messages.uploadMedia`, and a photo attached
+to an entry never uses it — it rides along in the entry's own commit with the
+`+1` suffix instead. An earlier version of this section leaned on that absence
+to conclude uploads had never worked. The conclusion happened to be right at
+the time, for a different reason: no commit had ever added a file under
+`src/content/race-reports/images/` except `776b4cd`, which was made from a
+terminal. That is the check worth repeating; the commit message is not.
 
 ### A build that fails with nothing changed
 

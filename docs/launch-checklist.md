@@ -273,14 +273,20 @@ source.
   committee giving a green light, and the maintainer being happy with the
   site. Until both, an unresolving domain is the intended state — see **The
   domain is held back on purpose** under the Cloudflare move.
-- **Photo uploads through the CMS do not work.** No photo has ever reached
-  this repository through `/admin` — see **Photo uploads have never worked**
-  in `docs/handover.md` for the evidence. Two attempts in September both
-  saved the frontmatter path without the file, which fails the build and
-  stops the site updating until somebody removes the reference by hand.
-  Race reports are photo-led, so "the CMS works apart from photos" is not a
-  working CMS, and this is the one item here that undermines the reason the
-  CMS exists at all.
+- **Photo uploads may not work from a phone.** They work from a computer —
+  proved 26 September 2026 — and both failures so far were from mobile
+  Chrome, a week apart, each leaving the frontmatter pointing at a file that
+  was never committed. That fails the build and stops the site updating until
+  somebody removes the reference by hand.
+
+  Not yet proved to be the device: the failures and the success also differ by
+  account, photo and filename. The test is one person trying both ways on the
+  same account, and it is worth doing before launch rather than after. A
+  running club's photos arrive on phones, so "upload from a computer" is a
+  reasonable instruction for one webmaster and a poor one for a committee.
+
+  See **Photo uploads work from a computer, and have never worked from a
+  phone** in `docs/handover.md`.
 - **Redirects from the old Webador URLs.** Needs the list of old addresses
   captured *before* that site is switched off. Without them, every link anyone
   has ever shared breaks on launch day.
