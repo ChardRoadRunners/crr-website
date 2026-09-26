@@ -333,6 +333,32 @@ source.
 
 ### Decisions
 
+- **Whether the build should depend on Google Calendar at all.** Every build
+  fetches five calendars from Google, and Cloudflare's builders share a pool of
+  addresses, so the rate limit can be spent by traffic that has nothing to do
+  with this club. That has stopped the site deploying three times in a week —
+  once on 20 September, twice on the morning of the 26th — each time on a
+  commit with nothing wrong with it.
+
+  The retry budget went from four attempts to six on 26 September, buying
+  thirty-one seconds of patience instead of seven. That makes it rarer, not
+  impossible, and it is a parameter rather than a fix.
+
+  The fix is for builds to stop reaching Google: something on a schedule
+  fetches the `.ics` feeds and commits them, and the build reads the
+  repository. The nightly `diary-rebuild` Worker is already the right shape for
+  it.
+
+  Weigh that against what it costs. It is another moving part to hand over, and
+  a committed feed can go stale in a way a live one cannot — an event cancelled
+  in Google would keep showing until the next fetch. Failing loudly instead is
+  this project's usual preference, and that preference is what the current
+  design expresses.
+
+  Worth settling before launch rather than after, because the nightly rebuild
+  fires a build at 04:00 every night, and each one is another chance to lose
+  this particular coin toss.
+
 - **Whether the CMS should keep committing straight to `main`.**
   `public/admin/config.yml` turns editorial workflow off on purpose, on the
   grounds that routing every post through a pull request is "friction nobody
