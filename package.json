@@ -8,11 +8,12 @@
   "scripts": {
     "dev": "astro dev",
     "check:cms": "node scripts/check-cms-schema.mjs",
-    "build": "node scripts/check-cms-schema.mjs && node scripts/check-diary-freshness.mjs && node --experimental-strip-types --no-warnings scripts/check-calendar.mjs && astro build",
+    "build": "node scripts/check-cms-schema.mjs && node scripts/check-diary-freshness.mjs && node --experimental-strip-types --no-warnings scripts/check-calendar.mjs && node --experimental-strip-types --no-warnings scripts/check-championship.mjs && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "check:diary": "node scripts/check-diary-freshness.mjs",
-    "check:calendar": "node --experimental-strip-types --no-warnings scripts/check-calendar.mjs"
+    "check:calendar": "node --experimental-strip-types --no-warnings scripts/check-calendar.mjs",
+    "check:championship": "node --experimental-strip-types --no-warnings scripts/check-championship.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.5",

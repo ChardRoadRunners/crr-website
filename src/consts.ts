@@ -71,3 +71,38 @@ export const CALENDAR_IDS = {
 		'e5e1ed32f0aa0f46521a0030b4a71d221606e1ff988caa688d67a9f0a4248ce2@group.calendar.google.com',
 } as const;
 
+
+/**
+ * The club championship standings, published from Google Sheets as CSV.
+ *
+ * The scoring lives in the sheet — runners submit their own result on a Google
+ * Form, formulas rank the Chard runners in each race and work out the points.
+ * The website reads the finished Standings tab and renders it. See
+ * docs/results.md for the sheet, the tabs, and who edits what.
+ *
+ * TO SWITCH THE STANDINGS ON: in the sheet, File > Share > Publish to web,
+ * choose the **Standings** tab and **Comma-separated values (.csv)**, then
+ * paste the address Google gives you here. It looks like
+ * `https://docs.google.com/spreadsheets/d/e/2PACX-…/pub?gid=…&single=true&output=csv`.
+ *
+ * Publish the Standings tab and nothing else. "Entire document" would publish
+ * the Form responses tab too, and that is every submission as typed — the
+ * tidied names on Standings are what goes on a public page.
+ *
+ * While this is empty the championship section says it is not published yet,
+ * which is true. That is the only quiet state here: once there is an address,
+ * anything that goes wrong with it fails the build rather than emptying the
+ * page, because a standings table that silently loses half the club is worse
+ * than a red deploy.
+ */
+export const CHAMPIONSHIP_CSV_URL = '';
+
+/**
+ * The championship season, used in headings on the results page.
+ *
+ * Here rather than in the page's content file because it has to match the
+ * sheet the URL above points at — the two change together, at the turn of the
+ * year, and a heading saying 2026 over 2027's table is the kind of wrong
+ * nobody reports.
+ */
+export const CHAMPIONSHIP_SEASON = '2026';
