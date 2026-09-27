@@ -95,7 +95,7 @@ export const CALENDAR_IDS = {
  * page, because a standings table that silently loses half the club is worse
  * than a red deploy.
  */
-export const CHAMPIONSHIP_CSV_URL = '';
+export const CHAMPIONSHIP_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCHyUh70D-4mFbZZVYB_OTbBT7H85nZ18ztyLC7fdGRBAhNrQbcBFzNtSxeVkpEXLD6xOpvqR3B96b/pub?gid=641242785&single=true&output=csv';
 
 /**
  * The championship season, used in headings on the results page.
