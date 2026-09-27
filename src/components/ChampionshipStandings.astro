@@ -1,0 +1,228 @@
+---
+// The club championship tables.
+//
+// Two of everything, because the championship ranks men and women separately
+// and always has. Each gender gets a summary table — the four numbers somebody
+// actually came to look up — and then the full race-by-race grid underneath.
+//
+// WHY TWO TABLES RATHER THAN ONE WIDE ONE. The Standings tab is Name, M or F,
+// fifteen race columns and five summary columns. That is twenty-two columns,
+// and most visitors here are on a phone: at 320px a table that wide is either
+// unreadable at 4px a column or a horizontal scroll through the only numbers
+// anybody wanted. So the summary is a plain four-column table that fits any
+// screen, and the grid that the club has always published sits below it in a
+// region that scrolls sideways on purpose, announced as one.
+//
+// No JavaScript. The sitemap says "sortable" and this is not — see the note
+// in docs/results.md. A championship table has one order anybody wants, which
+// is the order it is already in, and a third client-side script would have to
+// earn its place against the rule in CLAUDE.md.
+import type { Standings, RunnerStanding } from '../utils/championship';
+
+interface Labels {
+	position: string;
+	name: string;
+	racesRun: string;
+	points: string;
+	bonus: string;
+	championshipScore: string;
+}
+
+interface Props {
+	standings: Standings;
+	menHeading: string;
+	womenHeading: string;
+	labels: Labels;
+	gridHeading: string;
+	gridIntro: string;
+	emptyState: string;
+	/** Announced on the sideways-scrolling region, and only to assistive tech. */
+	gridRegionLabel: string;
+}
+
+const {
+	standings,
+	menHeading,
+	womenHeading,
+	labels,
+	gridHeading,
+	gridIntro,
+	emptyState,
+	gridRegionLabel,
+} = Astro.props;
+
+const tables = [
+	{ id: 'women', heading: womenHeading, runners: standings.women },
+	{ id: 'men', heading: menHeading, runners: standings.men },
+].filter((table) => table.runners.length > 0);
+
+/**
+ * What goes in a race cell.
+ *
+ * Blank and zero are different facts — "did not run" against "ran, and
+ * finished eleventh or lower among the Chard runners" — so they must not
+ * render the same. The dash is explained in the key above the grid rather
+ * than repeated into 570 hidden spans, one per cell.
+ */
+const cell = (points: number | null) => (points === null ? '–' : String(points));
+---
+
+{
+	tables.length === 0 ? (
+		<p class="mt-4 text-base-content/80">{emptyState}</p>
+	) : (
+		tables.map((table) => (
+			<div class="mt-10 first:mt-6">
+				<h3 class="text-2xl font-bold text-primary">{table.heading}</h3>
+
+				{/*
+				  The summary. Sized to fit a 320px screen without scrolling — see the
+				  padding and text size below.
+
+				  overflow-x-auto, NOT overflow-hidden. This wrapper was overflow-hidden
+				  for its rounded corners, and at 320px the table came to 345px and the
+				  Points column was simply cut off the right-hand edge: the one number
+				  anybody came for, invisible on the commonest screen size and not
+				  reachable by scrolling either. Auto means a freak-long name degrades
+				  to a scroll instead of hiding a column.
+				*/}
+				<div class="scroll-region mt-4 overflow-x-auto rounded-md border border-base-300">
+					<table class="w-full border-collapse text-left text-sm sm:text-base">
+						<caption class="sr-only">
+							{table.heading} — {labels.position}, {labels.name}, {labels.racesRun} and{' '}
+							{labels.points}
+						</caption>
+						<thead>
+							<tr class="bg-primary text-chalk">
+								<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">
+									{labels.position}
+								</th>
+								<th scope="col" class="px-2 py-2 font-semibold sm:px-3">
+									{labels.name}
+								</th>
+								<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">
+									{labels.racesRun}
+								</th>
+								<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">
+									{labels.points}
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							{table.runners.map((runner: RunnerStanding) => (
+								<tr class="even:bg-base-200">
+									<td class="px-2 py-2 text-right tabular-nums sm:px-3">{runner.position}</td>
+									<th scope="row" class="px-2 py-2 font-normal sm:px-3">
+										{runner.name}
+									</th>
+									<td class="px-2 py-2 text-right tabular-nums sm:px-3">{runner.racesRun}</td>
+									<td class="px-2 py-2 text-right font-semibold tabular-nums sm:px-3">
+										{runner.pointsSoFar}
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+
+				{/* The full grid, as the club has always published it. */}
+				<h4 class="mt-8 text-lg font-semibold text-primary">
+					{gridHeading} — {table.heading}
+				</h4>
+				<p class="mt-2 text-sm text-base-content/70">{gridIntro}</p>
+
+				{/*
+				  tabindex="0" so the region can be scrolled by keyboard, which an
+				  overflow container cannot be without it. role="region" plus a label
+				  is what makes a screen reader announce it rather than dropping the
+				  reader into an unexplained scroll box.
+				*/}
+				<div
+					class="scroll-region mt-3 overflow-x-auto rounded-md border border-base-300"
+					role="region"
+					aria-label={`${gridRegionLabel} — ${table.heading}`}
+					tabindex="0"
+				>
+					<table class="w-full border-collapse text-left text-sm whitespace-nowrap">
+						<caption class="sr-only">
+							{gridRegionLabel} — {table.heading}
+						</caption>
+						<thead>
+							<tr class="bg-primary text-chalk">
+								<th scope="col" class="sticky-name bg-primary px-2 py-2 font-semibold sm:px-3">
+									{labels.name}
+								</th>
+								{standings.races.map((race) => (
+									<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">
+										{race}
+									</th>
+								))}
+								<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">
+									{labels.bonus}
+								</th>
+								<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">
+									{labels.points}
+								</th>
+								<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">
+									{labels.championshipScore}
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							{table.runners.map((runner: RunnerStanding) => (
+								<tr class="bg-base-100 even:bg-base-200">
+									<th scope="row" class="sticky-name px-2 py-2 font-normal sm:px-3">
+										{runner.name}
+									</th>
+									{runner.racePoints.map((points) => (
+										<td
+											class:list={[
+												'px-2 py-2 text-right tabular-nums sm:px-3',
+												points === null && 'text-base-content/40',
+											]}
+										>
+											{cell(points)}
+										</td>
+									))}
+									<td class="px-2 py-2 text-right tabular-nums sm:px-3">{runner.bonus}</td>
+									<td class="px-2 py-2 text-right font-semibold tabular-nums sm:px-3">
+										{runner.pointsSoFar}
+									</td>
+									<td class="px-2 py-2 text-right tabular-nums sm:px-3">
+										{runner.championshipScore}
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		))
+	)
+}
+
+<style>
+	/*
+	  The name column stays put while the races scroll past it. Without this a
+	  reader three races along has a row of numbers and no idea whose they are.
+
+	  It needs its own background: a sticky cell sits over the cells it passes,
+	  and a transparent one shows both at once. `inherit` picks up the row's own
+	  colour, so the zebra striping keeps working — the header row sets
+	  bg-primary directly because it has no striping to inherit.
+	*/
+	.sticky-name {
+		position: sticky;
+		left: 0;
+		background-color: inherit;
+	}
+
+	/*
+	  A focusable div gets no focus ring from the browser in every engine, and
+	  this one is keyboard-scrollable, so it needs a visible one of its own.
+	*/
+	.scroll-region:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
+</style>

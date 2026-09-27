@@ -1246,6 +1246,162 @@ collections:
                   TODO, so it is safe to leave until the committee has said who
                   is happy to be listed.
 
+      - name: results
+        label: Results page
+        file: src/content/pages/results.md
+        description: >-
+          The wording on the results page. The championship standings
+          themselves are NOT here - they are read straight from the club's
+          Google Sheet, so to change a runner's points you edit the sheet, not
+          this page.
+        fields:
+          - { name: page, widget: hidden, default: results }
+
+          - label: Top of the page
+            name: hero
+            widget: object
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Strapline, name: strapline, widget: text }
+
+          - label: Search and sharing
+            name: seo
+            widget: object
+            fields:
+              - label: Description
+                name: description
+                widget: text
+                hint: >-
+                  One sentence, shown under the page title in search results
+                  and when the page is shared.
+
+          - label: Club championship
+            name: championship
+            widget: object
+            hint: >-
+              The standings come from the Championship Google Sheet, not from
+              here. This is the wording around them.
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Introduction, name: intro, widget: text }
+
+              - label: Before the sheet is published
+                name: notPublished
+                widget: text
+                hint: >-
+                  Shown until somebody publishes the Standings tab to the web.
+                  Once that is done this disappears on its own and the real
+                  table takes its place.
+
+              - label: If there are no results yet
+                name: emptyState
+                widget: text
+                hint: >-
+                  Shown when the sheet is published but nobody has scored yet,
+                  which is what January looks like.
+
+              - { label: Heading over the women's table, name: womenHeading, widget: string }
+              - { label: Heading over the men's table, name: menHeading, widget: string }
+
+              - label: Column headings
+                name: labels
+                widget: object
+                collapsed: true
+                hint: What each column is called on the tables.
+                fields:
+                  - { label: Position, name: position, widget: string }
+                  - { label: Name, name: name, widget: string }
+                  - { label: Races run, name: racesRun, widget: string }
+                  - { label: Points, name: points, widget: string }
+                  - { label: Bonus, name: bonus, widget: string }
+                  - { label: Year-end score, name: championshipScore, widget: string }
+
+              - { label: Race-by-race heading, name: gridHeading, widget: string }
+              - label: Race-by-race introduction
+                name: gridIntro
+                widget: text
+                hint: >-
+                  Sits above the wide table. Worth keeping the bit that
+                  explains a dash means "did not run" and a 0 means "ran but
+                  finished outside the first ten Chard runners".
+              - label: Race-by-race table description
+                name: gridRegionLabel
+                widget: string
+                hint: >-
+                  Not shown on screen. It is what a screen reader announces
+                  when somebody reaches the table that scrolls sideways, so it
+                  must not be left empty.
+
+              - { label: "Label before the date, e.g. \"Standings as at\"", name: updatedLabel, widget: string }
+              - label: Note under the date
+                name: updatedNote
+                widget: text
+                hint: >-
+                  Explains that the page is rebuilt overnight, so a result
+                  submitted today appears tomorrow.
+
+              - label: Note on the year-end score
+                name: scoreNote
+                widget: text
+                required: false
+                hint: >-
+                  The caveat under the wide table. Clear it, or start it with
+                  TODO, once the committee has confirmed what "2 points for
+                  every race more than the 7" means - then nothing is shown.
+
+              - { label: Rules heading, name: rulesHeading, widget: string }
+              - label: The rules
+                name: rules
+                widget: list
+                field: { label: Rule, name: rule, widget: string }
+                hint: >-
+                  The championship rules exactly as the club publishes them.
+                  These are the rules themselves, not a description of them -
+                  check with the committee before rewording one.
+
+              - label: Results form link
+                name: formUrl
+                widget: string
+                required: false
+                hint: >-
+                  The Google Form runners submit their results on. The button
+                  only appears once there is a link here.
+              - { label: Results form button text, name: formLabel, widget: string }
+
+          - label: Monthly handicap
+            name: handicap
+            widget: object
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Introduction, name: body, widget: text }
+              - label: Not published yet
+                name: notPublished
+                widget: text
+                required: false
+                hint: >-
+                  Shown while there is no handicap data on the site. Clear it,
+                  or start it with TODO, once there is.
+
+          - label: Club records
+            name: records
+            widget: object
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Introduction, name: body, widget: text }
+              - label: Not published yet
+                name: notPublished
+                widget: text
+                required: false
+                hint: >-
+                  Shown while there are no records on the site. Clear it, or
+                  start it with TODO, once there are.
+
+          - label: Footnote
+            name: footnote
+            widget: text
+            hint: >-
+              The line at the bottom of the page. Markdown links work here.
+
   # =========================================================================
   # LEGAL AND POLICY PAGES
   # =========================================================================

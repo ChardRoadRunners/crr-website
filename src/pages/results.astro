@@ -4,63 +4,117 @@
 // are different questions and a page answering both buried the first under
 // the second.
 //
-// Per crr-sitemap.md, everything on this page will read from Google Sheets at
-// build time, so the committee keeps editing where it already edits. Nothing
-// is wired up yet, so each section says so plainly rather than showing an
-// empty table.
+// The championship standings are read from the club's Google Sheet at build
+// time. The scoring happens in the sheet's own formulas; nothing is worked out
+// here. See docs/results.md for the sheet and src/consts.ts for the address.
+//
+// Handicap and records have no backend yet, so each says so in its own words
+// rather than showing an empty table.
+import { getEntry } from 'astro:content';
+
+import ChampionshipStandings from '../components/ChampionshipStandings.astro';
+import FormattedDate from '../components/FormattedDate.astro';
 import Layout from '../layouts/Layout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import RichText from '../components/RichText.astro';
+import { CHAMPIONSHIP_SEASON } from '../consts';
+import { getChampionshipStandings } from '../utils/championship';
 
-const sections = [
-	{
-		id: 'championship',
-		heading: 'Club Championship',
-		body: 'Current standings, the scoring rules, and which races count towards them.',
-	},
-	{
-		id: 'handicap',
-		heading: 'Monthly Handicap',
-		body: 'The latest month, and the running standings across the year.',
-	},
-	{
-		id: 'records',
-		heading: 'Club Records',
-		body: 'By distance and age category.',
-	},
+const page = await getEntry('pages', 'results');
+if (!page) throw new Error('src/content/pages/results.md is missing.');
+const { hero, seo, championship, handicap, records, footnote } = page.data;
+
+// null while the Standings tab has not been published. Any other problem with
+// a published sheet throws and takes the build with it, on purpose — a
+// standings table that quietly loses half the club is worse than a red deploy.
+const standings = await getChampionshipStandings();
+
+// Both still waiting on a backend. Ids are spelled out rather than derived,
+// because they are the anchors other pages link to.
+const later = [
+	{ id: 'handicap', ...handicap },
+	{ id: 'records', ...records },
 ];
 ---
 
-<Layout
-	title="Results"
-	description="Club championship standings, the monthly handicap and club records."
-	overlayHeader
->
-	<PageHeader
-		heading="Results"
-		strapline="Championship standings, the monthly handicap, and the club records."
-	/>
+<Layout title="Results" description={seo.description} overlayHeader>
+	<PageHeader heading={hero.heading} strapline={hero.strapline} />
 
 	<div class="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+		<section id="championship" class="scroll-mt-20">
+			<h2 class="text-3xl font-bold text-primary">
+				{championship.heading} {CHAMPIONSHIP_SEASON}
+			</h2>
+			<RichText text={championship.intro} class="mt-3 text-base-content/80" />
+
+			{
+				championship.formUrl !== '' && (
+					<p class="mt-4">
+						<a class="btn btn-accent" href={championship.formUrl}>
+							{championship.formLabel}
+						</a>
+					</p>
+				)
+			}
+
+			{
+				standings === null ? (
+					<p class="mt-6 text-base-content/80">{championship.notPublished}</p>
+				) : (
+					<>
+						<ChampionshipStandings
+							standings={standings}
+							womenHeading={championship.womenHeading}
+							menHeading={championship.menHeading}
+							labels={championship.labels}
+							gridHeading={championship.gridHeading}
+							gridIntro={championship.gridIntro}
+							gridRegionLabel={championship.gridRegionLabel}
+							emptyState={championship.emptyState}
+						/>
+
+						{championship.scoreNote && (
+							<p class="mt-6 text-sm text-base-content/70">{championship.scoreNote}</p>
+						)}
+
+						<p class="mt-6 text-sm text-base-content/60">
+							{championship.updatedLabel}{' '}
+							<FormattedDate date={standings.readAt} weekday={false} />.{' '}
+							{championship.updatedNote}
+						</p>
+					</>
+				)
+			}
+
+			{
+				championship.rules.length > 0 && (
+					<div class="mt-8">
+						<h3 class="text-xl font-semibold text-primary">{championship.rulesHeading}</h3>
+						<ul class="mt-3 list-disc space-y-1 pl-5 text-base-content/80">
+							{championship.rules.map((rule) => (
+								<li>{rule}</li>
+							))}
+						</ul>
+					</div>
+				)
+			}
+		</section>
+
 		{
-			sections.map((section, index) => (
-				<section
-					id={section.id}
-					class:list={[
-						'scroll-mt-20',
-						index > 0 && 'mt-12 border-t border-base-300 pt-8',
-					]}
-				>
+			later.map((section) => (
+				<section id={section.id} class="mt-12 scroll-mt-20 border-t border-base-300 pt-8">
 					<h2 class="text-3xl font-bold text-primary">{section.heading}</h2>
 					<p class="mt-3 text-base-content/80">{section.body}</p>
-					<p class="mt-2 text-sm text-base-content/60">Not published yet.</p>
+					{section.notPublished && (
+						<p class="mt-2 text-sm text-base-content/60">{section.notPublished}</p>
+					)}
 				</section>
 			))
 		}
 
-		<p class="mt-12 border-t border-base-300 pt-8 text-base-content/80">
-			Looking for upcoming races? They are on the <a href="/calendar" class="link link-primary"
-				>calendar</a
-			>.
-		</p>
+		<RichText
+			text={footnote}
+			class="mt-12 border-t border-base-300 pt-8 text-base-content/80"
+		/>
 	</div>
 </Layout>

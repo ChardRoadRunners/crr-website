@@ -46,6 +46,15 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
   the site's own `wrangler.jsonc` — that file is assets-only, and adding a script
   to it would put a Worker in front of unmatched requests and risk the 404
   handling. See `workers/diary-rebuild/README.md`.
+- **Results come from Google Sheets.** The club championship is scored in a
+  sheet the committee owns — runners submit their own result on a Google Form,
+  formulas do the ranking — and the site reads the finished Standings tab,
+  published as CSV, at build time. **No points are worked out in this
+  repository**, deliberately: two places calculating the same table is two
+  answers to "how many points have I got". The address is
+  `CHAMPIONSHIP_CSV_URL` in `src/consts.ts`, empty until somebody publishes the
+  tab, and the page says so plainly while it is. Every other way it can fail
+  takes the build down rather than emptying the table. See `docs/results.md`.
 - **Sveltia CMS**, at `/admin`, so committee members can post without touching
   code. Loaded from a CDN by `public/admin/index.html` and configured by
   `public/admin/config.yml`; it commits to `ChardRoadRunners/crr-website` on `main`

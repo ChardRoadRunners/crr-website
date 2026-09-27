@@ -403,6 +403,87 @@ const calendarPage = z.object({
   raceDiary: z.object({ heading: z.string(), intro: z.string() }),
 });
 
+// The results page.
+//
+// The championship standings are not here and never will be: they are read
+// from the club's Google Sheet at build time, because the scoring lives in
+// that sheet's formulas and two places working out the same table is two
+// answers to "how many points have I got". This file holds the wording around
+// them, including the wording shown while the sheet is not published yet.
+//
+// The address of the published sheet is CHAMPIONSHIP_CSV_URL in
+// src/consts.ts, with the rest of the setup in docs/results.md.
+const resultsPage = z.object({
+  page: z.literal("results"),
+  hero: z.object({ heading: z.string(), strapline: z.string() }),
+  seo: z.object({ description: z.string() }),
+
+  championship: z.object({
+    heading: z.string(),
+    intro: z.string(),
+
+    // Shown while CHAMPIONSHIP_CSV_URL is empty. A real state with real
+    // copy, not an error being swallowed — everything that can actually go
+    // wrong with a published sheet fails the build instead.
+    notPublished: z.string(),
+    // Shown when the sheet is published and nobody has scored yet.
+    emptyState: z.string(),
+
+    womenHeading: z.string(),
+    menHeading: z.string(),
+
+    // Column headings. Here rather than in the component because they are
+    // words a visitor reads, and CLAUDE.md keeps those in content.
+    labels: z.object({
+      position: z.string(),
+      name: z.string(),
+      racesRun: z.string(),
+      points: z.string(),
+      bonus: z.string(),
+      championshipScore: z.string(),
+    }),
+
+    gridHeading: z.string(),
+    gridIntro: z.string(),
+    // Announced on the sideways-scrolling grid, to assistive tech only.
+    // min(1) because an empty one leaves a scroll region with no name.
+    gridRegionLabel: z.string().min(1),
+
+    updatedLabel: z.string(),
+    updatedNote: z.string(),
+
+    // The caveat on the year-end column. draftable, so it can be emptied to
+    // a "TODO —" and disappear once the committee confirms the rule rather
+    // than leaving a note nobody needs.
+    scoreNote: draftable,
+
+    rulesHeading: z.string(),
+    // The club's published championship rules, verbatim. An empty list
+    // hides the section rather than printing a heading over nothing.
+    rules: z.array(z.string()).default([]),
+
+    // Empty until the Google Form exists. Nothing renders while it is, so
+    // the page never offers a link that goes nowhere.
+    formUrl: z.string().default(""),
+    formLabel: z.string(),
+  }),
+
+  // Neither of these has a backend yet. Each says so in its own words rather
+  // than a component printing "coming soon" at them.
+  handicap: z.object({
+    heading: z.string(),
+    body: z.string(),
+    notPublished: draftable,
+  }),
+  records: z.object({
+    heading: z.string(),
+    body: z.string(),
+    notPublished: draftable,
+  }),
+
+  footnote: z.string(),
+});
+
 // The pub runs page.
 //
 // Its dates are not here. They are read from the socials calendar in Google
@@ -477,6 +558,7 @@ const pages = defineCollection({
     contactPage,
     calendarPage,
     pubRunsPage,
+    resultsPage,
   ]),
 });
 
