@@ -264,6 +264,17 @@ source.
 
 ### Must be done, or the site is wrong
 
+- **Publish the championship Standings tab, and paste the address in.** The
+  results page is built and waiting: `CHAMPIONSHIP_CSV_URL` in `src/consts.ts`
+  is empty, so the championship section currently says the standings are not
+  ready yet. One person, five minutes, in the sheet — File > Share > Publish to
+  web, the **Standings** tab, **CSV**, then paste the address into that
+  constant and push. Publish that one tab and not "Entire document", which
+  would also publish the raw form responses. Full steps in `docs/results.md`.
+
+  Not blocking launch — the page reads perfectly well without it — but it is
+  the one thing standing between a working feature and a live one.
+
 - **DNS and the custom domain in Cloudflare.** `site` in `astro.config.mjs` is
   already `https://chardroadrunners.com`, which is what makes canonical URLs,
   share links, RSS and the sitemap correct — but nothing resolves until the

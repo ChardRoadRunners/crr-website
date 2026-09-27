@@ -14,11 +14,15 @@ Five, all in `src/content/`:
 
 - **`race-reports`** — race reports and club news. Note the hyphen.
 - **`races`** — the two club-hosted races.
-- **`pages`** — copy for one-off pages (`home.md`, `join-us.md`, `pub-runs.md`).
+- **`pages`** — copy for one-off pages (`home.md`, `join-us.md`, `pub-runs.md`,
+  `calendar.md`, `contact.md`, `results.md`).
   A discriminated union: each entry is its own shape, picked by the `page`
   field. Some of these pages carry only the wording around a list whose
-  contents come from elsewhere — `calendar.md` and `pub-runs.md` both do, and
-  their empty-state copy is the page, not a fallback.
+  contents come from elsewhere — `calendar.md`, `pub-runs.md` and `results.md`
+  all do, and their empty-state copy is the page, not a fallback. `results.md`
+  is the furthest along that line: the championship standings are read from a
+  published Google Sheet at build time and no points are worked out in this
+  repository at all. See `docs/results.md`.
 - **`legal`** — welfare, inclusion, privacy, and the rules and constitution. One
   shared shape, and the only collection whose Markdown body is rendered as the
   page. Routed by `src/pages/[legal].astro`, so a new file gets a route on its
