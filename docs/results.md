@@ -167,14 +167,61 @@ the page working; all of them are things a committee member has to decide.
   column rests on that reading. The page carries a note saying the column is
   provisional — clear `championship.scoreNote` in
   `src/content/pages/results.md` once it is confirmed, and the note disappears.
-- **Haselbury Trail Race (5 Aug)** was run but is not entered. The results are
-  on Timing Monkey.
+- ~~**Haselbury Trail Race (5 Aug)** was run but is not entered.~~ **Done** —
+  entered 27 September 2026, through the form.
 - **Two gaps in the 2026 PDF.** Men's Ilminster has two 8s and no 7; women's
   Crewkerne goes 10, then 8, with no 9. Both are loaded exactly as published
   and flagged in the `Note` column on `Points (manual)`.
-- **Spellings.** Names from the PDF may be wrong, and they go on a public page
-  under a real person's name. They are worth a read-through on the `Runners`
-  tab before launch.
+- **Spellings.** Checked against the committee on 28 September 2026. Three
+  looked wrong; one was not:
+
+  | On the sheet | Verdict |
+  |---|---|
+  | `Mathew Glastonvill` | **Correct as it stands.** No `e` — the name comes from Aston and Glanvill, also without one. Leave it alone. |
+  | `Marek Wegrzyowski` | Typo. Should be **Wegrzynowski** — an `n` is missing. |
+  | `Aga Maslikiewizc` | Typo. Should be **Maslikiewicz** — the `zc` is the wrong way round. |
+
+  The two typos are still to be fixed, and **fixing a name is a two-tab job** —
+  see below.
+
+---
+
+## Renaming a runner — read this first
+
+A runner's name is the join between three tabs, so **correcting a spelling in
+one place silently deletes their points.**
+
+`Standings` has one row per name on `Runners`. `Points (manual)` and
+`Form responses` are matched to that row **by the name as typed**. Change
+`Runners` on its own and the old rows match nobody: they do not error, they
+just stop counting, and the runner's total quietly drops.
+
+Both of the misspellings above are the worst case for this, because almost all
+of what they have came in by hand rather than through the form:
+
+- `Aga Maslikiewizc` — one bonus point, from `Points (manual)`. Fix `Runners`
+  alone and she goes from 1 point to 0.
+- `Marek Wegrzyowski` — Yeovil Half Marathon 10, plus a bonus point, both from
+  `Points (manual)`. Fix `Runners` alone and he goes from 11 points to 0.
+
+Neither has submitted anything through the form, so `Form responses` does not
+need touching for these two. That will not be true of the next one.
+
+### The order to do it in
+
+1. Change the name on **`Runners`**.
+2. Change **every** row for that person on **`Points (manual)`** — use
+   Edit > Find and replace, scoped to that sheet, so none is missed.
+3. Change **every** row for that person on **`Form responses`**, if they have
+   submitted anything. Editing the tab is safe; the form writes new rows below.
+4. Run **Championship menu → Update form lists**, or the form keeps offering
+   the old spelling and the next submission will not match.
+5. Check the **`Scored`** tab for `?`, which is what it shows when a name or
+   race does not match the lists. None means every row still found its runner.
+6. Confirm the runner's `Points so far` on `Standings` is what it was before.
+
+The website needs no change at all: it reads `Standings`, so a corrected name
+appears on the site at the next nightly rebuild.
 
 ---
 
