@@ -186,6 +186,56 @@ the page working; all of them are things a committee member has to decide.
 
 ---
 
+## Why the form is not linked from the website
+
+**A decision, not an oversight.** `championship.formUrl` in
+`src/content/pages/results.md` is deliberately empty, so no "Submit a result"
+button renders. Members get the form's address from Facebook.
+
+The website is public and the form accepts a submission from anybody who
+opens it, so a button would put a one-click path to it in front of the whole
+internet. Not linking it does not make the form private — anyone who has the
+address can still post to it, and the address is on Facebook — but it keeps
+the club's results out of the way of people who have no reason to find them.
+Same reasoning as `PRE_LAUNCH`: obscurity, honestly labelled as obscurity.
+
+### What a bad submission could actually do
+
+Worth knowing, because it is sharper than "somebody types nonsense":
+
+- **Nonsense mostly bounces.** Both the name and the race are dropdowns built
+  from the `Runners` and `Races` tabs, so a stranger cannot invent a runner or
+  a race. `Scored` marks an entry `Counts? FALSE` if the name is not on
+  `Runners`, or the time or age grade is missing.
+- **Impersonation is the real risk.** Somebody can pick a real member's name
+  off the dropdown and submit a time. That scores points for them and pushes
+  every genuine runner behind them down a place.
+- **And it can overwrite.** The latest submission for a name and race wins, by
+  design, so a fake entry replaces that member's real result rather than
+  sitting beside it.
+
+### What actually protects the results
+
+Not the missing button — every submission is kept, timestamped, in
+`Form responses`, and **deleting the row puts everything back**. The standings
+recalculate, and the site catches up at the next nightly rebuild. That is why
+this is a nuisance rather than a disaster, and why it is worth a glance down
+`Form responses` after a race rather than any heavier defence.
+
+Things deliberately NOT done, and why:
+
+- **Requiring a Google sign-in** (Form settings > "Limit to 1 response") would
+  stop casual impersonation, but it collects the respondent's email address
+  into the sheet. `CLAUDE.md` says only names and finishing times go in that
+  sheet, and it shuts out any member without a Google account.
+- **Collecting email addresses** for an audit trail: same objection.
+
+If the form ever does get abused, deleting the rows is the first move and
+turning on sign-in is the second — accepting the privacy cost knowingly rather
+than by default.
+
+---
+
 ## Renaming a runner — read this first
 
 A runner's name is the join between three tabs, so **correcting a spelling in
