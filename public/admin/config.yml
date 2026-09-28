@@ -1368,8 +1368,9 @@ collections:
                   Putting the form's address here shows a button on a page
                   anybody on the internet can reach, and the form takes
                   submissions from anybody who opens it. Members get the link
-                  from Facebook instead. See "Why the form is not linked from
-                  the website" in docs/results.md.
+                  from the Championships Chat group in the club's WhatsApp
+                  community instead, which is a closed group. See "Why the
+                  form is not linked from the website" in docs/results.md.
               - label: Results form button text
                 name: formLabel
                 widget: string

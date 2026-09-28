@@ -190,14 +190,20 @@ the page working; all of them are things a committee member has to decide.
 
 **A decision, not an oversight.** `championship.formUrl` in
 `src/content/pages/results.md` is deliberately empty, so no "Submit a result"
-button renders. Members get the form's address from Facebook.
+button renders. **Members get the form's address from the club's WhatsApp
+community, in the `Championships Chat` group.**
 
 The website is public and the form accepts a submission from anybody who
 opens it, so a button would put a one-click path to it in front of the whole
-internet. Not linking it does not make the form private — anyone who has the
-address can still post to it, and the address is on Facebook — but it keeps
-the club's results out of the way of people who have no reason to find them.
-Same reasoning as `PRE_LAUNCH`: obscurity, honestly labelled as obscurity.
+internet. Where the link lives now is a closed group of club members, which is
+a real difference and not just a quieter one: to post a fake result you would
+first have to be in the community. A button on the results page would remove
+that step for everybody.
+
+It is still not access control — the form itself lets anyone who has the
+address post to it, and a link pasted out of a WhatsApp group travels like any
+other. But the set of people holding it is small and known, which is about as
+good as a Google Form gets without collecting sign-ins.
 
 ### What a bad submission could actually do
 
