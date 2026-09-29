@@ -167,14 +167,117 @@ the page working; all of them are things a committee member has to decide.
   column rests on that reading. The page carries a note saying the column is
   provisional — clear `championship.scoreNote` in
   `src/content/pages/results.md` once it is confirmed, and the note disappears.
-- **Haselbury Trail Race (5 Aug)** was run but is not entered. The results are
-  on Timing Monkey.
+- ~~**Haselbury Trail Race (5 Aug)** was run but is not entered.~~ **Done** —
+  entered 27 September 2026, through the form.
 - **Two gaps in the 2026 PDF.** Men's Ilminster has two 8s and no 7; women's
   Crewkerne goes 10, then 8, with no 9. Both are loaded exactly as published
   and flagged in the `Note` column on `Points (manual)`.
-- **Spellings.** Names from the PDF may be wrong, and they go on a public page
-  under a real person's name. They are worth a read-through on the `Runners`
-  tab before launch.
+- **Spellings.** Checked against the committee on 28 September 2026. Three
+  looked wrong; one was not:
+
+  | On the sheet | Verdict |
+  |---|---|
+  | `Mathew Glastonvill` | **Correct as it stands.** No `e` — the name comes from Aston and Glanvill, also without one. Leave it alone. |
+  | `Marek Wegrzyowski` | Typo. Should be **Wegrzynowski** — an `n` is missing. |
+  | `Aga Maslikiewizc` | Typo. Should be **Maslikiewicz** — the `zc` is the wrong way round. |
+
+  The two typos are still to be fixed, and **fixing a name is a two-tab job** —
+  see below.
+
+---
+
+## Why the form is not linked from the website
+
+**A decision, not an oversight.** `championship.formUrl` in
+`src/content/pages/results.md` is deliberately empty, so no "Submit a result"
+button renders. **Members get the form's address from the club's WhatsApp
+community, in the `Championships Chat` group.**
+
+The website is public and the form accepts a submission from anybody who
+opens it, so a button would put a one-click path to it in front of the whole
+internet. Where the link lives now is a closed group of club members, which is
+a real difference and not just a quieter one: to post a fake result you would
+first have to be in the community. A button on the results page would remove
+that step for everybody.
+
+It is still not access control — the form itself lets anyone who has the
+address post to it, and a link pasted out of a WhatsApp group travels like any
+other. But the set of people holding it is small and known, which is about as
+good as a Google Form gets without collecting sign-ins.
+
+### What a bad submission could actually do
+
+Worth knowing, because it is sharper than "somebody types nonsense":
+
+- **Nonsense mostly bounces.** Both the name and the race are dropdowns built
+  from the `Runners` and `Races` tabs, so a stranger cannot invent a runner or
+  a race. `Scored` marks an entry `Counts? FALSE` if the name is not on
+  `Runners`, or the time or age grade is missing.
+- **Impersonation is the real risk.** Somebody can pick a real member's name
+  off the dropdown and submit a time. That scores points for them and pushes
+  every genuine runner behind them down a place.
+- **And it can overwrite.** The latest submission for a name and race wins, by
+  design, so a fake entry replaces that member's real result rather than
+  sitting beside it.
+
+### What actually protects the results
+
+Not the missing button — every submission is kept, timestamped, in
+`Form responses`, and **deleting the row puts everything back**. The standings
+recalculate, and the site catches up at the next nightly rebuild. That is why
+this is a nuisance rather than a disaster, and why it is worth a glance down
+`Form responses` after a race rather than any heavier defence.
+
+Things deliberately NOT done, and why:
+
+- **Requiring a Google sign-in** (Form settings > "Limit to 1 response") would
+  stop casual impersonation, but it collects the respondent's email address
+  into the sheet. `CLAUDE.md` says only names and finishing times go in that
+  sheet, and it shuts out any member without a Google account.
+- **Collecting email addresses** for an audit trail: same objection.
+
+If the form ever does get abused, deleting the rows is the first move and
+turning on sign-in is the second — accepting the privacy cost knowingly rather
+than by default.
+
+---
+
+## Renaming a runner — read this first
+
+A runner's name is the join between three tabs, so **correcting a spelling in
+one place silently deletes their points.**
+
+`Standings` has one row per name on `Runners`. `Points (manual)` and
+`Form responses` are matched to that row **by the name as typed**. Change
+`Runners` on its own and the old rows match nobody: they do not error, they
+just stop counting, and the runner's total quietly drops.
+
+Both of the misspellings above are the worst case for this, because almost all
+of what they have came in by hand rather than through the form:
+
+- `Aga Maslikiewizc` — one bonus point, from `Points (manual)`. Fix `Runners`
+  alone and she goes from 1 point to 0.
+- `Marek Wegrzyowski` — Yeovil Half Marathon 10, plus a bonus point, both from
+  `Points (manual)`. Fix `Runners` alone and he goes from 11 points to 0.
+
+Neither has submitted anything through the form, so `Form responses` does not
+need touching for these two. That will not be true of the next one.
+
+### The order to do it in
+
+1. Change the name on **`Runners`**.
+2. Change **every** row for that person on **`Points (manual)`** — use
+   Edit > Find and replace, scoped to that sheet, so none is missed.
+3. Change **every** row for that person on **`Form responses`**, if they have
+   submitted anything. Editing the tab is safe; the form writes new rows below.
+4. Run **Championship menu → Update form lists**, or the form keeps offering
+   the old spelling and the next submission will not match.
+5. Check the **`Scored`** tab for `?`, which is what it shows when a name or
+   race does not match the lists. None means every row still found its runner.
+6. Confirm the runner's `Points so far` on `Standings` is what it was before.
+
+The website needs no change at all: it reads `Standings`, so a corrected name
+appears on the site at the next nightly rebuild.
 
 ---
 
