@@ -16,8 +16,8 @@
 //     handicaps itself gives everybody a result of exactly zero.
 //   - start offsets come from the slowest runner ACTUALLY STARTING. Use the
 //     slowest on the books and the whole field waits for somebody at home.
-//   - a runner with no previous 5k and no seed has no handicap, and must be
-//     told so rather than given one.
+//   - a first-timer (no previous 5k, no starting handicap) races but cannot
+//     win: not placed, told why, and their time becomes next month's handicap.
 //   - ordering by (finish - handicap) has to be the real finishing order.
 //
 // Plain node, no test framework, like the other checks in this folder. Run it
@@ -30,7 +30,7 @@ import { readFileSync } from 'node:fs';
 // imports. Load it the way Apps Script effectively does.
 const source = readFileSync(new URL('../sheets/handicap/scoring.gs', import.meta.url), 'utf8');
 const load = new Function(
-  `${source}\nreturn { durationToSeconds, secondsToClock, defaultFormat, handicapFor, startOffsets, latestPerRunner, scoreEvent, scoreAll, currentHolder, eventKey };`,
+  `${source}\nreturn { durationToSeconds, secondsToClock, defaultFormat, handicapFor, startOffsets, latestPerRunner, scoreEvent, scoreAll, currentHolder, eventKey, handicapHistory };`,
 );
 const S = load();
 
@@ -55,7 +55,7 @@ const check = (name, fn) => {
 
 /** mm:ss as seconds, so the fixtures read like race times. */
 const t = (mins, secs = 0) => mins * 60 + secs;
-const runner = (name, gender, seedSeconds = null) => ({ name, gender, seedSeconds });
+const runner = (name, gender, startingSeconds = null) => ({ name, gender, startingSeconds });
 const entry = (name, over) => ({ name, submittedAt: 1, finishSeconds: null, ageGrade: null, ...over });
 const placed = (rows) => rows.filter((r) => r.counts).map((r) => [r.name, r.place]);
 
@@ -140,7 +140,7 @@ check('the handicap is the previous 5k, never this one', () => {
 	const event = { dateIso: '2026-10-27', distance: '5k', format: 'Handicap' };
 	const rows = S.scoreEvent(event, [entry('Ann Example', { finishSeconds: t(27) })], runners, history);
 
-	// September's 29:00, not the seed and not tonight's 27:00.
+	// September's 29:00, not the starting handicap and not tonight's 27:00.
 	assert.equal(rows[0].handicapSeconds, t(29));
 	assert.equal(rows[0].sortKey, t(-2));
 });
@@ -161,19 +161,24 @@ check('a later 5k does not handicap an earlier one', () => {
 	const event = { dateIso: '2026-10-27', distance: '5k', format: 'Handicap' };
 	const rows = S.scoreEvent(event, [entry('Ann Example', { finishSeconds: t(27) })], runners, history);
 
-	// Falls back to the seed rather than reaching forward in time.
+	// Falls back to the starting handicap rather than reaching forward in time.
 	assert.equal(rows[0].handicapSeconds, t(30));
 });
 
-check('a runner with no previous 5k and no seed is told why, not guessed at', () => {
+check('a first handicap run is not placed, and says so', () => {
 	const event = { dateIso: '2026-10-27', distance: '5k', format: 'Handicap' };
-	const rows = S.scoreEvent(event, [entry('New Person', { finishSeconds: t(24) })], [
-		runner('New Person', 'F', null),
-	], []);
+	const rows = S.scoreEvent(event, [
+		entry('New Person', { finishSeconds: t(18) }),
+		entry('Ann Example', { finishSeconds: t(29) }),
+	], [runner('New Person', 'F', null), runner('Ann Example', 'F', t(30))], []);
 
-	assert.equal(rows[0].counts, false);
-	assert.equal(rows[0].place, null);
-	assert.match(rows[0].reason, /seed/i);
+	const newbie = rows.find((r) => r.name === 'New Person');
+	// Fastest by miles, and still cannot win: first-timers never do.
+	assert.equal(newbie.counts, false);
+	assert.equal(newbie.firstRun, true);
+	assert.equal(newbie.place, null);
+	assert.match(newbie.reason, /first/i);
+	assert.deepEqual(placed(rows), [['Ann Example', 1]]);
 });
 
 check('a 5k entry with no finish time does not count', () => {
@@ -205,7 +210,7 @@ check('an age graded race needs no handicap at all', () => {
 		runner('New Person', 'F', null),
 	], []);
 
-	// No seed, no previous run, and it still counts — nobody is handicapped.
+	// No starting handicap, no previous run, and it still counts — nobody is handicapped.
 	assert.equal(rows[0].counts, true);
 	assert.equal(rows[0].place, 1);
 	assert.equal(rows[0].handicapSeconds, null);
@@ -282,7 +287,7 @@ check('each 5k handicaps the next, and a mile in between changes nothing', () =>
 
 	const scored = S.scoreAll(events, entriesByEvent, runners);
 
-	// September used the seed; November used September, not the mile.
+	// September used the starting handicap; November used September, not the mile.
 	assert.equal(scored[0].rows[0].handicapSeconds, t(30));
 	assert.equal(scored[2].rows[0].handicapSeconds, t(29));
 });
@@ -322,13 +327,12 @@ check('the trophy is held by the winner of the latest event with a result', () =
 	assert.equal(holder.event.distance, '1 mile');
 });
 
-check('an unscored 5k does not become somebody’s handicap', () => {
+check('a first run becomes the handicap for the next 5k', () => {
 	const events = [
 		{ dateIso: '2026-09-29', distance: '5k', format: 'Handicap' },
 		{ dateIso: '2026-10-27', distance: '5k', format: 'Handicap' },
 	];
 	const entriesByEvent = {
-		// No seed for this runner, so September cannot be scored.
 		[S.eventKey('2026-09-29', '5k')]: [entry('New Person', { finishSeconds: t(24) })],
 		[S.eventKey('2026-10-27', '5k')]: [entry('New Person', { finishSeconds: t(23) })],
 	};
@@ -336,8 +340,48 @@ check('an unscored 5k does not become somebody’s handicap', () => {
 
 	const scored = S.scoreAll(events, entriesByEvent, list);
 	assert.equal(scored[0].rows[0].counts, false);
-	// October must still have nothing to go on.
-	assert.equal(scored[1].rows[0].counts, false);
+	assert.equal(scored[0].rows[0].firstRun, true);
+	// October is a proper race for them now, off September's 24:00.
+	assert.equal(scored[1].rows[0].counts, true);
+	assert.equal(scored[1].rows[0].handicapSeconds, t(24));
+	assert.equal(scored[1].rows[0].place, 1);
+});
+
+check('a 5k that did not count for another reason sets no handicap', () => {
+	const events = [
+		{ dateIso: '2026-09-29', distance: '5k', format: 'Handicap' },
+		{ dateIso: '2026-10-27', distance: '5k', format: 'Handicap' },
+	];
+	const entriesByEvent = {
+		// Not on the Runners tab in September, so that run is not evidence.
+		[S.eventKey('2026-09-29', '5k')]: [entry('Late Addition', { finishSeconds: t(24) })],
+		[S.eventKey('2026-10-27', '5k')]: [entry('Late Addition', { finishSeconds: t(23) })],
+	};
+	const scored = S.scoreAll(events, entriesByEvent, []);
+	assert.equal(S.handicapHistory(scored).length, 0);
+});
+
+check('start offsets are rounded to the nearest 5 seconds', () => {
+	const offsets = S.startOffsets([
+		{ handicapSeconds: t(30) },
+		{ handicapSeconds: t(27, 42) },
+		{ handicapSeconds: t(25, 3) },
+	]);
+	assert.deepEqual(offsets, [0, t(2, 20), t(4, 55)]);
+});
+
+check('the next handicap is the latest 5k, first run or not', () => {
+	const events = [
+		{ dateIso: '2026-08-25', distance: '5k', format: 'Handicap' },
+		{ dateIso: '2026-09-29', distance: '5k', format: 'Handicap' },
+	];
+	const entriesByEvent = {
+		[S.eventKey('2026-08-25', '5k')]: [entry('Ann Example', { finishSeconds: t(28) })],
+		[S.eventKey('2026-09-29', '5k')]: [entry('Ann Example', { finishSeconds: t(27) })],
+	};
+	const scored = S.scoreAll(events, entriesByEvent, [runner('Ann Example', 'F', null)]);
+	const next = S.handicapFor('Ann Example', '9999-12-31', S.handicapHistory(scored), null);
+	assert.equal(next, t(27));
 });
 
 // ---------------------------------------------------------------------------

@@ -1,8 +1,11 @@
-# Monthly handicap — brief for building the sheet and form
+# Monthly handicap — the sheet, the form, and the rules
 
-**Status: nothing built yet.** This is the specification to hand to whoever
-builds the Google Sheet and Form. The website side is not started either and
-is not covered here beyond what the sheet must produce for it.
+**Status (29 Sep 2026): the sheet is built.** It is **CRR Handicap** in the
+club Drive's Results folder. Its script is `sheets/handicap/scoring.gs` plus
+`sheets/handicap/setup.gs`, pasted into the sheet's Apps Script. The form is
+created from the sheet's own menu and has not been made yet. No results are
+loaded yet: the club's back catalogue is being gathered. The website side is
+not started.
 
 Everything below came from the club, in conversation on 28–29 September 2026,
 or from copy already on the website. Anything nobody has decided is in
@@ -46,10 +49,20 @@ out of date on this point.
 ### 5k handicap
 
 - A runner's **handicap** is their finish time at the **most recent previous
-  5k handicap**. Not this month's, and not a later one. A runner with no
-  previous 5k uses a **seed time** typed on the Runners tab.
+  5k handicap**. Not this month's, and not a later one. Failing that, a
+  **starting handicap** typed on the Runners tab: a 5k time the club already
+  knew from before the sheet existed, which counts like a previous run.
+- **First-timers race but cannot win.** Somebody with no previous 5k and no
+  starting handicap is not placed; they appear on Not counted with that reason.
+  Their time becomes their handicap for next month. On the night they start
+  from a **first-run estimate** typed on the Runners tab. That is a guess for
+  the starter only, and scoring never uses it.
+- Times are the **runner's own watch**. There are usually timekeepers, but
+  members time themselves, so the result is worked out from submitted times,
+  not the order across the line. An app for timing on the night is a later idea.
 - **Start offset** = (slowest handicap among those actually starting) − (this
-  runner's handicap). The slowest runner goes off on 0:00.
+  runner's handicap), **rounded to the nearest 5 seconds** because a person
+  calls them from a stopwatch. The slowest runner goes off on 0:00.
 - **Result** = finish time − own handicap. Lowest wins.
 
   That ordering *is* the finishing order, and it is worth seeing why: every
@@ -81,9 +94,10 @@ out of date on this point.
   same rule as the championship.
 - A submission does not count if the name is not on the Runners tab, or the
   measure that decides that race is missing (finish time for a 5k, age grade
-  for the others), or a 5k runner has no handicap and no seed time.
+  for the others), or it is a 5k runner's first handicap run.
 - **Ties share a place and the next one skips** (1, 1, 3), as the
   championship's Position column does.
+- **One combined result**, men and women together.
 - **Everybody who submitted should appear somewhere**, placed or with a reason
   they were not. A member left out of the results wants to know whether they
   were missed or whether their entry was no good, and a blank says neither.
@@ -116,16 +130,18 @@ maintain both, and a familiar layout is worth more than a better one.
 | Start here | — | Plain-English guide, as the championship has |
 | **Results** | worked out | **The one the website reads.** One row per placed runner per race |
 | Not counted | worked out | Submissions that did not score, and why. Checked after each race |
-| Events | committee | Date · Distance · How it is decided |
-| Runners | committee | Name · M or F · Seed 5k time |
-| Start list | worked out | Tick who is running, get the start times for the next 5k |
-| Form responses | the form | Created when the form is made |
+| Start list | worked out | Tick who is running; start times, and a list grouped by start time |
+| Events | committee | Date · Distance · How it is decided · Form label (worked out) |
+| Runners | committee | Name · M or F · Starting handicap · First-run estimate · Current handicap and From (worked out) |
+| Settings | committee | The membership list's file ID |
+| Form responses | the form | Created when the form is made. Past results are typed in here too |
 
 ### Events
 
 `Date`, `Distance` (one of the four), `How it is decided` (`Handicap` or
-`Age graded`). Default the 5k to Handicap and the rest to Age graded, but
-leave it editable so an odd month can be run differently without code changes.
+`Age graded`). If `How it is decided` is left blank, the 5k is scored as a
+Handicap and the rest as Age graded. It is editable, so an odd month can be
+run differently without code changes. Seeded with 25 Aug and 29 Sep 2026, both 5k.
 
 Races repeat monthly, so **a race is identified by date *and* distance** — the
 name alone is not unique, unlike the championship. The form's dropdown needs
@@ -133,28 +149,45 @@ to say something like `27 Oct 2026 — 5k`.
 
 ### Runners
 
-Seeded with **the same 43 athletes as the championship**, and from then on
-maintained separately — adding a member means adding them in both places.
+Seeded with the championship's 43 athletes, with three spellings corrected on
+29 Sep 2026 (Matthew Glastonvill, Marek Wegrzynowski, Aga Maslikiewicz). The
+same corrections were made in the championship sheet, so the lists match.
 
-**Three spellings should be corrected as the list is copied across**, because
-the championship sheet still has them wrong and a new sheet should not be born
-with them:
+New names come from the **membership list** (below): Handicap → Add new
+members from the membership list appends anybody missing, at the bottom, so
+nobody's tick on the Start list moves. The Runners tab keeps its own copy
+because Starting handicap and First-run estimate have to sit on the same row
+as the name.
 
-| Championship has | Should be |
-|---|---|
-| Mathew Glastonvill | **Matthew** Glastonvill — surname has no `e`, from Aston and Glanvill |
-| Marek Wegrzyowski | Marek **Wegrzynowski** |
-| Aga Maslikiewizc | Aga **Maslikiewicz** |
+- `Starting handicap`: a 5k time the club knew from before the sheet.
+- `First-run estimate`: a guess, so a newcomer can be given a start.
+- `Current handicap` and `From`: written by the script. This is what each
+  runner carries into the next 5k, and it is what the Start list uses.
 
-`Seed 5k time` is only needed for someone who has not yet run a 5k handicap.
-Without it they cannot be given a start, and the sheet should say so rather
-than invent one.
+Typing `24:30` into a time cell gets 24 *hours* from Sheets. The script and the
+Start list both read anything over three hours as minutes and seconds, so
+either `24:30` or `0:24:30` works.
 
 ### Start list
 
-The thing that makes the sheet useful on the night. A tick box per runner, and
-it gives the start time for the next 5k on the Events tab. Slowest ticked
-runner on 0:00.
+The thing that makes the sheet useful on the night, and it is ordinary
+formulas, not script, because custom menus do not appear in the Sheets phone
+app. A tick box per runner gives each one a start time. Slowest ticked runner
+on 0:00. To the right, **Go at / Who / How many** groups the ticked runners by
+start time, for whoever is calling the starts.
+
+---
+
+## The membership list
+
+**CRR Membership List** in the club Drive's Membership folder: Name · M or F ·
+Date of birth · Age (worked out) · Status (Member, EA member, Lapsed). It is the
+one list of members that other sheets take names from.
+
+**It holds dates of birth, so it is never published and is shared only with
+named people.** The handicap script reads Name, M or F and Status from it and
+nothing else. The championship sheet does not read from it yet; its Runners
+tab is still its own list.
 
 ---
 
@@ -167,8 +200,11 @@ from the tabs, refreshable when the lists change.
 |---|---|---|
 | Your name | dropdown | From the Runners tab |
 | Which race? | dropdown | From the Events tab, date and distance |
-| Finish time | duration | Decides the 5k. Worth collecting for the others too |
-| Age grade % | number | Decides the 3km, 1500m and mile |
+| Finish time | duration | Required. Decides the 5k; collected for the others too |
+| Age grade % | number | Optional on the form, but it decides the 3km, 1500m and mile |
+
+The race dropdown shows the six most recent events on the Events tab, newest
+first. Handicap → Update form lists refreshes both dropdowns.
 
 **Do not put a link to this form on the website.** The site is public and the
 form takes a submission from anybody who opens it; members get the link from
@@ -214,11 +250,9 @@ None of these stops the sheet being built. All of them need a person.
   parkrun hands it to them, which is why the championship can ask for it. A
   club track race does not. Without an answer, the short races have no usable
   input. Naming a specific calculator on the form is probably the fix.
-- **Men and women together or separately?** The championship ranks them apart.
-  A handicap and an age grade both already equalise, and "first in gets the
-  trophy" sounds like one winner, so **this brief assumes one combined
-  result** — but nobody has said so.
-- **Who sets a new runner's seed 5k time**, and from what?
+- **Averages.** Whether a handicap should be an average of recent 5ks rather
+  than the last one is to be discussed at the club. The club doesn't believe
+  anybody games it: "a race against yourself more than the masses".
 - **A dead heat** — two people on the same age grade. Shared trophy, or a
   tiebreak?
 - **Does a 5k run anywhere else ever count** towards the handicap, or only the
