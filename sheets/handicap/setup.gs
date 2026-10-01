@@ -74,17 +74,21 @@ function doGet() {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1');
 }
 
+/**
+ * Shows the link typed on Settings. ScriptApp.getService().getUrl() is no use
+ * here: from a bound script it can return a link to a different deployment,
+ * one that only works for the owner (found 1 Oct 2026). So the link is copied
+ * from Deploy > Manage deployments onto Settings by hand.
+ */
 function showTimingLink() {
-  var url = '';
-  try { url = ScriptApp.getService().getUrl() || ''; } catch (e) { url = ''; }
   var ui = SpreadsheetApp.getUi();
+  var url = String(sheet_(TAB.settings).getRange(SET.link, 2).getDisplayValue() || '').trim();
   if (!url) {
-    ui.alert('The timing page is not deployed yet.\n\nDeploy > New deployment > Web app, '
-      + 'execute as Me, access Anyone. Then use this menu again.');
+    ui.alert('No timing page link on the Settings tab yet.\n\nDeploy > Manage deployments, copy the Web app URL '
+      + '(execute as Me, access Anyone), and paste it into Settings, "Timing page link".');
     return;
   }
-  sheet_(TAB.settings).getRange(SET.link, 2).setValue(url);
-  ui.alert('Timing page\n\n' + url + '\n\nAlso saved on the Settings tab. It asks for the PIN on Settings. '
+  ui.alert('Timing page\n\n' + url + '\n\nIt asks for the PIN on Settings. '
     + 'Share it with the timers only, never on the website.');
 }
 
