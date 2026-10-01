@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>CRR handicap timing</title>
+<style>
+  :root {
+    --bg: #0f1419; --panel: #1b232c; --line: #2c3742; --text: #f2f5f7; --muted: #9aa8b4;
+    --accent: #f5a524; --go: #2fbf71; --stop: #e5484d; --info: #4ea1ff;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { padding-bottom: 40px; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .race { padding: 10px 14px 4px; font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+  .race small { color: var(--muted); font-weight: 400; }
+  nav { display: flex; overflow-x: auto; }
+  nav button { flex: 1 0 auto; background: none; border: 0; color: var(--muted); padding: 10px 12px 12px;
+    font: inherit; font-weight: 600; border-bottom: 3px solid transparent; }
+  nav button.on { color: var(--text); border-bottom-color: var(--accent); }
+  main { padding: 14px; max-width: 640px; margin: 0 auto; }
+  section { display: none; } section.on { display: block; }
+  h2 { font-size: 18px; margin: 18px 0 8px; }
+  p.hint { color: var(--muted); margin: 6px 0 12px; font-size: 14px; }
+  .btn { display: block; width: 100%; border: 0; border-radius: 12px; padding: 16px; font: inherit;
+    font-weight: 700; font-size: 18px; color: #0b0f13; background: var(--accent); }
+  .btn.go { background: var(--go); } .btn.stop { background: var(--stop); color: #fff; }
+  .btn.ghost { background: var(--panel); color: var(--text); border: 1px solid var(--line); font-size: 16px; padding: 12px; }
+  .btn:disabled { opacity: .4; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+  .row .name { flex: 1; min-width: 0; }
+  .row .t { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .badge { font-size: 12px; padding: 2px 6px; border-radius: 6px; background: var(--line); color: var(--muted); margin-left: 6px; }
+  .badge.warn { background: #4a2a10; color: var(--accent); }
+  input[type=text], input[type=password], select { width: 100%; font: inherit; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  input.small { width: 90px; padding: 8px; }
+  .check { width: 30px; height: 30px; border-radius: 8px; border: 2px solid var(--muted); flex: none; display: grid; place-items: center; }
+  .check.on { background: var(--go); border-color: var(--go); color: #0b0f13; font-weight: 900; }
+  .clock { font-size: 72px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; letter-spacing: 1px; margin: 6px 0; }
+  .clock.small { font-size: 40px; }
+  .next { background: var(--panel); border-radius: 14px; padding: 14px; text-align: center; margin: 10px 0; }
+  .next .when { color: var(--muted); }
+  .next .who { font-size: 24px; font-weight: 800; margin-top: 4px; }
+  .next.now { background: var(--go); color: #0b0f13; } .next.now .when { color: #0b0f13; }
+  .next.soon { outline: 3px solid var(--accent); }
+  .group { display: flex; gap: 12px; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  .group .at { width: 64px; font-variant-numeric: tabular-nums; font-weight: 700; }
+  .group.done { opacity: .35; }
+  .finish { height: 46vh; min-height: 220px; font-size: 44px; border-radius: 20px; }
+  .status { text-align: center; font-size: 14px; color: var(--muted); margin: 8px 0; }
+  .status.bad { color: var(--accent); }
+  .problems { background: #3a2410; border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; margin: 10px 0; }
+  .problems li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  td, th { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  tr.win td { color: var(--accent); font-weight: 800; }
+  .split { display: flex; gap: 10px; } .split > * { flex: 1; }
+  #toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line);
+    padding: 10px 16px; border-radius: 10px; display: none; z-index: 10; max-width: 90vw; }
+  #pinGate { max-width: 360px; margin: 18vh auto 0; padding: 0 16px; }
+</style>
+</head>
+<body>
+<div id="pinGate" style="display:none">
+  <h2>CRR handicap timing</h2>
+  <p class="hint">Enter the PIN from the Settings tab of the CRR Handicap sheet. This phone will remember it.</p>
+  <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN">
+  <div style="height:10px"></div>
+  <button class="btn" id="pinGo">Open</button>
+  <p class="status bad" id="pinMsg"></p>
+</div>
+
+<div id="app" style="display:none">
+<header>
+  <div class="race"><span id="raceLabel">Loading…</span><small id="syncState"></small></div>
+  <nav>
+    <button data-tab="runners" class="on">Runners</button>
+    <button data-tab="start">Start</button>
+    <button data-tab="finish">Finish</button>
+    <button data-tab="tokens">Tokens</button>
+    <button data-tab="result">Result</button>
+  </nav>
+</header>
+<main>
+  <section id="tab-runners" class="on">
+    <p class="hint">Tick everyone running tonight. <span id="runCount"></span></p>
+    <input id="search" type="text" placeholder="Find a runner">
+    <label style="display:flex;gap:8px;align-items:center;margin:10px 0;color:var(--muted)">
+      <input type="checkbox" id="onlyRunning"> Show only who's running</label>
+    <div id="runnerList"></div>
+    <h2>Someone new?</h2>
+    <p class="hint">Their first handicap: they race, but can't win. Guess a 5k time for their start.</p>
+    <div class="split"><input id="newName" type="text" placeholder="Full name"><input id="newStart" type="text" inputmode="decimal" placeholder="Start e.g. 27:00"></div>
+    <div style="height:10px"></div>
+    <button class="btn ghost" id="addRunner">Add and tick</button>
+  </section>
+
+  <section id="tab-start">
+    <div class="clock" id="startClock">0:00</div>
+    <div id="startIdle">
+      <p class="hint">The slowest go first, on 0:00. Press when the first group sets off.</p>
+      <button class="btn go" id="startBtn">Start the clock</button>
+    </div>
+    <div id="nextBox" class="next" style="display:none"><div class="when" id="nextWhen"></div><div class="who" id="nextWho"></div></div>
+    <h2>Start order</h2>
+    <div id="groups"></div>
+    <p class="hint" id="noStart"></p>
+    <div style="height:20px"></div>
+    <button class="btn ghost" id="restartBtn" style="display:none">Restart the clock</button>
+  </section>
+
+  <section id="tab-finish">
+    <div class="clock small" id="finishClock">0:00</div>
+    <button class="btn go finish" id="finishBtn" disabled>FINISH</button>
+    <div class="status" id="finishCount"></div>
+    <div id="lastFinishes"></div>
+    <div style="height:12px"></div>
+    <button class="btn ghost" id="undoBtn" disabled>Undo last finish</button>
+  </section>
+
+  <section id="tab-tokens">
+    <p class="hint">Hand out tokens in finishing order. Afterwards, put each runner against the token they hold.</p>
+    <div id="tokenList"></div>
+    <h2 id="noTokenHead" style="display:none">Running, no token yet</h2>
+    <p class="hint" id="noTokenList"></p>
+  </section>
+
+  <section id="tab-result">
+    <button class="btn ghost" id="refreshResult">Refresh the result</button>
+    <div id="resultBox"></div>
+    <div style="height:16px"></div>
+    <button class="btn" id="saveBtn" style="display:none">Save to History</button>
+    <p class="hint">Saving writes the result to the History tab, then clears the ticks, tokens and clock ready for next month.</p>
+  </section>
+</main>
+</div>
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  // ---- storage that survives a reload, and never breaks the page if blocked
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  var $ = function (id) { return document.getElementById(id); };
+  function call(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new Promise(function (resolve, reject) {
+      var runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+      runner[fn].apply(runner, [pin].concat(args));
+    });
+  }
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.style.display = 'block';
+    clearTimeout(toast.h); toast.h = setTimeout(function () { t.style.display = 'none'; }, 3500); }
+  function errText(e) { return (e && e.message) ? e.message : String(e); }
+  function clock(sec, tenths) {
+    if (sec === null || sec === undefined || !isFinite(sec)) return '';
+    var neg = sec < 0; sec = Math.abs(sec);
+    var m = Math.floor(sec / 60), s = sec - m * 60;
+    var ss = tenths ? s.toFixed(1) : String(Math.floor(s));
+    if (s < 10) ss = '0' + ss;
+    return (neg ? '-' : '') + m + ':' + ss;
+  }
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) { if (k === 'text') n.textContent = attrs[k]; else if (k === 'cls') n.className = attrs[k]; else n.setAttribute(k, attrs[k]); });
+    (kids || []).forEach(function (c) { if (c) n.appendChild(c); });
+    return n;
+  }
+
+  var pin = store.get('crr-pin') || '';
+  var state = null;       // from the sheet
+  var local = null;       // this race on this phone: { clockStartMs, finishes: [{id, clockSeconds}], dirty }
+  var syncing = false;
+
+  // ---------------------------------------------------------------- loading
+  function gate(msg) { $('app').style.display = 'none'; $('pinGate').style.display = 'block'; $('pinMsg').textContent = msg || ''; }
+  $('pinGo').onclick = function () { pin = $('pinInput').value.trim(); load(); };
+
+  function load() {
+    call('api_state').then(function (s) {
+      store.set('crr-pin', pin);
+      $('pinGate').style.display = 'none'; $('app').style.display = 'block';
+      state = s;
+      var key = 'crr-race-' + (s.race.iso || 'none');
+      local = store.get(key) || { clockStartMs: null, finishes: [], dirty: false };
+      local.key = key;
+      // Whichever side has a clock, both should.
+      if (!local.clockStartMs && s.clockStartMs) local.clockStartMs = s.clockStartMs;
+      else if (local.clockStartMs && !s.clockStartMs) call('api_startClock', local.clockStartMs, false).catch(function () {});
+      // This phone is the record of finishes; adopt the sheet's only if this phone has none.
+      if (!local.finishes.length && s.finishes.length) local.finishes = s.finishes;
+      else if (local.finishes.length) local.dirty = true;
+      save(); render(); syncFinishes();
+    }).catch(function (e) {
+      var m = errText(e);
+      if (/PIN/.test(m)) gate(m); else { gate(); $('pinMsg').textContent = 'Could not reach the sheet: ' + m; }
+    });
+  }
+  function save() { store.set(local.key, { clockStartMs: local.clockStartMs, finishes: local.finishes, dirty: local.dirty }); }
+
+  // -------------------------------------------------------------- tabs
+  Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) {
+    b.onclick = function () {
+      Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (x) { x.classList.toggle('on', x === b); });
+      Array.prototype.forEach.call(document.querySelectorAll('section'), function (s) { s.classList.toggle('on', s.id === 'tab-' + b.dataset.tab); });
+      if (b.dataset.tab === 'result') loadResult();
+      render();
+    };
+  });
+
+  // ------------------------------------------------------------- the rules
+  function running() { return state.runners.filter(function (r) { return r.running; }); }
+  function groups() {
+    var rs = running().filter(function (r) { return r.startSeconds !== null; });
+    if (!rs.length) return [];
+    var slowest = Math.max.apply(null, rs.map(function (r) { return r.startSeconds; }));
+    var by = {};
+    rs.forEach(function (r) {
+      var g = Math.round((slowest - r.startSeconds) / state.step) * state.step;
+      (by[g] = by[g] || []).push(r.name);
+    });
+    return Object.keys(by).map(Number).sort(function (a, b) { return a - b; })
+      .map(function (g) { return { at: g, names: by[g].sort() }; });
+  }
+  function elapsed() { return local && local.clockStartMs ? (Date.now() - local.clockStartMs) / 1000 : null; }
+  function sortedFinishes() { return local.finishes.slice().sort(function (a, b) { return a.clockSeconds - b.clockSeconds; }); }
+
+  // ------------------------------------------------------------- rendering
+  function render() {
+    if (!state) return;
+    $('raceLabel').textContent = state.race.label || 'No race on the Events tab';
+    renderRunners(); renderGroups(); renderFinish(); renderTokens(); renderSync();
+  }
+  function renderSync() {
+    var s = $('syncState');
+    if (syncing) s.textContent = 'saving…';
+    else if (local && local.dirty) { s.textContent = 'not saved yet — kept on this phone'; }
+    else s.textContent = 'saved';
+  }
+
+  function renderRunners() {
+    var q = $('search').value.trim().toLowerCase();
+    var only = $('onlyRunning').checked;
+    var list = $('runnerList'); list.innerHTML = '';
+    var n = running().length;
+    $('runCount').textContent = n ? n + ' ticked.' : '';
+    state.runners.filter(function (r) {
+      return (!q || r.name.toLowerCase().indexOf(q) >= 0) && (!only || r.running);
+    }).forEach(function (r) {
+      var check = el('div', { cls: 'check' + (r.running ? ' on' : ''), text: r.running ? '✓' : '' });
+      var label = el('div', { cls: 'name', text: r.name });
+      if (r.firstHandicap) label.appendChild(el('span', { cls: 'badge', text: 'first handicap' }));
+      var startTxt = r.startSeconds === null ? 'no start time' : clock(r.startSeconds);
+      var start = el('span', { cls: 't' + (r.startSeconds === null && r.running ? ' badge warn' : ''), text: startTxt });
+      var row = el('div', { cls: 'row' }, [check, label, start]);
+      check.onclick = label.onclick = function () { toggleRunning(r); };
+      start.onclick = function () { editStart(r, row); };
+      list.appendChild(row);
+    });
+  }
+  function toggleRunning(r) {
+    r.running = !r.running; if (!r.running) r.token = null; render();
+    call('api_setRunning', r.name, r.running).catch(function (e) { r.running = !r.running; render(); toast(errText(e)); });
+  }
+  function editStart(r, row) {
+    if (row.querySelector('input')) return;
+    var input = el('input', { type: 'text', inputmode: 'decimal', cls: 'small', placeholder: 'e.g. 24:30' });
+    input.value = r.startSeconds === null ? '' : clock(r.startSeconds);
+    var ok = el('button', { cls: 'btn ghost', text: 'Set', style: 'width:auto;padding:8px 12px' });
+    ok.onclick = function () {
+      call('api_setStartTime', r.name, input.value.trim()).then(refreshState).then(function () { toast('Start time set for ' + r.name); })
+        .catch(function (e) { toast(errText(e)); });
+    };
+    row.appendChild(input); row.appendChild(ok); input.focus();
+  }
+  $('search').oninput = renderRunners; $('onlyRunning').onchange = renderRunners;
+  $('addRunner').onclick = function () {
+    var name = $('newName').value.trim(), start = $('newStart').value.trim();
+    if (!name) return toast('Type a name');
+    call('api_addRunner', name, start).then(refreshState).then(function () {
+      $('newName').value = ''; $('newStart').value = ''; toast(name + ' added and ticked');
+    }).catch(function (e) { toast(errText(e)); });
+  };
+  function refreshState() {
+    return call('api_state').then(function (s) {
+      state.runners = s.runners; state.race = s.race; state.step = s.step; render();
+    });
+  }
+
+  var lastBeep = null;
+  function renderGroups() {
+    var gs = groups(), t = elapsed();
+    var box = $('groups'); box.innerHTML = '';
+    gs.forEach(function (g) {
+      box.appendChild(el('div', { cls: 'group' + (t !== null && t > g.at + 5 ? ' done' : '') }, [
+        el('div', { cls: 'at', text: clock(g.at) }), el('div', { text: g.names.join(', ') })]));
+    });
+    var missing = running().filter(function (r) { return r.startSeconds === null; }).map(function (r) { return r.name; });
+    $('noStart').textContent = missing.length ? 'No start time yet (set one on Runners): ' + missing.join(', ') : '';
+    $('startIdle').style.display = local.clockStartMs ? 'none' : 'block';
+    $('restartBtn').style.display = local.clockStartMs ? 'block' : 'none';
+    var nb = $('nextBox');
+    if (t === null || !gs.length) { nb.style.display = 'none'; return; }
+    var now = gs.filter(function (g) { return t >= g.at && t < g.at + 5; })[0];
+    var next = gs.filter(function (g) { return g.at > t; })[0];
+    nb.style.display = 'block';
+    if (now) {
+      nb.className = 'next now'; $('nextWhen').textContent = 'GO  ' + clock(now.at); $('nextWho').textContent = now.names.join(', ');
+    } else if (next) {
+      var wait = next.at - t;
+      nb.className = 'next' + (wait <= 10 ? ' soon' : '');
+      $('nextWhen').textContent = 'Next at ' + clock(next.at) + ' — in ' + clock(Math.ceil(wait));
+      $('nextWho').textContent = next.names.join(', ');
+      var whole = Math.ceil(wait);
+      if (whole <= 3 && whole >= 1 && lastBeep !== next.at + '-' + whole) { lastBeep = next.at + '-' + whole; beep(660, 0.12); }
+    } else {
+      nb.className = 'next'; $('nextWhen').textContent = 'Everyone is away'; $('nextWho').textContent = '';
+    }
+    if (now && lastBeep !== now.at + '-go') { lastBeep = now.at + '-go'; beep(990, 0.4); if (navigator.vibrate) navigator.vibrate(300); }
+  }
+
+  function renderFinish() {
+    var fs = sortedFinishes();
+    $('finishBtn').disabled = !local.clockStartMs;
+    $('undoBtn').disabled = !fs.length;
+    $('finishCount').textContent = local.clockStartMs ? (fs.length ? fs.length + ' finished' : 'Tap as each runner crosses the line') : 'Start the clock on the Start tab first';
+    var box = $('lastFinishes'); box.innerHTML = '';
+    fs.slice(-5).reverse().forEach(function (f) {
+      box.appendChild(el('div', { cls: 'row' }, [el('div', { cls: 'name', text: 'Position ' + (fs.indexOf(f) + 1) }), el('div', { cls: 't', text: clock(f.clockSeconds, true) })]));
+    });
+  }
+
+  function renderTokens() {
+    var fs = sortedFinishes(), box = $('tokenList'); box.innerHTML = '';
+    var holders = {};
+    running().forEach(function (r) { if (r.token) holders[r.token] = r.name; });
+    fs.forEach(function (f, i) {
+      var pos = i + 1;
+      var sel = el('select', {});
+      sel.appendChild(el('option', { value: '', text: '— who has token ' + pos + '?' }));
+      running().filter(function (r) { return !r.token || r.token === pos; }).forEach(function (r) {
+        var o = el('option', { value: r.name, text: r.name + (r.firstHandicap ? ' (first handicap)' : '') });
+        if (r.token === pos) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.onchange = function () { setToken(pos, sel.value); };
+      box.appendChild(el('div', { cls: 'row' }, [el('div', { text: String(pos), style: 'width:28px;font-weight:800' }),
+        el('div', { cls: 't', text: clock(f.clockSeconds), style: 'width:56px' }), el('div', { cls: 'name' }, [sel])]));
+    });
+    if (!fs.length) box.appendChild(el('p', { cls: 'hint', text: 'Finishes appear here once they are timed.' }));
+    var none = running().filter(function (r) { return !r.token; }).map(function (r) { return r.name; });
+    $('noTokenHead').style.display = none.length && fs.length ? 'block' : 'none';
+    $('noTokenList').textContent = fs.length ? none.join(', ') : '';
+  }
+  function setToken(pos, name) {
+    var jobs = [];
+    running().forEach(function (r) {
+      if (r.token === pos && r.name !== name) { r.token = null; jobs.push(call('api_setToken', r.name, '')); }
+    });
+    if (name) {
+      var r = running().filter(function (x) { return x.name === name; })[0];
+      r.token = pos; jobs.push(call('api_setToken', name, pos));
+    }
+    render();
+    Promise.all(jobs).catch(function (e) { toast('Not saved: ' + errText(e)); });
+  }
+
+  // --------------------------------------------------------- clock & taps
+  $('startBtn').onclick = function () {
+    unlockAudio();
+    local.clockStartMs = Date.now(); save(); render();
+    call('api_startClock', local.clockStartMs, false).then(function (ms) {
+      if (ms && ms !== local.clockStartMs) { local.clockStartMs = ms; save(); toast('The clock was already started on another phone; using that one'); }
+    }).catch(function () { toast('Clock started on this phone. It will reach the sheet when there is signal.'); });
+  };
+  var restartArmed = false;
+  $('restartBtn').onclick = function () {
+    if (!restartArmed) { restartArmed = true; $('restartBtn').textContent = 'Tap again to restart from 0:00'; setTimeout(function () { restartArmed = false; $('restartBtn').textContent = 'Restart the clock'; }, 4000); return; }
+    restartArmed = false; $('restartBtn').textContent = 'Restart the clock';
+    local.clockStartMs = Date.now(); local.finishes = []; local.dirty = true; save(); render();
+    call('api_startClock', local.clockStartMs, true).catch(function () {}); syncFinishes();
+  };
+  $('finishBtn').onclick = function () {
+    var t = elapsed(); if (t === null) return;
+    local.finishes.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), clockSeconds: Math.round(t * 10) / 10 });
+    local.dirty = true; save(); render();
+    if (navigator.vibrate) navigator.vibrate(40);
+    syncSoon();
+  };
+  var undoArmed = false;
+  $('undoBtn').onclick = function () {
+    var fs = sortedFinishes(); if (!fs.length) return;
+    if (!undoArmed) { undoArmed = true; $('undoBtn').textContent = 'Tap again to remove position ' + fs.length; setTimeout(function () { undoArmed = false; $('undoBtn').textContent = 'Undo last finish'; }, 4000); return; }
+    undoArmed = false; $('undoBtn').textContent = 'Undo last finish';
+    var last = fs[fs.length - 1];
+    local.finishes = local.finishes.filter(function (f) { return f.id !== last.id; });
+    local.dirty = true; save(); render(); syncSoon();
+  };
+
+  var syncTimer = null;
+  function syncSoon() { clearTimeout(syncTimer); syncTimer = setTimeout(syncFinishes, 400); }
+  function syncFinishes() {
+    if (!local || !local.dirty || syncing) return;
+    syncing = true; renderSync();
+    var sent = local.finishes.length;
+    call('api_syncFinishes', local.finishes).then(function () {
+      syncing = false;
+      if (local.finishes.length === sent) local.dirty = false; else syncSoon();
+      save(); renderSync();
+    }).catch(function () { syncing = false; renderSync(); });
+  }
+  setInterval(syncFinishes, 5000);
+  window.addEventListener('online', syncFinishes);
+
+  // ------------------------------------------------------------- result
+  function loadResult() {
+    var box = $('resultBox'); box.innerHTML = ''; box.appendChild(el('p', { cls: 'hint', text: 'Working it out…' }));
+    var go = local.dirty ? new Promise(function (res) { syncFinishes(); setTimeout(res, 1500); }) : Promise.resolve();
+    go.then(function () { return call('api_result'); }).then(function (r) {
+      box.innerHTML = '';
+      if (r.problems.length) {
+        var ul = el('ul', {}); r.problems.forEach(function (p) { ul.appendChild(el('li', { text: p })); });
+        box.appendChild(el('div', { cls: 'problems' }, [el('strong', { text: 'Sort these out before saving' }), ul]));
+      }
+      var table = el('table', {}, [el('tr', {}, ['', 'Runner', 'Run', 'vs start'].map(function (h) { return el('th', { text: h }); }))]);
+      r.rows.forEach(function (x) {
+        table.appendChild(el('tr', { cls: x.winner ? 'win' : '' }, [
+          el('td', { text: x.position === null ? '–' : String(x.position) }),
+          el('td', { text: x.name + (x.note ? '  · ' + x.note : '') }),
+          el('td', { text: x.run }), el('td', { text: x.vsStart })]));
+      });
+      box.appendChild(table);
+      $('saveBtn').style.display = r.rows.length ? 'block' : 'none';
+    }).catch(function (e) { box.innerHTML = ''; box.appendChild(el('p', { cls: 'status bad', text: errText(e) })); });
+  }
+  $('refreshResult').onclick = loadResult;
+  var saveArmed = false;
+  $('saveBtn').onclick = function () {
+    if (local.dirty) return toast('Finish times are still saving. Try again in a moment.');
+    if (!saveArmed) { saveArmed = true; $('saveBtn').textContent = 'Tap again to save ' + (state.race.label || 'this race'); setTimeout(function () { saveArmed = false; $('saveBtn').textContent = 'Save to History'; }, 5000); return; }
+    saveArmed = false; $('saveBtn').disabled = true;
+    call('api_saveRace').then(function (d) {
+      toast('Saved ' + d.saved + ' runners' + (d.winner ? '. Winner: ' + d.winner : ''));
+      try { localStorage.removeItem(local.key); } catch (e) {}
+      local = null;
+      $('saveBtn').disabled = false; $('saveBtn').textContent = 'Save to History'; load();
+    }).catch(function (e) { $('saveBtn').disabled = false; $('saveBtn').textContent = 'Save to History'; toast(errText(e)); });
+  };
+
+  // ------------------------------------------------------------- sound
+  var audio = null;
+  function unlockAudio() { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (e) {} }
+  function beep(freq, secs) {
+    if (!audio) return;
+    try {
+      var o = audio.createOscillator(), g = audio.createGain();
+      o.frequency.value = freq; o.connect(g); g.connect(audio.destination);
+      g.gain.setValueAtTime(0.25, audio.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + secs);
+      o.start(); o.stop(audio.currentTime + secs);
+    } catch (e) {}
+  }
+  document.addEventListener('touchstart', unlockAudio, { once: true });
+
+  // ------------------------------------------------------------- tick
+  setInterval(function () {
+    if (!local) return;
+    var t = elapsed();
+    var txt = t === null ? '0:00' : clock(Math.max(0, t));
+    $('startClock').textContent = txt; $('finishClock').textContent = t === null ? '0:00' : clock(Math.max(0, t), true);
+    if ($('tab-start').classList.contains('on')) renderGroups();
+  }, 100);
+
+  if (pin) load(); else gate();
+})();
+</script>
+</body>
+</html>

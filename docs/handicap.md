@@ -1,259 +1,115 @@
-# Monthly handicap — the sheet, the form, and the rules
+# Monthly handicap — the sheet, the timing page, and the rules
 
-**Status (29 Sep 2026): the sheet is built.** It is **CRR Handicap** in the
-club Drive's Results folder. Its script is `sheets/handicap/scoring.gs` plus
-`sheets/handicap/setup.gs`, pasted into the sheet's Apps Script. The form is
-created from the sheet's own menu and has not been made yet. No results are
-loaded yet: the club's back catalogue is being gathered. The website side is
-not started.
+**Status (1 Oct 2026): rebuilt around finishing order.** The sheet is **CRR Handicap** in the club
+Drive's Results folder. Its script is `sheets/handicap/scoring.gs` + `sheets/handicap/setup.gs`, with
+the phone timing page in `sheets/handicap/timing.html`, all pasted into the sheet's Apps Script.
+First real use: the October handicap, Tue 27 Oct 2026. The website side is not started.
 
-Everything below came from the club, in conversation on 28–29 September 2026,
-or from copy already on the website. Anything nobody has decided is in
-**Open questions** at the end rather than guessed at.
+This replaces the 29 Sep design (handicap = last 5k time, winner = best finish − handicap, results
+from a form of runners' own watch times). Simon, who times the handicap and sets the start times,
+put us right on 1 Oct; everything below comes from him and Matthew unless marked as open.
 
 ---
 
-## What the competition is
+## The rules
 
-Last Tuesday of the month, with the bake off afterwards. From `home.md`, in
-the club's own words:
+- **Start time.** Every runner has a start time: a predicted 5k time, **in 15-second steps**. Simon
+  sets it. The sheet suggests one; he overrides it whenever he likes.
+- **Go at.** The slowest start time among those *actually starting* goes first, on 0:00. Everyone
+  else goes at (slowest start time − their start time). Done right, everyone arrives together.
+- **The winner is the first person across the line.** Not the best run time minus start time: if
+  someone is set off a few seconds early, those disagree, and the line is what counts. In Aug and
+  Sep 2026 the two gave different winners (Katie Hobbs and Tom Wallis won by the line).
+- **First-timers race but can't win.** The first *eligible* runner across the line wins. "First
+  handicap" = no run in History yet.
+- **Finishing order comes from numbered tokens**, handed out at the line. The club has about 10;
+  Matthew is 3D printing more (`crr-finish-token.scad`, 50 × 36 mm, numbers cut into both faces).
+- **Run time = clock time − go-at time**, from one clock started when the first group goes. That
+  is what sets the next suggestion. Nobody needs their own watch (people still run one for Strava).
+- One combined result, men and women together. One trophy: the latest winner holds it.
 
-> Our most common timed run format is a handicap 5km, we all run round the
-> route together first and then everyone starts at a different time based on
-> your 5Km time. The slowest goes off first, fastest last so in theory
-> everyone finishes together.
->
-> Other handicap events include; The mile, 1500m, 3000m out and back.
+### The suggested start time
 
-**Four distances: 5k, 3km, 1500m, 1 mile.**
+Measured against Simon's own choices, Feb–Sep 2026 (31 of 48 within 15 s):
 
-**It is two different races under one name, and this is the thing to get
-right:**
+1. Last run time, rounded to the nearest 15 s.
+2. A run **more than a minute slower** than the start time is an off night: the start time stays.
+3. Missed the latest handicap: the latest start time carries forward.
+4. First handicap with no start time given: the run itself, rounded.
 
-| | 5k | 3km, 1500m, 1 mile |
-|---|---|---|
-| Start | Staggered. Each runner's own start time | All together, on the gun |
-| Handicap | Yes — from their last 5k | None |
-| Winner | **First across the line** | **Best age grade %** |
-
-**One trophy.** Whoever wins this month holds it until somebody takes it off
-them next month — a current champion, not a points table. **There is no
-season-long standings table**, which is a change from what `crr-sitemap.md`
-assumes ("latest month's results and the running standings"). The sitemap is
-out of date on this point.
-
----
-
-## The scoring, precisely
-
-### 5k handicap
-
-- A runner's **handicap** is their finish time at the **most recent previous
-  5k handicap**. Not this month's, and not a later one. Failing that, a
-  **starting handicap** typed on the Runners tab: a 5k time the club already
-  knew from before the sheet existed, which counts like a previous run.
-- **First-timers race but cannot win.** Somebody with no previous 5k and no
-  starting handicap is not placed; they appear on Not counted with that reason.
-  Their time becomes their handicap for next month. On the night they start
-  from a **first-run estimate** typed on the Runners tab. That is a guess for
-  the starter only, and scoring never uses it.
-- Times are the **runner's own watch**. There are usually timekeepers, but
-  members time themselves, so the result is worked out from submitted times,
-  not the order across the line. An app for timing on the night is a later idea.
-- **Start offset** = (slowest handicap among those actually starting) − (this
-  runner's handicap), **rounded to the nearest 5 seconds** because a person
-  calls them from a stopwatch. The slowest runner goes off on 0:00.
-- **Result** = finish time − own handicap. Lowest wins.
-
-  That ordering *is* the finishing order, and it is worth seeing why: every
-  runner's elapsed time from the gun is `slowest handicap + (finish −
-  handicap)`, and the first term is the same for everybody. It also means the
-  result does not shift depending on who turned up, which a raw elapsed time
-  would.
-
-- **Worked example.** Ann's handicap is 30:00, Bob's 25:00, Cat's 20:00. Ann
-  starts on 0:00, Bob waits 5:00, Cat waits 10:00. Ann runs 28:00, Bob 25:00,
-  Cat 20:00. Ann wins by two minutes despite being ten minutes slower than
-  Cat, because she is the only one to beat her handicap. **The fastest runner
-  is not the winner** — if that ever looks wrong on the sheet, the handicap is
-  not being applied.
-- **Offsets must come from who is actually starting.** If the slowest member
-  stays at home and the sheet still bases offsets on their time, the whole
-  field waits for somebody who is not there.
-
-### 3km, 1500m, 1 mile
-
-- Everyone starts together. **Ranked on age grade %, highest first.** Finish
-  time decides nothing.
-- No handicap is involved, so somebody brand new can run one and be placed
-  immediately.
-
-### Shared by both
-
-- If a runner submits twice for the same race, **the latest submission wins** —
-  same rule as the championship.
-- A submission does not count if the name is not on the Runners tab, or the
-  measure that decides that race is missing (finish time for a 5k, age grade
-  for the others), or it is a 5k runner's first handicap run.
-- **Ties share a place and the next one skips** (1, 1, 3), as the
-  championship's Position column does.
-- **One combined result**, men and women together.
-- **Everybody who submitted should appear somewhere**, placed or with a reason
-  they were not. A member left out of the results wants to know whether they
-  were missed or whether their entry was no good, and a blank says neither.
+Simon's own figure (Runners → Simon's start time) always wins. It clears itself once that runner
+runs again, so the new run drives the next suggestion. Simon's note is for a short handicap reason,
+**never medical detail**.
 
 ---
 
-## Privacy — this one is a constraint, not a preference
-
-Age grading needs an age. **`CLAUDE.md` says only names and finishing times go
-in a sheet that gets published**; dates of birth live in a separate,
-never-published file.
-
-**So the runner submits their own age grade %, and no date of birth goes
-anywhere near this sheet.** That is exactly how the championship already
-handles parkruns, so members have done it before.
-
-Do not add a date-of-birth column and compute it, however convenient. If the
-committee ever wants that, it is a decision to take deliberately, with the
-ages held somewhere that is not published.
-
----
-
-## Tabs
-
-Mirror the championship workbook's shape and vocabulary — the same people
-maintain both, and a familiar layout is worth more than a better one.
+## The sheet
 
 | Tab | Who edits | Purpose |
 |---|---|---|
-| Start here | — | Plain-English guide, as the championship has |
-| **Results** | worked out | **The one the website reads.** One row per placed runner per race |
-| Not counted | worked out | Submissions that did not score, and why. Checked after each race |
-| Start list | worked out | Tick who is running; start times, and a list grouped by start time |
-| Events | committee | Date · Distance · How it is decided · Form label (worked out) |
-| Runners | committee | Name · M or F · Starting handicap · First-run estimate · Current handicap and From (worked out) |
-| Settings | committee | The membership list's file ID |
-| Form responses | the form | Created when the form is made. Past results are typed in here too |
+| Start here | — | Plain-English guide |
+| Start list | worked out | Who's running tonight, slowest first, with go-at times grouped for the caller |
+| This race | worked out | Live result from tokens and timing |
+| **Runners** | Simon / timers | The one list of runners (Simon's list is the authority, not the membership list). Inputs: M or F, Running tonight, Finish token, Simon's start time, Simon's note. Worked out: Start time to use, Suggested start time, Why, Last handicap run, Last run time, Handicaps run, First handicap next time? |
+| Runner form | — | Pick a runner: every handicap, a chart of start vs run time, the suggestion |
+| History | the script | One row per starter per handicap. Everything reads from it |
+| **Results** | worked out | **The tab the website reads.** Placed runners and winners from History, newest first |
+| Events | committee | Race nights: Date, Distance, How it is decided, Label (worked out) |
+| Timing | the timing page | One row per finish: position, clock time |
+| Settings | committee | This race (worked out), 15 s step, off-night threshold, **timing page PIN**, clock start |
 
-### Events
+Typing `24:30` into a time cell normally gives 24 *hours*. Simon's start time is a text column and
+the formula reads it as minutes:seconds, so `24:30`, `24.30` and `0:24:30` all work.
 
-`Date`, `Distance` (one of the four), `How it is decided` (`Handicap` or
-`Age graded`). If `How it is decided` is left blank, the 5k is scored as a
-Handicap and the rest as Age graded. It is editable, so an odd month can be
-run differently without code changes. Seeded with 25 Aug and 29 Sep 2026, both 5k.
+Add new runners at the bottom of Runners (or from the timing page). Don't sort Runners while
+anyone is ticked.
 
-Races repeat monthly, so **a race is identified by date *and* distance** — the
-name alone is not unique, unlike the championship. The form's dropdown needs
-to say something like `27 Oct 2026 — 5k`.
+History for Feb–Sep 2026 came from Simon's spreadsheet: run times are runners' own watch times,
+only the winners are known (no full finishing orders), and the Feb/Mar/Apr dates are guesses.
 
-### Runners
+## The timing page
 
-Seeded with the championship's 43 athletes, with three spellings corrected on
-29 Sep 2026 (Matthew Glastonvill, Marek Wegrzynowski, Aga Maslikiewicz). The
-same corrections were made in the championship sheet, so the lists match.
+An Apps Script web app on the sheet (`doGet` → `timing.html`), deployed *Execute as: Me, Access:
+Anyone*, gated by the PIN on Settings. Five screens, in the order of the night:
 
-New names come from the **membership list** (below): Handicap → Add new
-members from the membership list appends anybody missing, at the bottom, so
-nobody's tick on the Start list moves. The Runners tab keeps its own copy
-because Starting handicap and First-run estimate have to sit on the same row
-as the name.
+1. **Runners** — tick who's running; add a newcomer with a guessed start time; set a start time.
+2. **Start** — big clock; "Start the clock" as the first group goes; shows who goes next with a
+   countdown, beeps the last three seconds, flashes GO.
+3. **Finish** — one big button: each tap is the next position and its clock time. Undo needs two taps.
+4. **Tokens** — put each runner against the token they hold.
+5. **Result** — the result and anything to sort out first; **Save to History** clears the ticks,
+   tokens and clock for next month.
 
-- `Starting handicap`: a 5k time the club knew from before the sheet.
-- `First-run estimate`: a guess, so a newcomer can be given a start.
-- `Current handicap` and `From`: written by the script. This is what each
-  runner carries into the next 5k, and it is what the Start list uses.
+The phone is the record of finishes: it keeps them across a reload or lost signal and sends the
+whole list each time, so a resend can't double-count. Fallback with no phone: tick and type tokens
+on Runners, time on paper, type the clock times into Timing.
 
-Typing `24:30` into a time cell gets 24 *hours* from Sheets. The script and the
-Start list both read anything over three hours as minutes and seconds, so
-either `24:30` or `0:24:30` works.
+The results form from the 29 Sep design is no longer used for the handicap. `onFormSubmitted` is
+kept as a no-op so its old trigger can't fail; delete the trigger and park the form.
 
-### Start list
+## Privacy
 
-The thing that makes the sheet useful on the night, and it is ordinary
-formulas, not script, because custom menus do not appear in the Sheets phone
-app. A tick box per runner gives each one a start time. Slowest ticked runner
-on 0:00. To the right, **Go at / Who / How many** groups the ticked runners by
-start time, for whoever is calling the starts.
-
----
-
-## The membership list
-
-**CRR Membership List** in the club Drive's Membership folder: Name · M or F ·
-Date of birth · Age (worked out) · Status (Member, EA member, Lapsed). It is the
-one list of members that other sheets take names from.
-
-**It holds dates of birth, so it is never published and is shared only with
-named people.** The handicap script reads Name, M or F and Status from it and
-nothing else. The championship sheet does not read from it yet; its Runners
-tab is still its own list.
-
----
-
-## The form
-
-Same arrangement as the championship: created from the sheet, dropdowns fed
-from the tabs, refreshable when the lists change.
-
-| Question | Type | Notes |
-|---|---|---|
-| Your name | dropdown | From the Runners tab |
-| Which race? | dropdown | From the Events tab, date and distance |
-| Finish time | duration | Required. Decides the 5k; collected for the others too |
-| Age grade % | number | Optional on the form, but it decides the 3km, 1500m and mile |
-
-The race dropdown shows the six most recent events on the Events tab, newest
-first. Handicap → Update form lists refreshes both dropdowns.
-
-**Do not put a link to this form on the website.** The site is public and the
-form takes a submission from anybody who opens it; members get the link from
-the WhatsApp community. The reasoning is written up under "Why the form is not
-linked from the website" in `docs/results.md` and applies identically here.
-
----
+- **Publish the Results tab only**, as CSV (File > Share > Publish to web). Names, run times and
+  start times only. Simon's notes and the PIN stay in the sheet.
+- Share the timing page link with the timers only, never on the website.
+- The membership list (dates of birth) is not read by this sheet any more.
 
 ## What the website needs
 
-Once the sheet exists, the website side is the same job as the championship
-and the plumbing is already written — `src/utils/sheet.ts` reads any published
-tab as CSV with the retries and failure messages done.
+Read the published Results CSV: `Date · Race · Position · Name · Run time · Start time · Winner ·
+First handicap`, newest first. Current trophy holder = the Winner row of the latest race. Rows
+before October 2026 have a winner but no position.
 
-- **Publish the `Results` tab only**, as CSV (File > Share > Publish to web).
-  Not "Entire document" — that would publish the raw form responses.
-- Flat, one row per placed runner per race:
-  `Date · Distance · Format · Place · Name · M or F · Finish time · Age grade % · Handicap · Start offset`
-- Newest race first. From that one table the site can show the latest month's
-  result, the current trophy holder (place 1 in the most recent race), and the
-  roll of past winners.
-- Rows run past the last entry, so the site drops rows with an empty Name.
+## Checking it
 
----
-
-## Checking it once it is built
-
-`scripts/check-handicap.mjs` in the website repository states all of the above
-as tests, against `sheets/handicap/scoring.gs`. Nothing in the club's sheet
-runs it — it exists so the rules can be argued with in a form that either
-passes or fails, and so the sheet's arithmetic can be audited against it once
-there are real results, the way the championship's sums were on 28 September.
-
-Run it with `npm run check:handicap`.
-
----
+`npm run check:handicap` runs `scripts/check-handicap.mjs` against `scoring.gs`: go-at times,
+winner by the line, first-timers, run times, the problems a result reports, and the suggestion
+rule against real cases from Simon's sheet.
 
 ## Open questions
 
-None of these stops the sheet being built. All of them need a person.
-
-- **Where does a member get their age grade % for a club 1500m or mile?**
-  parkrun hands it to them, which is why the championship can ask for it. A
-  club track race does not. Without an answer, the short races have no usable
-  input. Naming a specific calculator on the form is probably the fix.
-- **Averages.** Whether a handicap should be an average of recent 5ks rather
-  than the last one is to be discussed at the club. The club doesn't believe
-  anybody games it: "a race against yourself more than the masses".
-- **A dead heat** — two people on the same age grade. Shared trophy, or a
-  tiebreak?
-- **Does a 5k run anywhere else ever count** towards the handicap, or only the
-  club's own monthly one? This brief assumes only the monthly one.
+- **Age-graded races** (3km, 1500m, mile): mass start, won on age grade %. The timing page gives
+  everyone's run time, but age grading needs an age, which this sheet must not hold. Not built.
+- Which September start times were used on the night: Simon's "September Result" tab or his
+  "Time order" tab (they differ for Marek Sedlak, Matthew and Phil Goodridge-Reynolds).
+- Names to confirm: Sophie Dyer / Sophie Cottie (same person?), "Sam M", surnames for Ben, Laura, Molly.

@@ -1,41 +1,42 @@
 /**
- * Working out who won a monthly handicap.
+ * The monthly handicap rules, as plain functions.
  *
- * Plain functions, no SpreadsheetApp, no modules. That is deliberate twice
- * over: Apps Script has no imports, so setup.gs picks these up simply by
- * sitting in the same project; and Node can load the same file, which is how
- * scripts/check-handicap.mjs pins the rules against fixtures. One copy of the
- * logic, tested before it ever reaches the club's sheet.
+ * No SpreadsheetApp, no modules, on purpose: Apps Script has no imports, so
+ * setup.gs picks these up by sitting in the same project, and Node can load
+ * the same file, which is how scripts/check-handicap.mjs pins the rules down.
  *
- * THE CLUB RUNS TWO DIFFERENT RACES under one name, and nearly every mistake
- * available here comes from treating them as one:
+ * HOW THE NIGHT WORKS (agreed with Simon, the timer, 1 Oct 2026)
  *
- *   5k            — a true handicap. Everyone starts at a different time,
- *                   worked out from their last 5k, slowest away first. First
- *                   across the line wins.
- *   3km, 1500m,   — not handicaps at all. Everyone starts together on the
- *   1 mile          gun, and the winner is the best age grade percentage.
- *
- * One trophy, held by whoever won the latest event until the next one.
- * There is no season points table — see docs/handicap.md.
+ *   - Every runner has a START TIME: a predicted 5k time, in 15-second steps.
+ *     Simon sets it. The sheet suggests one (suggestStartTime) and he
+ *     overrides it whenever he likes.
+ *   - The slowest start time goes first, on 0:00 on one clock. Everybody else
+ *     GOES AT (slowest start time − their start time). Done right, everybody
+ *     arrives together.
+ *   - The WINNER IS THE FIRST PERSON ACROSS THE LINE. Not the best watch time
+ *     minus start time: if someone is set off a few seconds early, those two
+ *     disagree, and the line is what counts. Both of the first two months of
+ *     the 2026 season had a different winner by the line than by the sums.
+ *   - Finishing order comes from numbered tokens handed out at the line. The
+ *     clock time of each finish comes from the timing page.
+ *   - A runner's RUN TIME is their clock time minus their go-at time. It is
+ *     what sets their next start time. Nobody needs their own watch.
+ *   - A FIRST-TIMER (no handicap run before this one) races but cannot win.
+ *     The first eligible runner across the line wins.
  */
 
-/** Seconds in a day. Google hands durations over as a fraction of one. */
 var SECONDS_PER_DAY = 86400;
 
-/**
- * A Google Sheets duration is a fraction of a day; a form's duration field
- * arrives the same way. Returns null for anything that is not a usable
- * number, because "no time" and "zero seconds" must not become the same fact.
- */
-function durationToSeconds(value) {
-  if (value === null || value === undefined || value === '') return null;
-  var n = Number(value);
-  if (!isFinite(n) || n <= 0) return null;
-  return n * SECONDS_PER_DAY;
-}
+/** Start times move in these steps. Simon's rule: 15 seconds. */
+var START_STEP_SECONDS = 15;
 
-/** Seconds back to h:mm:ss for display. */
+/** A run this much slower than the start time is an off night: ignore it. */
+var OFF_NIGHT_SECONDS = 60;
+
+/** Nobody runs this 5k in under 12 minutes: a run time below it is a mix-up. */
+var MIN_PLAUSIBLE_RUN_SECONDS = 12 * 60;
+
+/** Seconds to m:ss (or h:mm:ss), with a minus sign when negative. */
 function secondsToClock(seconds) {
   if (seconds === null || seconds === undefined || !isFinite(seconds)) return '';
   var sign = seconds < 0 ? '-' : '';
@@ -44,278 +45,210 @@ function secondsToClock(seconds) {
   var m = Math.floor((s % 3600) / 60);
   var sec = s % 60;
   var mm = h > 0 && m < 10 ? '0' + m : String(m);
-  var ss = sec < 10 ? '0' + sec : String(sec);
-  return sign + (h > 0 ? h + ':' : '') + mm + ':' + ss;
+  return sign + (h > 0 ? h + ':' : '') + mm + ':' + (sec < 10 ? '0' : '') + sec;
 }
 
 /**
- * Which way an event is decided.
+ * A time as people type it, or as the sheet displays it, to seconds.
  *
- * Derived from the distance, but the Events tab carries it as its own column
- * so the committee can run a handicap mile one month without anybody editing
- * code. This is only the default offered there.
+ * "21:30" is 21 minutes 30 seconds, never 21 hours — this is a 5k. "0:21:30",
+ * "21.30" and "-0:12" work too. Anything else is null, because "no time" and
+ * "zero" must not become the same thing.
  */
-function defaultFormat(distance) {
-  return String(distance).trim().toLowerCase() === '5k' ? 'Handicap' : 'Age graded';
-}
-
-var HANDICAP = 'handicap';
-var AGE_GRADED = 'age graded';
-
-var normalise = function (value) {
-  return String(value === null || value === undefined ? '' : value)
-    .replace(/\s+/g, ' ')
-    .trim();
-};
-
-/** Events are identified by date AND distance — the same 5k comes round monthly. */
-function eventKey(dateIso, distance) {
-  return normalise(dateIso) + '|' + normalise(distance).toLowerCase();
-}
-
-/**
- * The handicap a runner carries into an event.
- *
- * "Based on your 5Km time" — so it is their finish time at the most recent
- * 5k BEFORE this one. Failing that, the starting handicap typed on the Runners
- * tab: a 5k time the club already knew from before this sheet existed, which
- * counts exactly like a previous run.
- *
- * Returns null when there is neither. That runner is on their FIRST handicap:
- * the club's rule is that a first-timer runs it as a race but cannot win it,
- * and that run becomes their handicap for next time. Their start on the night
- * comes from a first-run estimate, which is a guess for the starter and never
- * used in scoring — see scoreEvent.
- *
- * `history` is every counted 5k result already known, as
- * { name, dateIso, finishSeconds }.
- */
-function handicapFor(name, beforeDateIso, history, startingSeconds) {
-  var key = normalise(name).toLowerCase();
-  var best = null;
-
-  for (var i = 0; i < history.length; i += 1) {
-    var row = history[i];
-    if (normalise(row.name).toLowerCase() !== key) continue;
-    // Strictly earlier. An event cannot handicap itself.
-    if (!(row.dateIso < beforeDateIso)) continue;
-    if (row.finishSeconds === null || row.finishSeconds === undefined) continue;
-    if (best === null || row.dateIso > best.dateIso) best = row;
+function clockToSeconds(text) {
+  if (text === null || text === undefined) return null;
+  var s = String(text).trim().replace('.', ':');
+  if (s === '') return null;
+  var sign = 1;
+  if (s.charAt(0) === '-') { sign = -1; s = s.slice(1); }
+  var parts = s.split(':');
+  if (parts.length < 2 || parts.length > 3) return null;
+  for (var i = 0; i < parts.length; i += 1) {
+    if (!/^\d+$/.test(parts[i])) return null;
   }
+  var n = parts.map(Number);
+  var total = parts.length === 3 ? n[0] * 3600 + n[1] * 60 + n[2] : n[0] * 60 + n[1];
+  if (n[n.length - 1] >= 60) return null;
+  return sign * total;
+}
 
-  if (best) return best.finishSeconds;
-  return startingSeconds === null || startingSeconds === undefined ? null : startingSeconds;
+function roundToStep(seconds, step) {
+  return Math.round(seconds / step) * step;
 }
 
 /**
- * Start offsets for a handicap race, for whoever is running tonight.
+ * The start time the sheet suggests for a runner's next handicap.
  *
- * The slowest goes off first, on zero, and everybody else waits by the
- * difference between their handicap and theirs. If everyone runs exactly to
- * their handicap they all arrive together, which is the whole idea.
+ * `runs` is that runner's handicap history, any order:
+ *   { dateIso, startSeconds (or null), runSeconds (or null: ticked, didn't finish) }
+ * `latestDateIso` is the most recent handicap anybody ran.
  *
- * Computed from the slowest runner ACTUALLY STARTING, not the slowest on the
- * books — if the slowest member stays at home and the sheet still uses their
- * time, every single runner waits for a person who is not there.
+ * Simon's own practice, measured on 48 cases from Feb–Sep 2026: last run
+ * time rounded to the nearest 15 s (31 of 48 within 15 s), ignoring an off
+ * night, and leaving people who missed a month where they were.
+ *
+ * Returns { seconds, why }. seconds is null only when there is nothing to go on.
  */
-/** Offsets are called out by a person with a stopwatch, so nearest 5 seconds. */
-var OFFSET_ROUNDING_SECONDS = 5;
+function suggestStartTime(runs, latestDateIso, opts) {
+  opts = opts || {};
+  var step = opts.step || START_STEP_SECONDS;
+  var offNight = opts.offNight === undefined ? OFF_NIGHT_SECONDS : opts.offNight;
 
-function startOffsets(entries) {
-  var withHandicap = entries.filter(function (e) {
-    return e.handicapSeconds !== null && e.handicapSeconds !== undefined;
-  });
-  if (withHandicap.length === 0) return entries.map(function () { return null; });
-
-  var slowest = withHandicap.reduce(function (max, e) {
-    return e.handicapSeconds > max ? e.handicapSeconds : max;
-  }, -Infinity);
-
-  return entries.map(function (e) {
-    if (e.handicapSeconds === null || e.handicapSeconds === undefined) return null;
-    var raw = slowest - e.handicapSeconds;
-    return Math.round(raw / OFFSET_ROUNDING_SECONDS) * OFFSET_ROUNDING_SECONDS;
-  });
-}
-
-/**
- * Keeps only each runner's latest submission for an event.
- *
- * Same rule as the championship: somebody who submits twice has corrected
- * themselves, and the correction is the one that counts.
- */
-function latestPerRunner(entries) {
-  var byName = {};
-  for (var i = 0; i < entries.length; i += 1) {
-    var e = entries[i];
-    var key = normalise(e.name).toLowerCase();
-    var seen = byName[key];
-    if (!seen || Number(e.submittedAt) >= Number(seen.submittedAt)) byName[key] = e;
-  }
-  return Object.keys(byName).map(function (k) { return byName[k]; });
-}
-
-/**
- * Places one event.
- *
- * `event`   — { dateIso, distance, format }
- * `entries` — submissions for this event: { name, submittedAt, finishSeconds,
- *             ageGrade }
- * `runners` — the Runners tab: { name, gender, startingSeconds } (a 5k time known from before the sheet)
- * `history` — counted 5k results from earlier events, for the handicaps.
- *
- * Every row comes back, placed or not, each carrying why. A member who is not
- * in the results wants to know whether they were missed or whether their
- * submission was no good, and a blank row answers neither.
- */
-function scoreEvent(event, entries, runners, history) {
-  var format = normalise(event.format).toLowerCase();
-  var isHandicap = format === HANDICAP;
-
-  var byName = {};
-  for (var i = 0; i < runners.length; i += 1) {
-    byName[normalise(runners[i].name).toLowerCase()] = runners[i];
-  }
-
-  var rows = latestPerRunner(entries).map(function (entry) {
-    var runner = byName[normalise(entry.name).toLowerCase()];
-    var row = {
-      name: runner ? runner.name : normalise(entry.name),
-      gender: runner ? runner.gender : '',
-      finishSeconds: entry.finishSeconds === undefined ? null : entry.finishSeconds,
-      ageGrade: entry.ageGrade === undefined ? null : entry.ageGrade,
-      handicapSeconds: null,
-      offsetSeconds: null,
-      sortKey: null,
-      place: null,
-      counts: false,
-      firstRun: false,
-      reason: '',
-    };
-
-    if (!runner) {
-      row.reason = 'Not on the Runners tab';
-      return row;
-    }
-
-    if (isHandicap) {
-      row.handicapSeconds = handicapFor(
-        runner.name, event.dateIso, history,
-        runner.startingSeconds === undefined ? null : runner.startingSeconds
-      );
-      if (row.finishSeconds === null) {
-        row.reason = 'No finish time';
-      } else if (row.handicapSeconds === null) {
-        // Club rule: a first-timer races but cannot win. The time still
-        // matters: scoreAll makes it their handicap for next month.
-        row.firstRun = true;
-        row.reason = 'First handicap run, so not placed. This time is their handicap next month';
-      } else {
-        // Ordering by (finish - handicap) is exactly the finishing order: every
-        // runner's elapsed time from the gun is slowest-handicap plus this, and
-        // that first term is the same for everybody. It also means the result
-        // does not move if a different set of people turns up.
-        row.sortKey = row.finishSeconds - row.handicapSeconds;
-        row.counts = true;
-      }
-    } else {
-      if (row.ageGrade === null || !isFinite(Number(row.ageGrade)) || Number(row.ageGrade) <= 0) {
-        row.reason = 'No age grade %';
-      } else {
-        // Negated so that, like the handicap, smallest sorts first.
-        row.sortKey = -Number(row.ageGrade);
-        row.counts = true;
-      }
-    }
-
-    return row;
-  });
-
-  var counted = rows.filter(function (r) { return r.counts; });
-  var offsets = startOffsets(counted);
-  counted.forEach(function (r, i) { r.offsetSeconds = offsets[i]; });
-
-  // Competition ranking: ties share a place and the next one skips, exactly as
-  // the championship's Position column does.
-  counted.forEach(function (row) {
-    row.place = 1 + counted.filter(function (other) {
-      return other.sortKey < row.sortKey;
-    }).length;
-  });
-
-  rows.sort(function (a, b) {
-    if (a.counts !== b.counts) return a.counts ? -1 : 1;
-    if (a.counts) return a.sortKey - b.sortKey || a.name.localeCompare(b.name, 'en-GB');
-    return a.name.localeCompare(b.name, 'en-GB');
-  });
-
-  return rows;
-}
-
-/**
- * Every event in order, each scored with the handicaps the ones before it
- * produced.
- *
- * Order matters and is the reason this is not a per-event formula: a 5k
- * handicap is last month's 5k time, so September has to be settled before
- * October can be. Events are sorted by date first so that entering an old
- * result late still feeds the right months.
- */
-function scoreAll(events, entriesByEvent, runners) {
-  var ordered = events.slice().sort(function (a, b) {
+  var sorted = runs.slice().sort(function (a, b) {
     return a.dateIso < b.dateIso ? -1 : a.dateIso > b.dateIso ? 1 : 0;
   });
+  var latestStart = null;
+  var lastRun = null;
+  sorted.forEach(function (r) {
+    if (r.startSeconds !== null && r.startSeconds !== undefined) latestStart = r.startSeconds;
+    if (r.runSeconds !== null && r.runSeconds !== undefined) lastRun = r;
+  });
 
-  var history = [];
-  var out = [];
-
-  for (var i = 0; i < ordered.length; i += 1) {
-    var event = ordered[i];
-    var key = eventKey(event.dateIso, event.distance);
-    var rows = scoreEvent(event, entriesByEvent[key] || [], runners, history);
-
-    out.push({ event: event, rows: rows });
-
-    // Only a 5k feeds a future handicap: a counted one, or a first run, which
-    // exists precisely to set one. An age-graded mile says nothing about
-    // somebody's 5k, and any other submission that did not count (no time,
-    // not on the Runners tab) is not evidence of anything.
-    if (normalise(event.format).toLowerCase() === HANDICAP) {
-      rows.forEach(function (r) {
-        if ((r.counts || r.firstRun) && r.finishSeconds !== null) {
-          history.push({ name: r.name, dateIso: event.dateIso, finishSeconds: r.finishSeconds });
-        }
-      });
-    }
+  if (!lastRun) {
+    if (latestStart === null) return { seconds: null, why: 'No times yet' };
+    return { seconds: latestStart, why: 'No handicap run yet, so the latest start time carries forward' };
   }
+  if (lastRun.dateIso < latestDateIso) {
+    if (latestStart === null) {
+      return { seconds: roundToStep(lastRun.runSeconds, step), why: 'Only run is from an earlier handicap, rounded to 15 s' };
+    }
+    return { seconds: latestStart, why: "Didn't run the latest handicap, so the latest start time carries forward" };
+  }
+  var start = lastRun.startSeconds;
+  if (start === null || start === undefined) {
+    return { seconds: roundToStep(lastRun.runSeconds, step), why: 'First handicap run, rounded to 15 s' };
+  }
+  if (lastRun.runSeconds - start > offNight) {
+    return { seconds: start, why: 'Over a minute slower than their start time: an off night, start time kept' };
+  }
+  return { seconds: roundToStep(lastRun.runSeconds, step), why: 'Last run time, rounded to 15 s' };
+}
 
+/**
+ * When each starter goes, in seconds after the first runner sets off.
+ *
+ * Worked from the slowest runner ACTUALLY STARTING, not the slowest on the
+ * books — or the whole field waits for somebody who stayed at home.
+ * `starters` is [{ name, startSeconds }]; the result is keyed by name.
+ * A starter with no start time gets null: they cannot be given a start.
+ */
+function goAtTimes(starters, step) {
+  step = step || START_STEP_SECONDS;
+  var timed = starters.filter(function (s) { return s.startSeconds !== null && s.startSeconds !== undefined; });
+  var out = {};
+  if (timed.length === 0) {
+    starters.forEach(function (s) { out[s.name] = null; });
+    return out;
+  }
+  var slowest = Math.max.apply(null, timed.map(function (s) { return s.startSeconds; }));
+  starters.forEach(function (s) {
+    out[s.name] = s.startSeconds === null || s.startSeconds === undefined
+      ? null
+      : roundToStep(slowest - s.startSeconds, step);
+  });
   return out;
 }
 
 /**
- * Every counted or first-run 5k, as handicap history. The Runners tab and the
- * start list use this to show what each runner carries into the NEXT 5k.
+ * Starters grouped by go-at time, for whoever is calling the starts.
+ * Returns [{ goAtSeconds, names: [...] }] in the order they go.
  */
-function handicapHistory(scored) {
-  var history = [];
-  scored.forEach(function (s) {
-    if (normalise(s.event.format).toLowerCase() !== HANDICAP) return;
-    s.rows.forEach(function (r) {
-      if ((r.counts || r.firstRun) && r.finishSeconds !== null) {
-        history.push({ name: r.name, dateIso: s.event.dateIso, finishSeconds: r.finishSeconds });
-      }
-    });
+function startGroups(starters, step) {
+  var goAt = goAtTimes(starters, step);
+  var byTime = {};
+  starters.forEach(function (s) {
+    var g = goAt[s.name];
+    if (g === null) return;
+    (byTime[g] = byTime[g] || []).push(s.name);
   });
-  return history;
+  return Object.keys(byTime).map(Number).sort(function (a, b) { return a - b; }).map(function (g) {
+    return { goAtSeconds: g, names: byTime[g].sort() };
+  });
 }
 
-/** Who holds the trophy: the winner of the latest event that has a result. */
-function currentHolder(scored) {
-  for (var i = scored.length - 1; i >= 0; i -= 1) {
-    var winners = scored[i].rows.filter(function (r) { return r.place === 1; });
-    if (winners.length > 0) {
-      return { event: scored[i].event, winners: winners.map(function (w) { return w.name; }) };
-    }
+/**
+ * The result of one handicap night.
+ *
+ * `starters`: [{ name, startSeconds, goAtSeconds, token, firstHandicap }]
+ *   token is the finishing position on the token they were handed, or null.
+ * `finishes`: [{ clockSeconds }] — one per tap on the timing page. Sorted by
+ *   clock time, the first is position 1: the tokens are handed out in that
+ *   same order, which is what ties a token number to a clock time.
+ *
+ * Returns { rows, problems }. Every starter appears in rows, finished or not,
+ * so nobody is silently missing. problems lists anything a person must sort
+ * out before the race is saved.
+ */
+function raceResult(starters, finishes) {
+  var clock = finishes
+    .map(function (f) { return f.clockSeconds; })
+    .filter(function (c) { return c !== null && c !== undefined && isFinite(c); })
+    .sort(function (a, b) { return a - b; });
+
+  var problems = [];
+  var tokenOwners = {};
+  starters.forEach(function (s) {
+    if (s.token === null || s.token === undefined || s.token === '') return;
+    (tokenOwners[s.token] = tokenOwners[s.token] || []).push(s.name);
+  });
+  Object.keys(tokenOwners).forEach(function (t) {
+    if (tokenOwners[t].length > 1) problems.push('Token ' + t + ' is against ' + tokenOwners[t].join(' and '));
+  });
+  for (var p = 1; p <= clock.length; p += 1) {
+    if (!tokenOwners[p]) problems.push('Position ' + p + ' (' + secondsToClock(clock[p - 1]) + ' on the clock) has no runner against it');
   }
-  return null;
+
+  var rows = starters.map(function (s) {
+    var position = s.token === null || s.token === undefined || s.token === '' ? null : Number(s.token);
+    var clockSeconds = position !== null && position >= 1 && position <= clock.length ? clock[position - 1] : null;
+    var runSeconds = clockSeconds !== null && s.goAtSeconds !== null && s.goAtSeconds !== undefined
+      ? Math.round(clockSeconds - s.goAtSeconds)
+      : null;
+    var note = '';
+    if (position === null) note = 'No finish recorded';
+    else if (clockSeconds === null) {
+      note = 'Token ' + position + ' has no clock time';
+      problems.push(s.name + ' has token ' + position + ', but only ' + clock.length + ' finishes were timed');
+    } else if (s.goAtSeconds === null || s.goAtSeconds === undefined) {
+      note = 'No start time, so no run time';
+    } else if (runSeconds < MIN_PLAUSIBLE_RUN_SECONDS) {
+      problems.push(s.name + "'s run time works out at " + secondsToClock(runSeconds)
+        + ': check their token, or that the clock started with the first group');
+    }
+    return {
+      position: position,
+      name: s.name,
+      startSeconds: s.startSeconds === undefined ? null : s.startSeconds,
+      goAtSeconds: s.goAtSeconds === undefined ? null : s.goAtSeconds,
+      clockSeconds: clockSeconds,
+      runSeconds: runSeconds,
+      vsStartSeconds: runSeconds !== null && s.startSeconds !== null && s.startSeconds !== undefined
+        ? runSeconds - s.startSeconds
+        : null,
+      firstHandicap: !!s.firstHandicap,
+      winner: false,
+      note: note,
+    };
+  });
+
+  var eligible = rows.filter(function (r) {
+    return r.position !== null && r.clockSeconds !== null && !r.firstHandicap;
+  });
+  if (eligible.length) {
+    var best = Math.min.apply(null, eligible.map(function (r) { return r.position; }));
+    rows.forEach(function (r) {
+      if (r.position === best && !r.firstHandicap) { r.winner = true; r.note = 'Winner'; }
+    });
+  }
+  rows.forEach(function (r) {
+    if (r.firstHandicap && r.position !== null && r.clockSeconds !== null) r.note = "First handicap, so can't win";
+  });
+
+  rows.sort(function (a, b) {
+    if (a.position === null && b.position === null) return a.name.localeCompare(b.name, 'en-GB');
+    if (a.position === null) return 1;
+    if (b.position === null) return -1;
+    return a.position - b.position;
+  });
+  return { rows: rows, problems: problems };
 }

@@ -1,481 +1,391 @@
 /**
- * The monthly handicap sheet: reading the tabs, running scoring.gs, writing
- * the answers back, and making the form.
+ * The handicap sheet's script: the timing page, and saving a night's result.
  *
- * Paste scoring.gs and this file into the sheet's Apps Script project
- * (Extensions > Apps Script), as two files side by side. Apps Script has no
- * imports; every file in a project shares one scope, which is how this file
- * calls scoreAll() without asking for it.
+ * Paste into the sheet's Apps Script project (Extensions > Apps Script) as
+ * three files side by side: scoring.gs, this file, and timing.html (an HTML
+ * file, named exactly "timing"). Apps Script has no imports; every file shares
+ * one scope, which is how this file calls raceResult() from scoring.gs.
  *
- * WHAT RUNS WHEN
- *   - Every form submission recalculates (an installable trigger, made when
- *     the form is created).
- *   - Editing Form responses, Events or Runners recalculates (onEdit), so a
- *     result typed in by hand scores straight away.
- *   - The Start list is ordinary formulas, not script. Custom menus do not
- *     show in the Sheets phone app, and the start list is used on a phone.
+ * WHAT DOES WHAT
+ *   - The tabs are formulas. Runners works out everyone's suggested start
+ *     time; Start list and This race are live views. None of that needs this
+ *     script, so it all works in the Sheets phone app.
+ *   - The timing page (doGet) is the phone tool for the night: tick who's
+ *     running, start the clock, call the starts, tap each finisher, match the
+ *     tokens, check the result, save it.
+ *   - Saving a race writes History. History is what every suggestion, the
+ *     runner form and the website's Results tab read from.
  *
- * PRIVACY
- *   The membership list holds dates of birth. The only thing this file ever
- *   reads from it is Name, M or F and Status, to add new members to Runners.
- *   Nothing from it is written anywhere else.
+ * DEPLOYING THE PAGE
+ *   Deploy > New deployment > Web app. Execute as: Me. Who has access: Anyone.
+ *   Every call checks the PIN on the Settings tab, so the link alone is not
+ *   enough to change anything. Share the link with the timers only, never on
+ *   the website.
  */
 
 var TAB = {
-  results: 'Results',
-  notCounted: 'Not counted',
-  events: 'Events',
   runners: 'Runners',
-  startList: 'Start list',
+  timing: 'Timing',
+  history: 'History',
   settings: 'Settings',
-  responses: 'Form responses',
 };
 
-var RESULTS_HEADER = ['Date', 'Distance', 'Format', 'Place', 'Name', 'M or F',
-  'Finish time', 'Age grade %', 'Handicap', 'Start offset'];
-var NOT_COUNTED_HEADER = ['Date', 'Distance', 'Name', 'Finish time', 'Age grade %', 'Why it did not count'];
+/** Runners columns, 1-based. Inputs first, worked-out columns after. */
+var COL = {
+  name: 1, mf: 2, running: 3, token: 4, simonStart: 5, simonNote: 6,
+  useStart: 7, suggested: 8, why: 9, firstHandicap: 16,
+};
+var RUNNERS_LAST_ROW = 300;
+var RUNNERS_WIDTH = 16;
 
-var Q_NAME = 'Your name';
-var Q_RACE = 'Which race?';
-var Q_TIME = 'Finish time';
-var Q_GRADE = 'Age grade %';
+/** Settings, column B. */
+var SET = { raceDate: 2, raceLabel: 3, step: 4, offNight: 5, pin: 6, clockStart: 7, link: 8 };
 
-/** Rows of the Start list that get tick boxes. Matches the formulas' reach. */
-var START_LIST_ROWS = 299;
+var TIMING_HEADER = ['Position', 'Clock time', 'Clock (seconds)', 'Tap ID', 'Recorded at'];
+var HISTORY_HEADER = ['Date', 'Race', 'Runner', 'Start time', 'Run time', 'Position', 'Winner',
+  'First handicap', 'Go at', 'Clock time', 'Note'];
 
 // ---------------------------------------------------------------------------
-// Menu and triggers
+// Menu, page, old trigger
 // ---------------------------------------------------------------------------
 
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Handicap')
-    .addItem('Recalculate now', 'recalculate')
-    .addItem('Add new members from the membership list', 'syncRunners')
+    .addItem('Timing page link', 'showTimingLink')
     .addSeparator()
-    .addItem('Create results form', 'createForm')
-    .addItem('Update form lists', 'updateFormLists')
+    .addItem('Save this race to History', 'saveRaceFromMenu')
+    .addItem('Clear the timing for this race', 'clearTimingFromMenu')
     .addToUi();
-  ensureCheckboxes_();
 }
-
-/** Simple trigger. Only edits that can change a result are worth the work. */
-function onEdit(e) {
-  if (!e || !e.range) return;
-  var name = e.range.getSheet().getName();
-  if (name === TAB.responses || name === TAB.events) {
-    recalculate();
-  } else if (name === TAB.runners && e.range.getColumn() <= 4) {
-    recalculate();
-  }
-}
-
-/** Installable trigger, created by createForm. */
-function onFormSubmitted() {
-  recalculate();
-}
-
-// ---------------------------------------------------------------------------
-// Reading the tabs
-// ---------------------------------------------------------------------------
 
 /**
- * A time as the sheet displays it ("0:52:47", "24:31") to seconds.
- *
- * Read from the DISPLAYED text on purpose: Apps Script hands duration cells
- * over as Date objects pinned to 1899, shifted by the sheet's time zone, and
- * that is a worse thing to reason about than the text a person can see.
- *
- * Someone typing "24:30" meaning 24 minutes gets 24 HOURS from Sheets. No 5k
- * takes three hours, so a whole number of minutes over that is read as
- * minutes and seconds instead.
+ * The September 2026 version of this sheet made a results form with an
+ * installable trigger pointing here. Results no longer come from a form, so
+ * this does nothing; it exists so that trigger can't throw if it still fires.
+ * Delete the trigger (Apps Script > Triggers) when convenient.
  */
-function parseClock_(text) {
-  var s = String(text === null || text === undefined ? '' : text).trim();
-  if (s === '') return null;
-  var parts = s.split(':').map(function (p) { return Number(p); });
-  if (parts.some(function (n) { return !isFinite(n) || n < 0; })) return null;
-  var seconds = parts.reduce(function (acc, p) { return acc * 60 + p; }, 0);
-  if (seconds >= 3 * 3600 && seconds % 60 === 0) seconds = seconds / 60;
-  return seconds > 0 ? seconds : null;
+function onFormSubmitted() {}
+
+function doGet() {
+  return HtmlService.createTemplateFromFile('timing')
+    .evaluate()
+    .setTitle('CRR handicap timing')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1');
 }
 
-/** "62.45", "62.45%" or 0.6245 all mean 62.45. */
-function parseAgeGrade_(text) {
-  var s = String(text === null || text === undefined ? '' : text).replace('%', '').trim();
-  if (s === '') return null;
-  var n = Number(s);
-  if (!isFinite(n) || n <= 0) return null;
-  return n < 1.5 ? n * 100 : n;
+function showTimingLink() {
+  var url = '';
+  try { url = ScriptApp.getService().getUrl() || ''; } catch (e) { url = ''; }
+  var ui = SpreadsheetApp.getUi();
+  if (!url) {
+    ui.alert('The timing page is not deployed yet.\n\nDeploy > New deployment > Web app, '
+      + 'execute as Me, access Anyone. Then use this menu again.');
+    return;
+  }
+  sheet_(TAB.settings).getRange(SET.link, 2).setValue(url);
+  ui.alert('Timing page\n\n' + url + '\n\nAlso saved on the Settings tab. It asks for the PIN on Settings. '
+    + 'Share it with the timers only, never on the website.');
 }
 
-function isoDate_(date, tz) {
-  return Utilities.formatDate(date, tz, 'yyyy-MM-dd');
+// ---------------------------------------------------------------------------
+// Reading the sheet
+// ---------------------------------------------------------------------------
+
+function sheet_(name) {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  if (!sh) throw new Error('The ' + name + ' tab is missing');
+  return sh;
 }
 
-/** The label a race has in the form's dropdown and in Form responses. */
-function eventLabel_(date, distance, tz) {
-  return Utilities.formatDate(date, tz, 'd MMM yyyy') + ' — ' + String(distance).trim();
+function settings_() {
+  var sh = sheet_(TAB.settings);
+  var values = sh.getRange(1, 2, 10, 1).getValues().map(function (r) { return r[0]; });
+  var display = sh.getRange(1, 2, 10, 1).getDisplayValues().map(function (r) { return r[0]; });
+  var date = values[SET.raceDate - 1];
+  var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+  return {
+    raceDate: date instanceof Date ? date : null,
+    raceIso: date instanceof Date ? Utilities.formatDate(date, tz, 'yyyy-MM-dd') : '',
+    raceLabel: display[SET.raceLabel - 1],
+    step: Number(values[SET.step - 1]) || START_STEP_SECONDS,
+    pin: String(display[SET.pin - 1] || '').trim(),
+    clockStartMs: Number(values[SET.clockStart - 1]) || null,
+  };
 }
 
-function normaliseLabel_(s) {
-  return String(s).replace(/\s+/g, ' ').replace(/[–-]/g, '—').trim().toLowerCase();
+function checkPin_(pin) {
+  var want = settings_().pin;
+  if (!want) throw new Error('No PIN is set. Put one on the Settings tab first.');
+  if (String(pin || '').trim() !== want) throw new Error('Wrong PIN');
 }
 
-function bodyRows_(sheet, columns) {
-  if (!sheet || sheet.getLastRow() < 2) return { values: [], display: [] };
-  var range = sheet.getRange(2, 1, sheet.getLastRow() - 1, columns);
-  return { values: range.getValues(), display: range.getDisplayValues() };
-}
-
-function readEvents_(ss) {
-  var tz = ss.getSpreadsheetTimeZone();
-  var rows = bodyRows_(ss.getSheetByName(TAB.events), 3).values;
-  var events = [];
-  rows.forEach(function (r) {
-    if (!(r[0] instanceof Date) || String(r[1]).trim() === '') return;
-    events.push({
-      dateIso: isoDate_(r[0], tz),
-      distance: String(r[1]).trim(),
-      format: String(r[2]).trim() || defaultFormat(r[1]),
-      label: eventLabel_(r[0], r[1], tz),
-      date: r[0],
-    });
-  });
-  return events;
-}
-
-function readRunners_(ss) {
-  var data = bodyRows_(ss.getSheetByName(TAB.runners), 4);
-  var runners = [];
-  data.values.forEach(function (r, i) {
-    var name = String(r[0]).trim();
-    if (name === '') return;
-    runners.push({
-      name: name,
-      gender: String(r[1]).trim(),
-      startingSeconds: parseClock_(data.display[i][2]),
-      estimateSeconds: parseClock_(data.display[i][3]),
-    });
-  });
-  return runners;
-}
-
-/** Form responses: Timestamp · Your name · Which race? · Finish time · Age grade % */
-function readResponses_(ss) {
-  var sheet = ss.getSheetByName(TAB.responses);
-  if (!sheet) return [];
-  var header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
-    .map(function (h) { return String(h).trim(); });
-  var col = function (title) { return header.indexOf(title); };
-  var at = { stamp: 0, name: col(Q_NAME), race: col(Q_RACE), time: col(Q_TIME), grade: col(Q_GRADE) };
-
-  var data = bodyRows_(sheet, header.length);
+/** Every runner, with what the sheet has worked out for them. */
+function runners_() {
+  var sh = sheet_(TAB.runners);
+  var range = sh.getRange(2, 1, RUNNERS_LAST_ROW - 1, RUNNERS_WIDTH);
+  var values = range.getValues();
+  var display = range.getDisplayValues();
   var out = [];
-  data.values.forEach(function (r, i) {
-    var name = at.name >= 0 ? String(r[at.name]).trim() : '';
-    var race = at.race >= 0 ? String(r[at.race]).trim() : '';
-    if (name === '' && race === '') return;
-    var stamp = r[at.stamp] instanceof Date ? r[at.stamp].getTime() : i;
+  for (var i = 0; i < values.length; i += 1) {
+    var name = String(values[i][COL.name - 1] || '').trim();
+    if (!name) continue;
+    var token = values[i][COL.token - 1];
     out.push({
+      row: i + 2,
       name: name,
-      raceLabel: race,
-      submittedAt: stamp,
-      finishSeconds: at.time >= 0 ? parseClock_(data.display[i][at.time]) : null,
-      ageGrade: at.grade >= 0 ? parseAgeGrade_(data.display[i][at.grade]) : null,
+      running: values[i][COL.running - 1] === true,
+      token: token === '' || token === null ? null : Number(token),
+      startSeconds: clockToSeconds(display[i][COL.useStart - 1]),
+      firstHandicap: values[i][COL.firstHandicap - 1] === true,
+      simonNote: String(values[i][COL.simonNote - 1] || ''),
     });
-  });
+  }
   return out;
 }
 
-// ---------------------------------------------------------------------------
-// Recalculating
-// ---------------------------------------------------------------------------
+function findRunner_(name) {
+  var key = String(name || '').trim().toLowerCase();
+  var match = runners_().filter(function (r) { return r.name.toLowerCase() === key; })[0];
+  if (!match) throw new Error('No runner called ' + name + ' on the Runners tab');
+  return match;
+}
 
-function recalculate() {
+function finishes_() {
+  var sh = sheet_(TAB.timing);
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, 5).getValues()
+    .filter(function (r) { return r[2] !== '' && r[2] !== null; })
+    .map(function (r) { return { id: String(r[3]), clockSeconds: Number(r[2]) }; });
+}
+
+function starters_(runners, step) {
+  var running = runners.filter(function (r) { return r.running; });
+  var goAt = goAtTimes(running.map(function (r) { return { name: r.name, startSeconds: r.startSeconds }; }), step);
+  return running.map(function (r) {
+    return {
+      name: r.name, startSeconds: r.startSeconds, goAtSeconds: goAt[r.name],
+      token: r.token, firstHandicap: r.firstHandicap,
+    };
+  });
+}
+
+function withLock_(fn) {
   var lock = LockService.getDocumentLock();
-  if (!lock.tryLock(20000)) return;
-  try {
-    recalculate_(SpreadsheetApp.getActiveSpreadsheet());
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-function recalculate_(ss) {
-  var events = readEvents_(ss);
-  var runners = readRunners_(ss);
-  var responses = readResponses_(ss);
-
-  var byLabel = {};
-  events.forEach(function (e) { byLabel[normaliseLabel_(e.label)] = e; });
-
-  var entriesByEvent = {};
-  var strays = [];
-  responses.forEach(function (r) {
-    var event = byLabel[normaliseLabel_(r.raceLabel)];
-    if (!event) {
-      strays.push(r);
-      return;
-    }
-    var key = eventKey(event.dateIso, event.distance);
-    (entriesByEvent[key] = entriesByEvent[key] || []).push(r);
-  });
-
-  var scored = scoreAll(events, entriesByEvent, runners);
-
-  writeResults_(ss, scored);
-  writeNotCounted_(ss, scored, strays);
-  writeCurrentHandicaps_(ss, scored, runners);
-  ensureCheckboxes_();
-}
-
-function newestFirst_(scored) {
-  return scored.slice().sort(function (a, b) {
-    return a.event.dateIso < b.event.dateIso ? 1 : a.event.dateIso > b.event.dateIso ? -1 : 0;
-  });
-}
-
-function writeTable_(sheet, header, rows) {
-  sheet.getRange(1, 1, 1, header.length).setValues([header]);
-  var last = sheet.getMaxRows();
-  if (last > 1) sheet.getRange(2, 1, last - 1, header.length).clearContent();
-  if (rows.length > 0) {
-    if (rows.length + 1 > last) sheet.insertRowsAfter(last, rows.length + 1 - last);
-    sheet.getRange(2, 1, rows.length, header.length).setValues(rows);
-  }
-}
-
-function clockOrBlank_(seconds) {
-  return seconds === null || seconds === undefined ? '' : secondsToClock(seconds);
-}
-
-function writeResults_(ss, scored) {
-  var rows = [];
-  newestFirst_(scored).forEach(function (s) {
-    var handicap = normalise(s.event.format).toLowerCase() === HANDICAP;
-    s.rows.filter(function (r) { return r.counts; }).forEach(function (r) {
-      rows.push([
-        s.event.dateIso,
-        s.event.distance,
-        s.event.format,
-        r.place,
-        r.name,
-        r.gender,
-        clockOrBlank_(r.finishSeconds),
-        r.ageGrade === null ? '' : Math.round(r.ageGrade * 100) / 100,
-        handicap ? clockOrBlank_(r.handicapSeconds) : '',
-        handicap ? clockOrBlank_(r.offsetSeconds) : '',
-      ]);
-    });
-  });
-  var sheet = ss.getSheetByName(TAB.results);
-  // Text, so "2026-09-29" and "24:31" reach the website exactly as written.
-  sheet.getRange(1, 1, sheet.getMaxRows(), RESULTS_HEADER.length).setNumberFormat('@');
-  writeTable_(sheet, RESULTS_HEADER, rows);
-}
-
-function writeNotCounted_(ss, scored, strays) {
-  var rows = [];
-  newestFirst_(scored).forEach(function (s) {
-    s.rows.filter(function (r) { return !r.counts; }).forEach(function (r) {
-      rows.push([s.event.dateIso, s.event.distance, r.name, clockOrBlank_(r.finishSeconds),
-        r.ageGrade === null ? '' : r.ageGrade, r.reason]);
-    });
-  });
-  strays.forEach(function (r) {
-    rows.push(['', r.raceLabel, r.name, clockOrBlank_(r.finishSeconds),
-      r.ageGrade === null ? '' : r.ageGrade, 'Race is not on the Events tab']);
-  });
-  var sheet = ss.getSheetByName(TAB.notCounted);
-  sheet.getRange(1, 1, sheet.getMaxRows(), NOT_COUNTED_HEADER.length).setNumberFormat('@');
-  writeTable_(sheet, NOT_COUNTED_HEADER, rows);
-}
-
-/**
- * Runners columns E and F: what each runner carries into the next 5k, and
- * where it came from. The Start list reads these. Written as real durations
- * (fractions of a day) so the Start list can do arithmetic on them.
- */
-function writeCurrentHandicaps_(ss, scored, runners) {
-  var sheet = ss.getSheetByName(TAB.runners);
-  if (sheet.getLastRow() < 2) return;
-  var names = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
-  var history = handicapHistory(scored);
-  var byName = {};
-  runners.forEach(function (r) { byName[normalise(r.name).toLowerCase()] = r; });
-
-  var out = names.map(function (row) {
-    var name = String(row[0]).trim();
-    if (name === '') return ['', ''];
-    var key = normalise(name).toLowerCase();
-    var latest = null;
-    history.forEach(function (h) {
-      if (normalise(h.name).toLowerCase() !== key) return;
-      if (latest === null || h.dateIso > latest.dateIso) latest = h;
-    });
-    if (latest) return [latest.finishSeconds / SECONDS_PER_DAY, latest.dateIso];
-    var runner = byName[key];
-    if (runner && runner.startingSeconds !== null) {
-      return [runner.startingSeconds / SECONDS_PER_DAY, 'Starting handicap'];
-    }
-    return ['', 'First run next time'];
-  });
-
-  sheet.getRange(1, 5, 1, 2).setValues([['Current handicap', 'From']]);
-  var target = sheet.getRange(2, 5, out.length, 2);
-  target.setValues(out);
-  sheet.getRange(2, 5, out.length, 1).setNumberFormat('[m]:ss');
-}
-
-/** The Start list's Running? column, as tick boxes, as far as the runners go. */
-function ensureCheckboxes_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(TAB.startList);
-  if (!sheet) return;
-  var range = sheet.getRange(2, 2, START_LIST_ROWS, 1);
-  var rule = range.getDataValidation();
-  if (!rule || rule.getCriteriaType() !== SpreadsheetApp.DataValidationCriteria.CHECKBOX) {
-    range.insertCheckboxes();
-  }
+  if (!lock.tryLock(20000)) throw new Error('The sheet is busy. Try again in a moment.');
+  try { return fn(); } finally { lock.releaseLock(); }
 }
 
 // ---------------------------------------------------------------------------
-// The membership list
+// The timing page's calls. Every one checks the PIN first.
 // ---------------------------------------------------------------------------
 
-/**
- * Adds anybody on the membership list who is not on Runners yet, at the
- * bottom so nobody's tick on the Start list moves. Lapsed members are left
- * out. Reads Name, M or F and Status only.
- */
-function syncRunners() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var ui = SpreadsheetApp.getUi();
-  var id = String(ss.getSheetByName(TAB.settings).getRange('B2').getValue()).trim();
-  if (id === '') {
-    ui.alert('Put the membership list\'s file ID in Settings, cell B2, first.');
-    return;
-  }
-  var members = SpreadsheetApp.openById(id).getSheetByName('Members');
-  if (!members || members.getLastRow() < 2) {
-    ui.alert('The membership list has no Members tab, or it is empty.');
-    return;
-  }
-  var header = members.getRange(1, 1, 1, members.getLastColumn()).getValues()[0]
-    .map(function (h) { return String(h).trim(); });
-  var iName = header.indexOf('Name');
-  var iGender = header.indexOf('M or F');
-  var iStatus = header.indexOf('Status');
-  var rows = members.getRange(2, 1, members.getLastRow() - 1, header.length).getValues();
-
-  var runners = ss.getSheetByName(TAB.runners);
-  var have = {};
-  if (runners.getLastRow() >= 2) {
-    runners.getRange(2, 1, runners.getLastRow() - 1, 1).getValues().forEach(function (r) {
-      have[normalise(r[0]).toLowerCase()] = true;
-    });
-  }
-
-  var added = [];
-  rows.forEach(function (r) {
-    var name = normalise(r[iName]);
-    if (name === '' || have[name.toLowerCase()]) return;
-    if (iStatus >= 0 && String(r[iStatus]).trim().toLowerCase() === 'lapsed') return;
-    added.push([name, iGender >= 0 ? String(r[iGender]).trim() : '']);
-    have[name.toLowerCase()] = true;
-  });
-
-  if (added.length > 0) {
-    runners.getRange(runners.getLastRow() + 1, 1, added.length, 2).setValues(added);
-    recalculate();
-  }
-  ui.alert(added.length === 0 ? 'Runners is already up to date.'
-    : 'Added ' + added.length + ': ' + added.map(function (a) { return a[0]; }).join(', ') +
-      '\n\nRun Handicap → Update form lists so they appear on the form.');
-}
-
-// ---------------------------------------------------------------------------
-// The form
-// ---------------------------------------------------------------------------
-
-function createForm() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var ui = SpreadsheetApp.getUi();
-  if (ss.getFormUrl()) {
-    ui.alert('This sheet already has a form:\n\n' + ss.getFormUrl());
-    return;
-  }
-  ss.setSpreadsheetTimeZone('Europe/London');
-
-  var form = FormApp.create('CRR Monthly Handicap');
-  form.setDescription(
-      'Ran the monthly handicap? Put your result in here.\n' +
-      'Made a mistake? Just submit again: only your latest entry for each race counts.')
-    .setCollectEmail(false)
-    .setShowLinkToRespondAgain(true)
-    .setConfirmationMessage('Thanks! Your result is in.');
-
-  form.addListItem().setTitle(Q_NAME).setRequired(true)
-    .setHelpText('Not on the list? Tell whoever is doing the results tonight.');
-  form.addListItem().setTitle(Q_RACE).setRequired(true);
-  form.addDurationItem().setTitle(Q_TIME).setRequired(true)
-    .setHelpText('Your own watch time, from your own start.');
-  form.addTextItem().setTitle(Q_GRADE).setRequired(false)
-    .setHelpText('Only for the 3km, 1500m and mile, which are won on age grade. Just the number, e.g. 62.45')
-    .setValidation(FormApp.createTextValidation()
-      .requireNumberBetween(0, 100)
-      .setHelpText('Just the number, e.g. 62.45')
-      .build());
-
-  form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
-  SpreadsheetApp.flush();
-  renameResponsesTab_(ss, form.getId());
-
-  ScriptApp.newTrigger('onFormSubmitted').forSpreadsheet(ss).onFormSubmit().create();
-  updateFormLists();
-
-  ui.alert('Form created.\n\nShare this link in the WhatsApp group (not on the website):\n' +
-    form.getPublishedUrl() + '\n\nEdit the form here:\n' + form.getEditUrl());
-}
-
-function renameResponsesTab_(ss, formId) {
-  var sheets = ss.getSheets();
-  for (var i = 0; i < sheets.length; i++) {
-    var url = sheets[i].getFormUrl();
-    if (url && url.indexOf(formId) !== -1) {
-      sheets[i].setName(TAB.responses);
-      return;
-    }
-  }
-  SpreadsheetApp.getUi().alert('The form is linked, but rename its new tab to exactly: ' + TAB.responses);
-}
-
-function updateFormLists() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var url = ss.getFormUrl();
-  if (!url) {
-    SpreadsheetApp.getUi().alert('No form yet. Use Handicap → Create results form first.');
-    return;
-  }
-  var form = FormApp.openByUrl(url);
-  var find = function (title) {
-    var items = form.getItems();
-    for (var i = 0; i < items.length; i++) if (items[i].getTitle() === title) return items[i];
-    throw new Error('Could not find "' + title + '" on the form. Has a question been renamed?');
+function api_state(pin) {
+  checkPin_(pin);
+  var s = settings_();
+  var runners = runners_();
+  return {
+    race: { iso: s.raceIso, label: s.raceLabel },
+    step: s.step,
+    clockStartMs: s.clockStartMs,
+    finishes: finishes_(),
+    runners: runners.map(function (r) {
+      return { name: r.name, running: r.running, token: r.token, startSeconds: r.startSeconds, firstHandicap: r.firstHandicap };
+    }),
   };
+}
 
-  var names = readRunners_(ss).map(function (r) { return r.name; })
-    .sort(function (a, b) { return a.localeCompare(b, 'en-GB'); });
-  find(Q_NAME).asListItem().setChoiceValues(names);
+function api_setRunning(pin, name, running) {
+  checkPin_(pin);
+  return withLock_(function () {
+    var r = findRunner_(name);
+    var sh = sheet_(TAB.runners);
+    sh.getRange(r.row, COL.running).setValue(running === true);
+    if (running !== true) sh.getRange(r.row, COL.token).clearContent();
+    return true;
+  });
+}
 
-  // Newest first, and only the last six: nobody submits for a race from
-  // last year, and a long list on a phone is how the wrong one gets picked.
-  var labels = readEvents_(ss)
-    .sort(function (a, b) { return a.dateIso < b.dateIso ? 1 : -1; })
-    .slice(0, 6)
-    .map(function (e) { return e.label; });
-  find(Q_RACE).asListItem().setChoiceValues(labels);
+/** A newcomer on the night: added at the bottom, ticked, with a guessed start time. */
+function api_addRunner(pin, name, startText) {
+  checkPin_(pin);
+  name = String(name || '').replace(/\s+/g, ' ').trim();
+  if (!name) throw new Error('Type a name');
+  var start = String(startText || '').trim();
+  if (start && clockToSeconds(start) === null) throw new Error('Start time should look like 24:30');
+  return withLock_(function () {
+    var existing = runners_().filter(function (r) { return r.name.toLowerCase() === name.toLowerCase(); })[0];
+    if (existing) throw new Error(name + ' is already on the list');
+    var sh = sheet_(TAB.runners);
+    var names = sh.getRange(2, COL.name, RUNNERS_LAST_ROW - 1, 1).getValues();
+    var row = 0;
+    for (var i = 0; i < names.length; i += 1) { if (String(names[i][0]).trim() === '') { row = i + 2; break; } }
+    if (!row) throw new Error('The Runners tab is full');
+    sh.getRange(row, COL.name).setValue(name);
+    sh.getRange(row, COL.running).setValue(true);
+    if (start) sh.getRange(row, COL.simonStart).setNumberFormat('@').setValue(start);
+    SpreadsheetApp.flush();
+    return true;
+  });
+}
 
-  ss.toast(names.length + ' runners and ' + labels.length + ' races on the form.', 'Form updated');
+/** Simon's start time for a runner (blank to go back to the suggestion). */
+function api_setStartTime(pin, name, startText) {
+  checkPin_(pin);
+  var start = String(startText || '').trim();
+  if (start && clockToSeconds(start) === null) throw new Error('Start time should look like 24:30');
+  return withLock_(function () {
+    var r = findRunner_(name);
+    sheet_(TAB.runners).getRange(r.row, COL.simonStart).setNumberFormat('@').setValue(start);
+    SpreadsheetApp.flush();
+    return true;
+  });
+}
+
+/** Records when the clock started. Won't overwrite a running clock unless asked. */
+function api_startClock(pin, epochMs, force) {
+  checkPin_(pin);
+  return withLock_(function () {
+    var cell = sheet_(TAB.settings).getRange(SET.clockStart, 2);
+    var current = Number(cell.getValue()) || null;
+    if (current && !force) return current;
+    cell.setValue(epochMs || '');
+    return epochMs || null;
+  });
+}
+
+/**
+ * The phone holds the full list of finishes and sends all of it every time,
+ * so a lost signal or a repeated send can never double-count or drop one.
+ */
+function api_syncFinishes(pin, finishes) {
+  checkPin_(pin);
+  return withLock_(function () {
+    var sh = sheet_(TAB.timing);
+    var list = (finishes || [])
+      .filter(function (f) { return f && isFinite(f.clockSeconds); })
+      .sort(function (a, b) { return a.clockSeconds - b.clockSeconds; });
+    var last = sh.getLastRow();
+    if (last >= 2) sh.getRange(2, 1, last - 1, TIMING_HEADER.length).clearContent();
+    if (list.length) {
+      var now = new Date();
+      sh.getRange(2, 1, list.length, TIMING_HEADER.length).setValues(list.map(function (f, i) {
+        return [i + 1, f.clockSeconds / SECONDS_PER_DAY, Math.round(f.clockSeconds * 10) / 10, String(f.id), now];
+      }));
+    }
+    return list.length;
+  });
+}
+
+function api_setToken(pin, name, position) {
+  checkPin_(pin);
+  return withLock_(function () {
+    var r = findRunner_(name);
+    var p = position === '' || position === null || position === undefined ? '' : Number(position);
+    sheet_(TAB.runners).getRange(r.row, COL.token).setValue(p);
+    return true;
+  });
+}
+
+function api_result(pin) {
+  checkPin_(pin);
+  var s = settings_();
+  var result = raceResult(starters_(runners_(), s.step), finishes_());
+  return {
+    race: { iso: s.raceIso, label: s.raceLabel },
+    problems: result.problems,
+    rows: result.rows.map(function (r) {
+      return {
+        position: r.position, name: r.name, winner: r.winner, firstHandicap: r.firstHandicap, note: r.note,
+        run: secondsToClock(r.runSeconds), start: secondsToClock(r.startSeconds),
+        vsStart: r.vsStartSeconds === null ? '' : (r.vsStartSeconds > 0 ? '+' : '') + secondsToClock(r.vsStartSeconds),
+      };
+    }),
+  };
+}
+
+/**
+ * Writes the night to History and clears the decks for next month: ticks,
+ * tokens, the timing, the clock, and Simon's start times for the people who
+ * ran (their new run time now drives the suggestion). His notes stay.
+ */
+function api_saveRace(pin) {
+  checkPin_(pin);
+  return withLock_(saveRace_);
+}
+
+function saveRace_() {
+  var s = settings_();
+  if (!s.raceDate) throw new Error('No race to save: add tonight to the Events tab first');
+  var runners = runners_();
+  var starters = starters_(runners, s.step);
+  if (!starters.length) throw new Error('Nobody is ticked as running');
+
+  var history = sheet_(TAB.history);
+  var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+  var lastRow = history.getLastRow();
+  if (lastRow >= 2) {
+    var dates = history.getRange(2, 1, lastRow - 1, 1).getValues();
+    var already = dates.some(function (d) {
+      return d[0] instanceof Date && Utilities.formatDate(d[0], tz, 'yyyy-MM-dd') === s.raceIso;
+    });
+    if (already) throw new Error(s.raceLabel + ' is already in History');
+  }
+
+  var result = raceResult(starters, finishes_());
+  var asDay = function (sec) { return sec === null ? '' : sec / SECONDS_PER_DAY; };
+  var rows = result.rows.map(function (r) {
+    return [s.raceDate, s.raceLabel, r.name, asDay(r.startSeconds), asDay(r.runSeconds),
+      r.position === null ? '' : r.position, r.winner ? true : '', r.firstHandicap ? true : '',
+      asDay(r.goAtSeconds), asDay(r.clockSeconds), r.note === 'Winner' ? '' : r.note];
+  });
+  var start = Math.max(lastRow, 1) + 1;
+  history.getRange(start, 1, rows.length, HISTORY_HEADER.length).setValues(rows);
+  history.getRange(start, 1, rows.length, 1).setNumberFormat('d mmm yyyy');
+  [4, 5, 9, 10].forEach(function (c) { history.getRange(start, c, rows.length, 1).setNumberFormat('[m]:ss'); });
+
+  var sh = sheet_(TAB.runners);
+  var ran = {};
+  result.rows.forEach(function (r) { if (r.runSeconds !== null) ran[r.name] = true; });
+  runners.forEach(function (r) {
+    if (r.running) sh.getRange(r.row, COL.running).setValue(false);
+    if (r.token !== null) sh.getRange(r.row, COL.token).clearContent();
+    if (ran[r.name]) sh.getRange(r.row, COL.simonStart).clearContent();
+  });
+  var timing = sheet_(TAB.timing);
+  if (timing.getLastRow() >= 2) timing.getRange(2, 1, timing.getLastRow() - 1, TIMING_HEADER.length).clearContent();
+  sheet_(TAB.settings).getRange(SET.clockStart, 2).clearContent();
+  SpreadsheetApp.flush();
+
+  var winner = result.rows.filter(function (r) { return r.winner; })[0];
+  return {
+    saved: rows.length,
+    label: s.raceLabel,
+    winner: winner ? winner.name : '',
+    problems: result.problems,
+  };
+}
+
+function saveRaceFromMenu() {
+  var ui = SpreadsheetApp.getUi();
+  var s = settings_();
+  var preview = raceResult(starters_(runners_(), s.step), finishes_());
+  var msg = 'Save ' + (s.raceLabel || 'this race') + ' to History?\n\nThis clears the ticks, tokens, timing and clock, '
+    + "and Simon's start times for everyone who finished.";
+  if (preview.problems.length) msg += '\n\nStill to sort out:\n- ' + preview.problems.join('\n- ');
+  if (ui.alert(msg, ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  var done = withLock_(saveRace_);
+  ui.alert('Saved ' + done.saved + ' runners for ' + done.label + (done.winner ? '. Winner: ' + done.winner : '') + '.');
+}
+
+function clearTimingFromMenu() {
+  var ui = SpreadsheetApp.getUi();
+  if (ui.alert('Clear every finish time and the clock for this race? Ticks and tokens stay.',
+    ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  withLock_(function () {
+    var timing = sheet_(TAB.timing);
+    if (timing.getLastRow() >= 2) timing.getRange(2, 1, timing.getLastRow() - 1, TIMING_HEADER.length).clearContent();
+    sheet_(TAB.settings).getRange(SET.clockStart, 2).clearContent();
+  });
 }
