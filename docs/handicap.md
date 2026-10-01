@@ -23,7 +23,7 @@ put us right on 1 Oct; everything below comes from him and Matthew unless marked
 - **First-timers race but can't win.** The first *eligible* runner across the line wins. "First
   handicap" = no run in History yet.
 - **Finishing order comes from numbered tokens**, handed out at the line. The club has about 10;
-  Matthew is 3D printing more (`crr-finish-token.scad`, 50 × 36 mm, numbers cut into both faces).
+  Matthew is 3D printing more (`sheets/handicap/tokens/`, 1–40, 50 × 36 mm: number on the front, club mark on the back).
 - **Run time = clock time − go-at time**, from one clock started when the first group goes. That
   is what sets the next suggestion. Nobody needs their own watch (people still run one for Strava).
 - One combined result, men and women together. One trophy: the latest winner holds it.
