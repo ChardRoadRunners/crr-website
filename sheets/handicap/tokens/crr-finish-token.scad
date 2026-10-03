@@ -1,33 +1,28 @@
 // Chard Road Runners — finish token, with the club mark
 //
 // Handed out in finishing order at the monthly handicap; the number is the
-// finishing position.
+// finishing position. One solid piece, printed flat, no supports.
 //
 //   TOP (as printed): the CRR mark and the number, small, cut 1 mm in.
-//   BOTTOM (on the bed): the number, big, as a FLUSH INLAY in a second
-//   colour. Nothing is recessed on the bed side, so it needs no supports.
-//
-// The inlay only shows in a second colour, so print with two filaments (AMS,
-// MMU or similar): load the body and the number STLs together as ONE object
-// with two parts, and give the number part the second colour. Purple body,
-// sky-blue number suits the club colours.
+//   BOTTOM (on the bed): the number, big, flush with the face and outlined by
+//   a fine groove, so it can be coloured in by hand afterwards (paint pen).
+//   The groove is narrow enough to bridge, so the bed side needs no supports.
 //
 // Needs, next to this file: mark.scad (the club mark from src/assets/crr-logo-mark.svg
 // as outlines) and Manrope-ExtraBold.ttf (Manrope, SIL Open Font Licence).
-//   openscad -D number=7 -D 'part="body"'   -o crr-token-07-body.stl   crr-finish-token.scad
-//   openscad -D number=7 -D 'part="number"' -o crr-token-07-number.stl crr-finish-token.scad
+//   openscad -D number=10 -o crr-token-10.stl crr-finish-token.scad
 
 use <Manrope-ExtraBold.ttf>
 include <mark.scad>
 
 number    = 7;       // finishing position on the token
-part      = "both";  // "body", "number", or "both" (preview)
 width     = 50;      // mm
 height    = 36;      // mm
 thickness = 3.4;     // mm
 corner    = 6;       // corner radius, mm
 cut       = 1.0;     // how deep the mark is cut into the top, mm
-inlay     = 0.6;     // how thick the flush number inlay is (3 layers at 0.2), mm
+groove_w  = 0.6;     // width of the outline round the big number, mm
+groove_d  = 0.4;     // its depth (2 layers at 0.2), mm
 hole_d    = 6;       // hole for a ring, string or hook board, mm
 hole_edge = 5;       // hole centre from the top edge, mm
 lean      = 12;      // degrees the numbers lean, echoing the mark's italic
@@ -63,19 +58,17 @@ module hole() {
     translate([0, height / 2 - hole_edge, -1]) cylinder(d = hole_d, h = thickness + 2);
 }
 
-module body() {
+// The outline round the big number: a thin band straddling its edge.
+module number_outline() {
     difference() {
-        linear_extrude(thickness) outline();
-        hole();
-        translate([0, 0, thickness - cut]) linear_extrude(cut + 1) top_design();
-        translate([0, 0, -1]) linear_extrude(inlay + 1) big_number();
+        offset(delta = groove_w / 2) big_number();
+        offset(delta = -groove_w / 2) big_number();
     }
 }
 
-module number_inlay() {
-    linear_extrude(inlay) big_number();
+difference() {
+    linear_extrude(thickness) outline();
+    hole();
+    translate([0, 0, thickness - cut]) linear_extrude(cut + 1) top_design();
+    translate([0, 0, -1]) linear_extrude(groove_d + 1) number_outline();
 }
-
-if (part == "body") body();
-else if (part == "number") number_inlay();
-else { color("#5b2d8e") body(); color("#7cc4ef") number_inlay(); }
