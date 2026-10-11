@@ -172,6 +172,26 @@ the time, for a different reason: no commit had ever added a file under
 `src/content/race-reports/images/` except `776b4cd`, which was made from a
 terminal. That is the check worth repeating; the commit message is not.
 
+### Choosing a photo already in the media library
+
+Uploading a new photo writes its path as `./images/name.webp`. Choosing one
+that is already in the media library writes `images/name.webp`, without the
+`./`. Astro only looks next to the post for a path that starts with `./`, so the
+photo silently does not appear. The build stays green, which is why nobody is
+told.
+
+Found 11 October 2026 on the RED Running Devon report. A photo was in the
+gallery, uploaded fresh, and showed at the bottom of the post. The same file
+picked from the library as the main photo did not show at the top. Fixed by
+hand in that one file.
+
+The preSave hook in `public/admin/index.html` now puts the `./` back on any
+photo path that begins `images/`, for both the main photo and the gallery, in
+race reports and races. Nothing else is touched. Tested against the hook code
+with the same data structures the CMS passes it; not yet tried against the
+live editing screen, so the first library pick after this lands is worth
+checking in the commit: the frontmatter should read `./images/…`.
+
 ### A build that fails with nothing changed
 
 On 22 September a merge to `main` failed to deploy. The identical tree had

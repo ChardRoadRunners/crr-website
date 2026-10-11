@@ -44,6 +44,56 @@
         // Alt text applies to these two; the diary rule below has its own check.
         var COLLECTIONS = ['race-reports', 'races'];
 
+        // Photo paths must start with "./".
+        //
+        // Both collections keep photos in an images/ folder next to the
+        // Markdown, and config.yml sets public_folder to "./images" so the
+        // path written is "./images/name.webp". Astro only looks next to the
+        // file for a path that starts with "./"; without it, the photo does
+        // not appear on the page.
+        //
+        // Uploading a new photo writes the "./". Choosing one that is already
+        // in the media library does not: it writes "images/name.webp". Found
+        // 11 October 2026 on the RED Running Devon report, where the gallery
+        // copy of a photo showed and the main photo, the same file picked from
+        // the library, did not. So this puts the "./" back on save.
+        //
+        // Deliberately narrow: only a path beginning "images/" is touched.
+        // Anything else, right or wrong, is saved exactly as written.
+        function withDotSlash(path) {
+          return typeof path === 'string' && path.indexOf('images/') === 0
+            ? './' + path
+            : path;
+        }
+
+        // Returns the entry's data with every photo path corrected, or null if
+        // nothing needed changing — in which case the save goes through
+        // untouched.
+        function fixPhotoPaths(data) {
+          var changed = false;
+
+          var hero = data.get('heroImage');
+          if (withDotSlash(hero) !== hero) {
+            data = data.set('heroImage', withDotSlash(hero));
+            changed = true;
+          }
+
+          // The gallery: a list of { src, alt }. Race reports only.
+          var gallery = data.get('images');
+          if (gallery && typeof gallery.map === 'function') {
+            var fixedGallery = gallery.map(function (item) {
+              if (!item || typeof item.get !== 'function') return item;
+              var src = item.get('src');
+              if (withDotSlash(src) === src) return item;
+              changed = true;
+              return item.set('src', withDotSlash(src));
+            });
+            if (changed) data = data.set('images', fixedGallery);
+          }
+
+          return changed ? data : null;
+        }
+
         window.CMS.registerEventListener({
           name: 'preSave',
           handler: function (args) {
@@ -67,6 +117,13 @@
                 ),
               });
             }
+
+            // Returning the data is how a preSave hook changes what is saved:
+            // the pinned version replaces the entry's content with it. Returning
+            // nothing saves the entry as it was. Worth re-checking, like the
+            // error above, if the pinned version is ever bumped.
+            var fixedData = fixPhotoPaths(entry.get('data'));
+            if (fixedData) return fixedData;
 
             // The race diary's either/or, which the config cannot express.
             //
