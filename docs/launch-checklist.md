@@ -284,20 +284,18 @@ source.
   committee giving a green light, and the maintainer being happy with the
   site. Until both, an unresolving domain is the intended state — see **The
   domain is held back on purpose** under the Cloudflare move.
-- **Photo uploads may not work from a phone.** They work from a computer —
-  proved 26 September 2026 — and both failures so far were from mobile
-  Chrome, a week apart, each leaving the frontmatter pointing at a file that
-  was never committed. That fails the build and stops the site updating until
-  somebody removes the reference by hand.
+- **Photo uploads from a phone: proved to work, two failures unexplained.**
+  On 11 October 2026 three reports went up from a phone, each with its photo
+  committed alongside it. They work from a computer too, proved 26 September.
 
-  Not yet proved to be the device: the failures and the success also differ by
-  account, photo and filename. The test is one person trying both ways on the
-  same account, and it is worth doing before launch rather than after. A
-  running club's photos arrive on phones, so "upload from a computer" is a
-  reasonable instruction for one webmaster and a poor one for a committee.
+  Still open: Kate's two failures from mobile Chrome, a week apart, each
+  leaving the frontmatter pointing at a file that was never committed. That
+  fails the build and stops the site updating until somebody removes the
+  reference by hand. Since phones in general are now ruled out, the cause was
+  something about that phone, browser, account or photo. The test is Kate
+  trying again from her own phone, worth doing before launch.
 
-  See **Photo uploads work from a computer, and have never worked from a
-  phone** in `docs/handover.md`.
+  See **Photo uploads from a phone** in `docs/handover.md`.
 - **Redirects from the old Webador URLs.** Needs the list of old addresses
   captured *before* that site is switched off. Without them, every link anyone
   has ever shared breaks on launch day.

@@ -126,11 +126,26 @@ That is the failure to recognise: not a broken site, a frozen one.
    publishes without it, everything queued behind it publishes too, and the
    photo can go back later. An unpublished post helps nobody.
 
-### Photo uploads work from a computer, and have never worked from a phone
+### Photo uploads from a phone: failed twice, then worked three times
 
-**They do work.** On 26 September 2026 a photo went up through `/admin` on a
-desktop browser and committed correctly: the entry and a 205 KB WebP together
-in commit `605950b`.
+**They do work from a phone.** On 11 October 2026 Matthew posted three race
+reports from his phone in quick succession, each with a photo saved from the
+club WhatsApp group, and all three photos committed with their entries:
+`90684d7`, `a4cfce2` and `05d7d74`, each with a `+1` and a WebP. One main photo
+then failed to show, but that was a different fault, a path written without
+its `./` — see **Choosing a photo already in the media library** below — not
+an upload that went missing.
+
+**They also work from a computer.** On 26 September 2026 a photo went up
+through `/admin` on a desktop browser and committed correctly: the entry and a
+205 KB WebP together in commit `605950b`.
+
+What is still unexplained is the two failures below. "Phones cannot upload" is
+now ruled out, so whatever went wrong was particular to that phone, browser,
+account or photo. The test that would settle it is Kate trying again from her
+own phone.
+
+The account of the failures, as first written:
 
 **Both failures were from a phone.** Kate tried twice, a week apart, on mobile
 Chrome. Each time the path was written into the frontmatter and the file was
