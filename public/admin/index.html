@@ -98,7 +98,43 @@
           name: 'preSave',
           handler: function (args) {
             var entry = args.entry;
-            if (COLLECTIONS.indexOf(entry.get('collection')) === -1) return;
+            var collection = entry.get('collection');
+
+            // The race diary's either/or, which the config cannot express.
+            //
+            // src/content.config.ts requires exactly one of: a fixed date, or
+            // both "which one" and "which day". Without this the save
+            // succeeds, the build then rejects the file, and the failure lands
+            // on the committee member — the exact thing the CMS is here to
+            // prevent.
+            //
+            // It has to come first. Until 11 October 2026 it sat at the end of
+            // this handler, below the line that leaves early for anything
+            // that is not a race report or a race, so it never ran at all.
+            if (collection === 'calendar-events') {
+              var fixed = String(entry.getIn(['data', 'fixedDate']) || '').trim();
+              var nth = String(entry.getIn(['data', 'nth']) || '').trim();
+              var weekday = String(entry.getIn(['data', 'weekday']) || '').trim();
+              var hasRule = Boolean(nth && weekday);
+
+              if (Boolean(fixed) === hasRule) {
+                throw new Error('saving_failed', {
+                  cause: new Error(
+                    fixed && hasRule
+                      ? 'Use either a fixed date or a rule, not both. Clear the ' +
+                        'fixed date if the race moves, or clear "which one" and ' +
+                        '"which day" if it is always the same date.'
+                      : 'Say when this race happens: either a fixed date like ' +
+                        '"1 January", or both "which one" and "which day" to make ' +
+                        'a rule like "last Sunday".',
+                  ),
+                });
+              }
+              return;
+            }
+
+            // Everything below is about photos, in these two collections only.
+            if (COLLECTIONS.indexOf(collection) === -1) return;
 
             var image = entry.getIn(['data', 'heroImage']);
             var alt = entry.getIn(['data', 'heroImageAlt']);
@@ -124,34 +160,6 @@
             // error above, if the pinned version is ever bumped.
             var fixedData = fixPhotoPaths(entry.get('data'));
             if (fixedData) return fixedData;
-
-            // The race diary's either/or, which the config cannot express.
-            //
-            // src/content.config.ts requires exactly one of: a fixed date, or
-            // both "which one" and "which day". Without this the save
-            // succeeds, the build then rejects the file, and the failure lands
-            // on the committee member — the exact thing the CMS is here to
-            // prevent.
-            if (entry.get('collection') === 'calendar-events') {
-              var fixed = String(entry.getIn(['data', 'fixedDate']) || '').trim();
-              var nth = String(entry.getIn(['data', 'nth']) || '').trim();
-              var weekday = String(entry.getIn(['data', 'weekday']) || '').trim();
-              var hasRule = Boolean(nth && weekday);
-
-              if (Boolean(fixed) === hasRule) {
-                throw new Error('saving_failed', {
-                  cause: new Error(
-                    fixed && hasRule
-                      ? 'Use either a fixed date or a rule, not both. Clear the ' +
-                        'fixed date if the race moves, or clear "which one" and ' +
-                        '"which day" if it is always the same date.'
-                      : 'Say when this race happens: either a fixed date like ' +
-                        '"1 January", or both "which one" and "which day" to make ' +
-                        'a rule like "last Sunday".',
-                  ),
-                });
-              }
-            }
           },
         });
       })();
