@@ -3,7 +3,7 @@ title: RED (Red Running Devon)
 races:
   - name: Red Running Devon
     distance:
-      value: 26
+      value: 26.2
       unit: mi
     raceDate: 2026-10-10
 dateApproximate: false
