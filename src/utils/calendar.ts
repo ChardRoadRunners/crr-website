@@ -131,19 +131,24 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * of seconds, or an HTTP date. Falls back to doubling. Exported so the wait is
  * testable without waiting.
  */
-export function retryDelayMs(attempt: number, retryAfter?: string | null, now = Date.now()): number {
-	const backoff = Math.min(BACKOFF_MS * 2 ** (attempt - 1), MAX_BACKOFF_MS);
+export function retryDelayMs(
+	attempt: number,
+	retryAfter?: string | null,
+	now = Date.now(),
+	cap = MAX_BACKOFF_MS,
+): number {
+	const backoff = Math.min(BACKOFF_MS * 2 ** (attempt - 1), cap);
 	if (!retryAfter) return backoff;
 
 	const seconds = Number(retryAfter);
 	if (Number.isFinite(seconds)) {
-		return Math.min(Math.max(seconds, 0) * 1_000, MAX_BACKOFF_MS);
+		return Math.min(Math.max(seconds, 0) * 1_000, cap);
 	}
 
 	const when = Date.parse(retryAfter);
 	if (Number.isNaN(when)) return backoff;
 
-	return Math.min(Math.max(when - now, 0), MAX_BACKOFF_MS);
+	return Math.min(Math.max(when - now, 0), cap);
 }
 
 /**
@@ -174,13 +179,71 @@ export function describeStatus(source: CalendarSource, status: number, statusTex
 	return `${head} Check the calendar is still shared publicly in Google.`;
 }
 
+export interface DownloadOptions {
+	/** How many tries before giving up. */
+	attempts?: number;
+	/** The longest single wait between tries, in milliseconds. */
+	maxBackoffMs?: number;
+}
+
 /**
- * Fetches and parses one feed.
+ * Downloads one feed from Google and returns the raw .ics text.
  *
  * Fails loudly on purpose. A feed that 404s means somebody turned off public
  * sharing in Google, and the visible symptom would otherwise be a page that
  * quietly has nothing on it — which nobody notices until a member asks why the
  * races have gone.
+ *
+ * Transient refusals are retried with backoff first. The defaults are the
+ * build's patience; scripts/fetch-calendars.mjs, which runs overnight with
+ * nobody waiting on it, asks for a good deal more.
+ */
+export async function downloadFeed(
+	source: CalendarSource,
+	{ attempts = MAX_ATTEMPTS, maxBackoffMs = MAX_BACKOFF_MS }: DownloadOptions = {},
+): Promise<string> {
+	let lastProblem = '';
+
+	for (let attempt = 1; attempt <= attempts; attempt += 1) {
+		let response: Response;
+		try {
+			response = await fetch(feedUrl(source));
+		} catch (cause) {
+			// A dropped connection is the same kind of "later" as a 429.
+			lastProblem = `Calendar "${source}" could not be reached: ${(cause as Error).message}`;
+			if (attempt === attempts) break;
+			await sleep(retryDelayMs(attempt, null, Date.now(), maxBackoffMs));
+			continue;
+		}
+
+		if (response.ok) {
+			const body = await response.text();
+			if (!body.trimStart().startsWith('BEGIN:VCALENDAR')) {
+				throw new Error(
+					`Calendar "${source}" did not return an iCalendar file. ` +
+						'Google serves an HTML error page when a feed is private, so this is the ' +
+						'same problem as a 404.',
+				);
+			}
+			return body;
+		}
+
+		lastProblem = describeStatus(source, response.status, response.statusText);
+
+		// Anything that is not a "try later" is a real answer. Say so now.
+		if (!RETRY_STATUSES.has(response.status)) throw new Error(lastProblem);
+
+		if (attempt === attempts) break;
+		await sleep(
+			retryDelayMs(attempt, response.headers.get('retry-after'), Date.now(), maxBackoffMs),
+		);
+	}
+
+	throw new Error(lastProblem);
+}
+
+/**
+ * Fetches and parses one feed.
  *
  * Transient refusals get up to MAX_ATTEMPTS tries with backoff first, because
  * failing the whole site build on one 429 is a false alarm, and a build nobody
@@ -190,44 +253,7 @@ export function fetchCalendar(source: CalendarSource): Promise<ical.CalendarResp
 	const cached = feeds.get(source);
 	if (cached) return cached;
 
-	const work = async () => {
-		let lastProblem = '';
-
-		for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
-			let response: Response;
-			try {
-				response = await fetch(feedUrl(source));
-			} catch (cause) {
-				// A dropped connection is the same kind of "later" as a 429.
-				lastProblem = `Calendar "${source}" could not be reached: ${(cause as Error).message}`;
-				if (attempt === MAX_ATTEMPTS) break;
-				await sleep(retryDelayMs(attempt));
-				continue;
-			}
-
-			if (response.ok) {
-				const body = await response.text();
-				if (!body.trimStart().startsWith('BEGIN:VCALENDAR')) {
-					throw new Error(
-						`Calendar "${source}" did not return an iCalendar file. ` +
-							'Google serves an HTML error page when a feed is private, so this is the ' +
-							'same problem as a 404.',
-					);
-				}
-				return ical.async.parseICS(body);
-			}
-
-			lastProblem = describeStatus(source, response.status, response.statusText);
-
-			// Anything that is not a "try later" is a real answer. Say so now.
-			if (!RETRY_STATUSES.has(response.status)) throw new Error(lastProblem);
-
-			if (attempt === MAX_ATTEMPTS) break;
-			await sleep(retryDelayMs(attempt, response.headers.get('retry-after')));
-		}
-
-		throw new Error(lastProblem);
-	};
+	const work = async () => ical.async.parseICS(await downloadFeed(source));
 
 	// Wait for whatever is already in flight, then go. `queue` swallows the
 	// result so one feed failing does not stop the feeds behind it from being

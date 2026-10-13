@@ -1,0 +1,150 @@
+# Fetch calendars — saves the club's Google calendars into the repository.
+#
+# Lives at: .github/workflows/fetch-calendars.yml
+#
+# Every night this downloads the five club calendars from Google, patiently,
+# and commits them to src/data/calendars/ if anything changed. The website
+# build reads those saved copies and never contacts Google itself — that is
+# what stopped Cloudflare's builds failing on Google's rate limit. See
+# scripts/fetch-calendars.mjs for the reasoning.
+#
+# WHEN IT RUNS: 02:17 UTC, so its commit lands before the 04:00 nightly
+# rebuild (workers/diary-rebuild/). GitHub often starts scheduled jobs late;
+# that is fine, because the commit triggers its own build whenever it lands.
+# Run it by hand from the Actions tab after changing a calendar in Google if
+# the change should be on the site before tomorrow.
+#
+# IF IT FAILS it opens ONE issue titled "Calendar fetch failing", assigned to
+# the same person as the build alerts (the BUILD_ALERT_ASSIGNEE variable), and
+# closes it the next night that works. The site carries on showing the last
+# copy that downloaded, so nothing breaks while it is open — it just goes
+# stale.
+#
+# WORTH KNOWING: GitHub switches off scheduled jobs in a public repository
+# after 60 days with no commits. Race reports count, so in practice this only
+# matters in a long quiet spell. If calendar changes stop reaching the site,
+# check this workflow is still enabled in the Actions tab.
+
+name: Fetch calendars
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch: # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write # to commit the calendars
+  issues: write # to raise the alarm
+
+concurrency:
+  group: fetch-calendars
+
+env:
+  ALERT_TITLE: Calendar fetch failing
+  ASSIGNEE: ${{ vars.BUILD_ALERT_ASSIGNEE }}
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Download the calendars
+        id: download
+        run: node --experimental-strip-types --no-warnings scripts/fetch-calendars.mjs
+        # Commit whatever did download even if one calendar failed, so one bad
+        # feed does not hold back the other four. The failure is still
+        # reported by the last step.
+        continue-on-error: true
+
+      - name: Commit any changes
+        run: |
+          git add src/data/calendars
+          if git diff --cached --quiet; then
+            echo "No calendar has changed. Nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update club calendars from Google"
+          # Somebody may have saved a race report since this job started.
+          for try in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 10
+          done
+          echo "Could not push the calendars after three tries."
+          exit 1
+
+      - name: Fail if any calendar could not be downloaded
+        if: steps.download.outcome == 'failure'
+        run: |
+          echo "At least one calendar failed. See the 'Download the calendars' step above."
+          exit 1
+
+  report-failure:
+    needs: fetch
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const title = process.env.ALERT_TITLE;
+            const issues = await github.paginate(github.rest.issues.listForRepo,
+              { owner, repo, state: 'open', per_page: 100 });
+            const existing = issues.find(i => !i.pull_request && i.title === title);
+            if (existing) {
+              core.info(`Issue #${existing.number} already open, so no new email.`);
+              return;
+            }
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const lines = [
+              'The nightly download of the club calendars from Google failed. **The website is fine** — it carries on showing the last copy that downloaded — but calendar changes made in Google will not appear on the site until this works again.',
+              '',
+              `- **Log:** ${runUrl}`,
+              '',
+              'Open the log and look at the "Download the calendars" step. Each calendar says whether it worked.',
+              '',
+              '- **"returned 404"** or **"did not return an iCalendar file"**: somebody has turned off public sharing on that calendar in Google. Turn it back on.',
+              '- **"returned 429"** or **"could not be reached"**: Google said "not now". It usually works the next night by itself. If it keeps happening, re-run it from the Actions tab.',
+              '',
+              'This issue closes itself the next time the download works. While it is open, further failures will not send more emails.',
+            ];
+            const assignee = process.env.ASSIGNEE;
+            if (!assignee) {
+              lines.push('', '> **Nobody was emailed about this.** Set the BUILD_ALERT_ASSIGNEE repository variable to the web admin\'s GitHub username.');
+              core.warning('BUILD_ALERT_ASSIGNEE is not set, so the issue is unassigned.');
+            }
+            await github.rest.issues.create({
+              owner, repo, title, body: lines.join('\n'),
+              assignees: assignee ? [assignee] : [],
+            });
+
+  report-recovery:
+    needs: fetch
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const title = process.env.ALERT_TITLE;
+            const issues = await github.paginate(github.rest.issues.listForRepo,
+              { owner, repo, state: 'open', per_page: 100 });
+            const existing = issues.find(i => !i.pull_request && i.title === title);
+            if (!existing) return;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            // One update = one email: note the fix in the body and close together.
+            await github.rest.issues.update({
+              owner, repo, issue_number: existing.number,
+              state: 'closed', state_reason: 'completed',
+              body: `${existing.body}\n\n---\n**Fixed:** the calendars downloaded again. ${runUrl}`,
+            });
