@@ -1,0 +1,32 @@
+BEGIN:VCALENDAR
+PRODID:-//Google Inc//Google Calendar 70.9054//EN
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:CRR - Championship Races
+X-WR-TIMEZONE:Europe/London
+X-WR-CALDESC:All the races in the club championship. \n\nYou’ve got to be i
+ n it to win it. 
+BEGIN:VEVENT
+DTSTART:20261018T090000Z
+DTEND:20261018T110000Z
+DTSTAMP:20261013T202803Z
+UID:grgr7r9l8l56gmfp4f53pa9nq8@google.com
+CREATED:20260919T101230Z
+DESCRIPTION:https://rubyredrunning.com/stockland-scamper-2026/\n\nStockland
+  Scamper 2026\n\nReturning again in 2026\, the Stockland Primary Academy PT
+ A and Ruby Red Running have teamed up to revive the ever popular Stockland 
+ Scamper\, featuring a 10km\, 5km and 3km multi-terrain run around the beaut
+ iful countryside of Stockland\, located near Honiton\, East Devon.\n\nSunda
+ y 18th October 2026\n\nExpect mud\, expect river crossings and expect hills
+ .... most of all expect to have a great time! Refreshments and cake will on
+  sale\, handmade by the PTA\, a perfect treat after a challenging trail rac
+ e.\n\nEntries close Thursday 15th October 2026
+LAST-MODIFIED:20260919T101249Z
+LOCATION:Stockland Village Hall\, Stockland\, Honiton EX14 9EF\, UK
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Stockland Scamper 10k
+TRANSP:OPAQUE
+END:VEVENT
+END:VCALENDAR
