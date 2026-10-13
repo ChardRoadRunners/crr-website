@@ -1,20 +1,25 @@
 /**
- * The club's Google calendars, read at build time.
+ * The club's Google calendars, read at build time from saved copies.
  *
  * Five public `.ics` feeds parsed into one shape, so a page never has to care
  * which calendar an event came from. The pages render ordinary HTML with no
  * client-side JavaScript, which is why the nightly rebuild exists: a static
  * build only knows what was true when it ran.
  *
- * Nothing here runs in a visitor's browser. The only request to Google happens
- * on the build machine — the whole reason this replaces the calendar iframe,
- * which would have put every visitor's IP in front of Google.
+ * Nothing here runs in a visitor's browser, and since 13 October 2026 nothing
+ * here contacts Google during a build either. A nightly GitHub workflow
+ * downloads the feeds into src/data/calendars/ (downloadFeed below, called by
+ * scripts/fetch-calendars.mjs) and the build reads those (fetchCalendar). Not
+ * using the calendar iframe keeps every visitor's IP away from Google.
  *
  * WHY node-ical: it parses an .ics file and expands RRULEs without a build
  * step. `ical.js` is the stricter parser but needs RecurExpansion wired up by
  * hand. The reason to switch would be club-night recurrence misbehaving — it
  * was checked across the BST/GMT change and 7pm stays 7pm, so it has not.
  */
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
 import ical from 'node-ical';
 
 import { CALENDAR_IDS } from '../consts.ts';
@@ -46,32 +51,22 @@ const feedUrl = (source: CalendarSource) =>
 	)}/public/basic.ics`;
 
 /**
- * One fetch per feed per build.
+ * Where the nightly job saves the feeds, and where the build reads them.
  *
- * Several pages read the same calendar, and without this each would pull it
- * again. Keyed by source and holding the promise rather than the result, so
- * two pages starting at once still share a single request.
+ * Resolved from the working directory rather than this file, because Astro
+ * bundles this module somewhere else before running it. Every build and
+ * check runs from the repository root.
  */
-const feeds = new Map<CalendarSource, Promise<ical.CalendarResponse>>();
+const SAVED_DIR = join(process.cwd(), 'src', 'data', 'calendars');
 
 /**
- * One request to Google at a time.
+ * One parse per feed per build.
  *
- * /calendar asks for all five feeds in a single `Promise.all`, seventeen
- * milliseconds into the build, so five requests left for the same host at the
- * same instant from one address. Google refused some of them with 429, and
- * which ones looked random — "2 of 3" on one build, "1 of 1" on the next.
- *
- * Retrying hid the shape of it rather than fixing it: every round re-fired the
- * survivors together, so each attempt was another burst. Raising the attempt
- * count from four to six on 26 September bought more waiting and still lost.
- *
- * Queueing costs about a second of build time across five small files and
- * removes the burst entirely. It does not replace the backoff above: a shared
- * build address can arrive already out of quota, which is a different problem
- * with the same symptom.
+ * Several pages read the same calendar, and without this each would parse it
+ * again. Keyed by source and holding the promise rather than the result, so
+ * two pages starting at once still share one.
  */
-let queue: Promise<unknown> = Promise.resolve();
+const feeds = new Map<CalendarSource, Promise<ical.CalendarResponse>>();
 
 /**
  * Statuses worth trying again.
@@ -82,40 +77,28 @@ let queue: Promise<unknown> = Promise.resolve();
  * 20 September 2026, on a commit that changed two CSS classes.
  *
  * A 404 is deliberately NOT here. That means somebody turned off public
- * sharing, it will 404 again in ten seconds, and the build should say so at
- * once rather than spending half a minute pretending otherwise. Retrying the
+ * sharing, it will 404 again in ten seconds, and the download should say so at
+ * once rather than spending minutes pretending otherwise. Retrying the
  * statuses that mean "later" is what keeps the loud failure meaningful: if the
- * build still goes red after this, something is actually wrong.
+ * nightly download still goes red after this, something is actually wrong.
  */
 const RETRY_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 
 /**
- * Six attempts, not four.
+ * The default patience for downloadFeed: six tries, about thirty seconds.
  *
- * The sleeps go between attempts and double from a second, so four attempts
- * spent 1 + 2 + 4 = seven seconds of patience altogether. That reads like more
- * than it is, and it is no match for a rate-limit window measured in minutes.
- * Six gives 1 + 2 + 4 + 8 + 16 = thirty-one seconds.
+ * This used to be the build's patience, when every build fetched from Google,
+ * and no setting of it was ever enough: Cloudflare's builders share addresses
+ * with everyone else's, so Google refused them often enough to stop the site
+ * deploying three times in a week in September and three more in two days in
+ * October, each on a commit with nothing wrong with it. Five requests fired at
+ * the same instant made it worse; they went out one at a time after that,
+ * which helped and did not cure it.
  *
- * Raised on 26 September 2026, after the shared-address 429 described above
- * took three builds down inside a week — once on 20 September, twice in one
- * morning on the 26th — each on a commit with nothing wrong with it.
- *
- * This makes losing less likely, not impossible. The real fix is for builds to
- * stop depending on Google at all, which is a decision on the launch checklist
- * rather than a number to tune.
- *
- * **Six is probably more than is needed now, and is kept on purpose.** It was
- * raised to outlast a rate limit, on a reading of the problem that turned out
- * to be wrong: the cause was the burst of five simultaneous requests, fixed
- * later the same day by the queue above. The queue spaces the requests out by
- * itself, so most of this patience now buys a slower failure rather than a
- * better chance — five feeds all failing takes about two and a half minutes to
- * report at six attempts, against thirty-five seconds at four.
- *
- * Left at six until the queue has a few weeks of quiet behind it. Dropping it
- * at the same time would have changed two things at once and taught us nothing
- * about which one was carrying the fix.
+ * Since 13 October 2026 builds read saved copies instead (see fetchCalendar),
+ * and the only download is scripts/fetch-calendars.mjs, overnight, which asks
+ * for more patience than this. The default stays for anything that calls
+ * downloadFeed without saying.
  */
 const MAX_ATTEMPTS = 6;
 const BACKOFF_MS = 1_000;
@@ -159,7 +142,12 @@ export function retryDelayMs(
  * about sharing permissions, and cost a morning chasing the wrong thing.
  * Exported so the wording is pinned by the checks.
  */
-export function describeStatus(source: CalendarSource, status: number, statusText: string): string {
+export function describeStatus(
+	source: CalendarSource,
+	status: number,
+	statusText: string,
+	attempts = MAX_ATTEMPTS,
+): string {
 	const head = `Calendar "${source}" returned ${status} ${statusText}.`;
 
 	if (status === 404) {
@@ -170,10 +158,10 @@ export function describeStatus(source: CalendarSource, status: number, statusTex
 	}
 	if (RETRY_STATUSES.has(status)) {
 		return (
-			`${head} That is a "try later", and it was already retried ${MAX_ATTEMPTS} ` +
+			`${head} That is a "try later", and it was already tried ${attempts} ` +
 			'times with backoff, so Google is still refusing. Nothing is wrong with the ' +
-			'calendar itself — a build machine sharing an address with noisy neighbours ' +
-			'can spend the rate limit. Re-run the build.'
+			'calendar itself. It usually works the next night; to try now, re-run ' +
+			'Fetch calendars from the Actions tab on GitHub.'
 		);
 	}
 	return `${head} Check the calendar is still shared publicly in Google.`;
@@ -228,7 +216,7 @@ export async function downloadFeed(
 			return body;
 		}
 
-		lastProblem = describeStatus(source, response.status, response.statusText);
+		lastProblem = describeStatus(source, response.status, response.statusText, attempts);
 
 		// Anything that is not a "try later" is a real answer. Say so now.
 		if (!RETRY_STATUSES.has(response.status)) throw new Error(lastProblem);
@@ -243,24 +231,31 @@ export async function downloadFeed(
 }
 
 /**
- * Fetches and parses one feed.
+ * Reads and parses one feed from its saved copy. Never contacts Google.
  *
- * Transient refusals get up to MAX_ATTEMPTS tries with backoff first, because
- * failing the whole site build on one 429 is a false alarm, and a build nobody
- * trusts is as bad as a page nobody checks.
+ * The copies are downloaded every night by .github/workflows/fetch-calendars.yml
+ * and committed to src/data/calendars/. So a race report saved at lunchtime
+ * builds without asking Google anything, and a change made in Google reaches
+ * the site overnight, or straight away if somebody runs that workflow by hand.
+ *
+ * A missing copy fails the build at once and says why. It would only happen if
+ * the file were deleted or a sixth calendar added without running the job, and
+ * an empty calendar page is the quiet failure this is here to prevent.
  */
 export function fetchCalendar(source: CalendarSource): Promise<ical.CalendarResponse> {
 	const cached = feeds.get(source);
 	if (cached) return cached;
 
-	const work = async () => ical.async.parseICS(await downloadFeed(source));
-
-	// Wait for whatever is already in flight, then go. `queue` swallows the
-	// result so one feed failing does not stop the feeds behind it from being
-	// tried — they each need to report their own problem, which is what lets
-	// the error name every broken feed at once rather than one per build.
-	const pending = queue.then(work);
-	queue = pending.catch(() => {});
+	const file = join(SAVED_DIR, `${source}.ics`);
+	const pending = readFile(file, 'utf8').then(
+		(body) => ical.async.parseICS(body),
+		() => {
+			throw new Error(
+				`Calendar "${source}" has no saved copy at src/data/calendars/${source}.ics. ` +
+					'Run Fetch calendars from the Actions tab on GitHub to download it.',
+			);
+		},
+	);
 
 	feeds.set(source, pending);
 	return pending;

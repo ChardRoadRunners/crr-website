@@ -33,31 +33,37 @@ export const SKIP_LINK_LABEL = 'Skip to content';
 // The id it targets, and the id on <main>. One constant so they cannot drift.
 export const MAIN_CONTENT_ID = 'main-content';
 
-// The club's five public Google calendars, read at build time by
-// `src/utils/calendar.ts` and rendered as ordinary HTML. No visitor's browser
-// ever talks to Google — the only request happens on the build machine, which
-// is the whole point of doing it this way rather than embedding an iframe.
+// The club's five public Google calendars, rendered as ordinary HTML. No
+// visitor's browser ever talks to Google, which is the whole point of doing it
+// this way rather than embedding an iframe.
+//
+// Since 13 October 2026 the build does not talk to Google either. A nightly
+// GitHub workflow (`.github/workflows/fetch-calendars.yml`) downloads each feed
+// into `src/data/calendars/<name>.ics`, and the build reads those saved copies.
+// Before that, every build fetched from Google, and Google's rate limit on
+// Cloudflare's shared build addresses kept stopping the site deploying on
+// commits with nothing wrong with them.
 //
 // These are calendar IDs, not URLs. Each one's public feed is
 // `https://calendar.google.com/calendar/ical/<id>/public/basic.ics`, built in
 // one place in calendar.ts so the shape is not written out five times. Find an
 // ID in Google Calendar under Settings > (the calendar) > Integrate calendar.
+// Adding a calendar here means running Fetch calendars once by hand, or the
+// build fails for want of its saved copy.
 //
 // Every one of these must stay set to "Make available to public". If one is
-// turned private its feed 404s and THE BUILD FAILS, by design: a calendar
-// quietly serving nothing is worse than a red build, because a page of races
-// that silently empties is a page nobody checks.
+// turned private its feed 404s and the nightly download fails and opens a
+// "Calendar fetch failing" issue. The site keeps showing the last copy that
+// downloaded until it is fixed.
 //
-// A 404 fails at once. A 429 does not: Google rate-limits by address, the
-// build machines share theirs, and on 20 September 2026 somebody else's
-// traffic failed a build of ours that had changed two CSS classes. Those are
-// retried with backoff before the build gives up — see fetchCalendar. The
-// distinction is the point: "no" is still loud and immediate, "not right now"
-// is waited out.
+// A 404 fails at once. A 429 does not: that is Google saying "not right now",
+// and the nightly job waits it out for a couple of minutes per calendar before
+// giving up. The distinction is the point: "no" is loud and immediate, "not
+// right now" is waited out.
 //
-// Because the site is built, not live, these are only as current as the last
-// build. The nightly rebuild in `workers/diary-rebuild/` is what keeps them
-// honest — see its README.
+// Changes made in Google reach the site overnight: the calendar job runs at
+// 02:17 UTC and the nightly rebuild in `workers/diary-rebuild/` at 04:00. To
+// publish one sooner, run Fetch calendars from the Actions tab on GitHub.
 export const CALENDAR_IDS = {
 	'club-nights':
 		'48e603a15900b03249e5f0e8c758ea0fd006441b66aba41a02bc7883e69792d8@group.calendar.google.com',

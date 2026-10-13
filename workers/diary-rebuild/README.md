@@ -2,10 +2,17 @@
 
 The race diary is worked out at build time, and so are the club's Google
 calendars. Without a rebuild both freeze: races that have already happened stop
-dropping off, the twelve-month window stops rolling forward, and an event added
-in Google never appears. This Worker rings a deploy hook once a night so that
+dropping off, the twelve-month window stops rolling forward, and past events
+keep showing as upcoming. This Worker rings a deploy hook once a night so that
 happens on its own — which is what stops the diary lapsing the way the old
 hand-maintained calendar did.
+
+It does not download the calendars. Since 13 October 2026 that is a separate
+GitHub workflow, `.github/workflows/fetch-calendars.yml`, which runs at 02:17
+UTC and commits the saved copies the build reads; a calendar that changed
+triggers its own build when that commit lands. This rebuild is what moves
+"upcoming" forward on the nights nothing changed. The build no longer contacts
+Google, so this rebuild can no longer fail because Google turned it away.
 
 It is a separate Worker from the site and shares nothing with it. Twenty lines,
 in `src/index.js`.

@@ -17,8 +17,17 @@ import assert from 'node:assert/strict';
 
 import ical from 'node-ical';
 
-const { normalise, formatEventWhen, isSameRace, isPubRun, retryDelayMs, describeStatus, fetchCalendar } =
-	await import(new URL('../src/utils/calendar.ts', import.meta.url).href);
+const {
+	normalise,
+	formatEventWhen,
+	isSameRace,
+	isPubRun,
+	retryDelayMs,
+	describeStatus,
+	downloadFeed,
+	fetchCalendar,
+} = await import(new URL('../src/utils/calendar.ts', import.meta.url).href);
+const { CALENDAR_IDS } = await import(new URL('../src/consts.ts', import.meta.url).href);
 const { ordinal } = await import(new URL('../src/utils/date.ts', import.meta.url).href);
 
 const red = (s) => `\u001b[31m${s}\u001b[0m`;
@@ -375,7 +384,7 @@ check('a 429 is NOT reported as a sharing problem', () => {
 	const message = describeStatus('socials', 429, 'Too Many Requests');
 	assert.ok(!/Access permissions/.test(message), `got: ${message}`);
 	assert.match(message, /try later/);
-	assert.match(message, /Re-run the build/);
+	assert.match(message, /Fetch calendars/);
 });
 
 check('the status and its text are always quoted back', () => {
@@ -408,8 +417,9 @@ check('a nonsense Retry-After falls back to backoff', () => {
 });
 
 // The behaviour itself, with fetch stubbed — the pure functions above say what
-// the policy is, these two say the policy is actually wired up. Each uses a
-// different source because fetchCalendar caches one promise per calendar.
+// the policy is, these say the policy is actually wired up. downloadFeed is
+// what the nightly job uses; fetchCalendar is what the build uses, and the
+// last check makes sure it never touches the network.
 
 const withFetch = async (impl, run) => {
 	const real = globalThis.fetch;
@@ -428,7 +438,7 @@ const icsBody = feed([
 	'STATUS:CONFIRMED',
 ]);
 
-await checkAsync('a 429 is retried and the build survives it', async () => {
+await checkAsync('a 429 is retried and the nightly download survives it', async () => {
 	let calls = 0;
 	const parsed = await withFetch(
 		async () => {
@@ -443,11 +453,11 @@ await checkAsync('a 429 is retried and the build survives it', async () => {
 			}
 			return new Response(icsBody, { status: 200, statusText: 'OK' });
 		},
-		() => fetchCalendar('race-calendar'),
+		() => downloadFeed('race-calendar'),
 	);
 
 	assert.equal(calls, 2, 'should have tried again after the 429');
-	assert.ok(parsed, 'should have parsed the feed on the second try');
+	assert.match(parsed, /BEGIN:VCALENDAR/, 'should have returned the feed on the second try');
 });
 
 await checkAsync('a 404 fails at once, without retrying', async () => {
@@ -459,7 +469,7 @@ await checkAsync('a 404 fails at once, without retrying', async () => {
 		},
 		async () => {
 			await assert.rejects(
-				() => fetchCalendar('championship'),
+				() => downloadFeed('championship'),
 				/no longer shared/,
 				'a 404 should report the sharing problem',
 			);
@@ -469,6 +479,23 @@ await checkAsync('a 404 fails at once, without retrying', async () => {
 	// The point of the whole exercise: a private calendar is still loud and
 	// immediate. Retrying it would only delay the news.
 	assert.equal(calls, 1, `a 404 should not be retried, but fetch ran ${calls} times`);
+});
+
+await checkAsync('the build reads every saved calendar without contacting Google', async () => {
+	let calls = 0;
+	await withFetch(
+		async () => {
+			calls += 1;
+			throw new Error('the build tried to reach the network');
+		},
+		async () => {
+			for (const source of Object.keys(CALENDAR_IDS)) {
+				const parsed = await fetchCalendar(source);
+				assert.ok(parsed, `${source} should parse from its saved copy`);
+			}
+		},
+	);
+	assert.equal(calls, 0, `the build should never fetch, but fetch ran ${calls} times`);
 });
 
 console.log(

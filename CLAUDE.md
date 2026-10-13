@@ -46,6 +46,16 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
   the site's own `wrangler.jsonc` — that file is assets-only, and adding a script
   to it would put a Worker in front of unmatched requests and risk the 404
   handling. See `workers/diary-rebuild/README.md`.
+- **The club calendars are saved copies, not live fetches.** A nightly GitHub
+  workflow, `.github/workflows/fetch-calendars.yml`, downloads the five Google
+  calendars at 02:17 UTC and commits them to `src/data/calendars/` when they
+  change; the build reads those files and **never contacts Google Calendar**.
+  Builds used to fetch them, and Google's rate limit on Cloudflare's shared
+  build addresses kept stopping the site deploying on commits with nothing
+  wrong in them. Don't put a network fetch back into `fetchCalendar`. A failed
+  download opens a "Calendar fetch failing" issue and leaves the last good copy
+  showing. To publish a calendar change before tomorrow, run the workflow by
+  hand from the Actions tab.
 - **Results come from Google Sheets.** The club championship is scored in a
   sheet the committee owns — runners submit their own result on a Google Form,
   formulas do the ranking — and the site reads the finished Standings tab,

@@ -342,31 +342,33 @@ source.
 
 ### Decisions
 
-- **Whether the build should depend on Google Calendar at all.** Every build
-  fetches five calendars from Google, and Cloudflare's builders share a pool of
-  addresses, so the rate limit can be spent by traffic that has nothing to do
-  with this club. That has stopped the site deploying three times in a week —
-  once on 20 September, twice on the morning of the 26th — each time on a
-  commit with nothing wrong with it.
+- ~~**Whether the build should depend on Google Calendar at all.**~~ **Decided
+  13 October 2026: it does not.** Every build used to fetch five calendars from
+  Google, and Cloudflare's builders share a pool of addresses, so Google's rate
+  limit could be spent by traffic that had nothing to do with this club. That
+  stopped the site deploying three times in a week in September, and three
+  more times in two days in October — a race report, the 04:00 nightly
+  rebuild and an unrelated docs commit — each with nothing wrong in it.
 
-  The retry budget went from four attempts to six on 26 September, buying
-  thirty-one seconds of patience instead of seven. That makes it rarer, not
-  impossible, and it is a parameter rather than a fix.
+  Now a nightly GitHub workflow, `.github/workflows/fetch-calendars.yml`,
+  downloads the feeds patiently at 02:17 UTC and commits them to
+  `src/data/calendars/` when they change, and the build reads those copies. It
+  is a GitHub workflow rather than part of the `diary-rebuild` Worker because
+  a Worker would need a GitHub token stored in Cloudflare to commit, and the
+  workflow already has that permission.
 
-  The fix is for builds to stop reaching Google: something on a schedule
-  fetches the `.ics` feeds and commits them, and the build reads the
-  repository. The nightly `diary-rebuild` Worker is already the right shape for
-  it.
+  What it costs, accepted at the time: one more moving part to hand over, and
+  a calendar change reaches the site overnight rather than on the next build
+  — or sooner if somebody runs Fetch calendars by hand from the Actions tab. A
+  failed download opens a "Calendar fetch failing" issue and leaves the last
+  good copy showing.
 
-  Weigh that against what it costs. It is another moving part to hand over, and
-  a committed feed can go stale in a way a live one cannot — an event cancelled
-  in Google would keep showing until the next fetch. Failing loudly instead is
-  this project's usual preference, and that preference is what the current
-  design expresses.
-
-  Worth settling before launch rather than after, because the nightly rebuild
-  fires a build at 04:00 every night, and each one is another chance to lose
-  this particular coin toss.
+- **Whether the build should depend on the championship Google Sheet.** The
+  same problem in a smaller form: every build still fetches the published
+  Standings tab from Google (`CHAMPIONSHIP_CSV_URL`), with retries, and a
+  refusal fails the deploy. It has not failed a build yet that anyone has
+  traced, and one request is far less exposed than five were. The calendar fix
+  is the pattern if it ever does. Left as it is on purpose, not overlooked.
 
 - **Whether the CMS should keep committing straight to `main`.**
   `public/admin/config.yml` turns editorial workflow off on purpose, on the
