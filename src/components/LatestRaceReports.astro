@@ -4,6 +4,7 @@ import { getCollection } from 'astro:content';
 import FormattedDate from './FormattedDate.astro';
 import ImageFallback from './ImageFallback.astro';
 import { getEarliestRaceDate, sortByRaceDateDesc } from '../utils/race-reports';
+import { objectPosition } from '../utils/crop';
 
 interface Props {
 	heading: string;
@@ -35,7 +36,8 @@ const posts = sortByRaceDateDesc(await getCollection('race-reports', ({ data }) 
 										width={480}
 										src={post.data.heroImage}
 										alt={post.data.heroImageAlt ?? ''}
-										class="h-full w-full object-cover object-hero"
+										class="h-full w-full object-cover"
+										style={{ objectPosition: objectPosition(post.data.heroImageCrop) }}
 									/>
 								) : (
 									<ImageFallback />

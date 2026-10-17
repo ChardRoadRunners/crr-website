@@ -13,7 +13,6 @@ category: Race Report
 clubRace: false
 heroImage: ./images/6055c717-6e00-4bb7-b0df-1af6cce62b10.webp
 heroImageAlt: Claire at the Osyho Royal Parks Half Marathon
-heroImagePosition: centre
 excerpt: The highlight of this half marathon is how it meanders through the four central London parks – Hyde Park, Green Park, St James’ Park and Kensington Gardens, passing Big Ben, Buckingham Palace, the Albert Hall, and you get to run up and down the Mall
 draft: false
 ---

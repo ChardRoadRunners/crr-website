@@ -13,7 +13,6 @@ category: Race Report
 clubRace: false
 heroImage: ./images/9de14164-9749-4275-8416-11c59684ef36.webp
 heroImageAlt: Great weather for running
-heroImagePosition: centre
 excerpt: 3rd week, 3rd marathon.
 draft: false
 ---

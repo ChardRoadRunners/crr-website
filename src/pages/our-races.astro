@@ -6,6 +6,7 @@ import ImageFallback from '../components/ImageFallback.astro';
 import { formatDistance } from '../utils/distance';
 import Layout from '../layouts/Layout.astro';
 import { resolveRaceDate } from '../utils/calendar';
+import { objectPosition } from '../utils/crop';
 
 const now = new Date();
 
@@ -41,7 +42,8 @@ const races = await Promise.all(
 										width={640}
 										src={data.heroImage}
 										alt={data.heroImageAlt ?? ''}
-										class="h-full w-full object-cover object-hero"
+										class="h-full w-full object-cover"
+										style={{ objectPosition: objectPosition() }}
 									/>
 								) : (
 									<ImageFallback />

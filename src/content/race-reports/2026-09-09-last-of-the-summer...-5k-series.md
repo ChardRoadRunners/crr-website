@@ -11,7 +11,6 @@ category: Race Report
 clubRace: false
 heroImage: ./images/0c889ae8-6785-4229-b325-63627b4c8b2f.webp
 heroImageAlt: Considerably smaller bus for this outing!
-heroImagePosition: centre
 excerpt: A great evening out for CRR at the last Yeovilton 5k race, PBs, SBs and awards across the board!
 draft: false
 ---

@@ -241,6 +241,10 @@ and troubleshooting, but learning this stack as I go. So:
 - **Alt text on every lead image**, not just in-body ones. Absent alt beats wrong
   alt — never ship the literal word "TODO" as alt text.
 - **Client-side JavaScript is the exception, not the default** — see below.
+- Hero photos are cropped by the browser, at the post's `heroImageCrop`, never
+  by the build: a hero `<Image>` gets a `width` and **no `height`**, or Sharp
+  centre-crops it while building and the chosen position silently does nothing.
+  That was live on every hero until 17 October 2026. See `src/utils/crop.ts`.
 - Social previews (`og:image`) use the post's own hero image, falling back to the
   contour graphic — never a generic placeholder.
 - Images through Astro's image component so dimensions are known and the page

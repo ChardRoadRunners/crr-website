@@ -13,7 +13,6 @@ category: Race Report
 clubRace: false
 heroImage: ./images/b9b38728-4539-49d7-97ef-fc3cf38fbc66.webp
 heroImageAlt: Helen at Kew Gardens
-heroImagePosition: centre
 excerpt: A Kew Gardens marathon
 draft: false
 ---

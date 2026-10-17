@@ -13,7 +13,6 @@ category: Race Report
 clubRace: false
 heroImage: ./images/69007c9d-9121-4bb0-998f-eae6db0f1284.webp
 heroImageAlt: Mike in the woods
-heroImagePosition: centre
 excerpt: Squeezing in a Marathon for a bonus Championship point!
 draft: false
 ---

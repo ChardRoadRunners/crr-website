@@ -11,7 +11,7 @@ category: "Race Report"
 draft: false
 heroImage: "./images/2017-11-19-cornish-marathon-01.webp"
 heroImageAlt: "Paul Masters after the Cornish Marathon"
-heroImagePosition: top
+heroImageCrop: top
 excerpt: "It was quite weekend for CRR's with just the one event attracting Paul Masters down to Cornwall The Cornish Marathon is a Hilly road race setting…"
 ---
 

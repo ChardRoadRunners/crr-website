@@ -7,6 +7,7 @@ import ContourDivider from '../components/ContourDivider.astro';
 import ImageFallback from '../components/ImageFallback.astro';
 import ShareRaceReport from '../components/ShareRaceReport.astro';
 import Layout from './Layout.astro';
+import { objectPosition } from '../utils/crop';
 import {
 	allRacesSameDay,
 	formatDistance,
@@ -26,7 +27,7 @@ const {
 	clubRace,
 	heroImage,
 	heroImageAlt,
-	heroImagePosition,
+	heroImageCrop,
 	images,
 	excerpt,
 } = Astro.props;
@@ -40,7 +41,7 @@ const showPosted = postedIsMeaningfullyLater(posted, earliestRaceDate);
 	title={title}
 	description={excerpt}
 	image={heroImage}
-	imagePosition={heroImagePosition}
+	shareImage={heroImage ? `/race-reports/${Astro.params.slug}/share.jpg` : undefined}
 	overlayHeader
 >
 	{/*
@@ -92,7 +93,13 @@ const showPosted = postedIsMeaningfullyLater(posted, earliestRaceDate);
 	<article class="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
 		<div class="aspect-[2/1] overflow-hidden rounded-box shadow-md">
 			{heroImage ? (
-				<Image width={1020} src={heroImage} alt={heroImageAlt ?? ''} class="h-full w-full object-cover object-hero" />
+				<Image
+					width={1020}
+					src={heroImage}
+					alt={heroImageAlt ?? ''}
+					class="h-full w-full object-cover"
+					style={{ objectPosition: objectPosition(heroImageCrop) }}
+				/>
 			) : (
 				<ImageFallback />
 			)}

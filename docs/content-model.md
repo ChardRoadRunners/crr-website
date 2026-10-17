@@ -49,6 +49,14 @@ collections needs a copy in both.
 - `dateApproximate` — when true, render month and year only.
 - `author`, `heroImage`, `images` may all be absent. Posts with no photos must
   render cleanly using the contour fallback block.
+- `heroImageCrop` — which band of the hero survives being cut to a wide strip:
+  `top`, `upper`, `middle`, `lower` or `bottom`, default `upper`. One setting
+  for the page, the lists and the share card. The positions, and the rule that
+  a hero `<Image>` gets a width and never a height, live in
+  `src/utils/crop.ts`. In the CMS it is a custom picker (`widget: crop`,
+  registered in `public/admin/index.html`) that shows the photo cropped at each
+  position. Replaced `heroImagePosition`, which had three values and only moved
+  the share card.
 
 ### The CMS mirrors this schema
 

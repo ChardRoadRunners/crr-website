@@ -13,7 +13,7 @@ category: Race Report
 clubRace: false
 heroImage: ./images/baltonsborough-5mile.webp
 heroImageAlt: Jen, Wayne, Chris, Helen and Maria
-heroImagePosition: top
+heroImageCrop: top
 excerpt: The main appeal is the traditional village fete that goes along with it, dog show, veg and craft competition along with various stalls and classic cars.
 draft: false
 ---

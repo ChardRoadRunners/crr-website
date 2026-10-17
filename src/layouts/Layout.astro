@@ -12,8 +12,8 @@ interface Props {
 	title: string;
 	description: string;
 	image?: ImageMetadata;
-	/** Passed straight to BaseHead — which part of `image` the share card keeps. */
-	imagePosition?: 'centre' | 'top' | 'bottom';
+	/** Passed straight to BaseHead — a ready-made share card that replaces `image`. */
+	shareImage?: string;
 	/**
 	 * Let the header float transparently over a page-level banner.
 	 *
@@ -31,7 +31,7 @@ const {
 	title,
 	description,
 	image,
-	imagePosition,
+	shareImage,
 	overlayHeader = false,
 	hideLogoUntilScrolled = false,
 } = Astro.props;
@@ -44,7 +44,7 @@ const {
 			title={title}
 			description={description}
 			image={image}
-			imagePosition={imagePosition}
+			shareImage={shareImage}
 		/>
 	</head>
 	<body class="flex min-h-screen flex-col bg-base-100 text-base-content">

@@ -6,6 +6,7 @@ import ImageFallback from './ImageFallback.astro';
 import { formatDistance } from '../utils/distance';
 import RichText from './RichText.astro';
 import { resolveRaceDate } from '../utils/calendar';
+import { objectPosition } from '../utils/crop';
 
 interface Props {
 	heading: string;
@@ -50,7 +51,8 @@ const races = await Promise.all(
 										width={480}
 										src={race.data.heroImage}
 										alt={race.data.heroImageAlt ?? ''}
-										class="h-full w-full object-cover object-hero"
+										class="h-full w-full object-cover"
+										style={{ objectPosition: objectPosition() }}
 									/>
 								) : (
 									<ImageFallback />

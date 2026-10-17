@@ -13,7 +13,6 @@ category: Race Report
 clubRace: false
 heroImage: ./images/c049e2a8-9879-470b-ad71-28c77c3a230a.webp
 heroImageAlt: Maria at the finish
-heroImagePosition: centre
 images:
   - src: ./images/c049e2a8-9879-470b-ad71-28c77c3a230a.webp
     alt: Maria at the finish
