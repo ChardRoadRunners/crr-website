@@ -41,7 +41,7 @@ const posts = sortByRaceDateDesc(await getCollection('race-reports', ({ data }) 
 						<a href={`/race-reports/${post.id}/`} class="group block">
 							<div class="mb-2 aspect-[2/1] overflow-hidden rounded-box">
 								{post.data.heroImage ? (
-									<Image width={720} height={360} src={post.data.heroImage} alt={post.data.heroImageAlt ?? ''} class="h-full w-full object-cover object-hero" />
+									<Image width={720} src={post.data.heroImage} alt={post.data.heroImageAlt ?? ''} class="h-full w-full object-cover object-hero" />
 								) : (
 									<ImageFallback />
 								)}
