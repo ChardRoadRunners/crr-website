@@ -164,5 +164,199 @@
         });
       })();
     </script>
+
+    <script>
+      // The "Photo crop" picker — `widget: crop` in config.yml.
+      //
+      // Every hero is cut to a wide strip: 2:1 on the page and in the lists,
+      // 1200x630 when shared. Which band of the photo survives is chosen per
+      // post, from five positions. A dropdown of words made that a guess, so
+      // this shows the photo itself cropped at each position, and the chosen
+      // one larger, as the page and a share card will show it.
+      //
+      // It does the cropping exactly as the site does — object-fit: cover and
+      // object-position — so what is shown here is what the site shows. The
+      // percentages must match CROPS in src/utils/crop.ts.
+      //
+      // Built with `h` and `createClass`, the globals Sveltia provides for
+      // custom fields. No state is kept here: everything is worked out from
+      // the props on every render, which is why it follows the photo field as
+      // soon as a photo is chosen.
+      (function () {
+        if (typeof window.CMS === 'undefined' || typeof window.h !== 'function') {
+          // eslint-disable-next-line no-console
+          console.error('Sveltia CMS did not load, so the photo crop picker is not active.');
+          return;
+        }
+        var h = window.h;
+
+        var PERCENT = { top: 0, upper: 25, middle: 50, lower: 75, bottom: 100 };
+        var DEFAULT = 'upper';
+
+        // Where a photo that is already committed can be fetched from. Only
+        // used when the CMS has not handed us a link of its own.
+        var RAW = 'https://raw.githubusercontent.com/ChardRoadRunners/crr-website/main/src/content/';
+
+        function get(map, key) {
+          return map && typeof map.get === 'function' ? map.get(key) : map ? map[key] : undefined;
+        }
+
+        // The hero's path as written, e.g. "./images/abc.webp", turned into
+        // something an <img> can load. A photo uploaded in this session lives
+        // only in the browser until Save, and the CMS lists it among the
+        // entry's media files with a temporary link, so look there first.
+        function photoUrl(entry, collection) {
+          var path = entry && entry.getIn ? entry.getIn(['data', 'heroImage']) : undefined;
+          if (!path || typeof path !== 'string') return null;
+          if (/^(https?:|blob:|data:)/.test(path)) return path;
+
+          var name = path.split('/').pop();
+          var files = get(entry, 'mediaFiles');
+          var found = null;
+          if (files && typeof files.forEach === 'function') {
+            files.forEach(function (file) {
+              if (found) return;
+              var filePath = String(get(file, 'path') || get(file, 'name') || '');
+              if (filePath.split('/').pop() === name) {
+                found = get(file, 'url') || get(file, 'displayURL') || null;
+              }
+            });
+          }
+          if (found) return found;
+
+          return RAW + collection + '/' + path.replace(/^\.\//, '');
+        }
+
+        function crop(url, percent, ratio, style) {
+          var box = Object.assign(
+            {
+              position: 'relative',
+              width: '100%',
+              aspectRatio: ratio,
+              overflow: 'hidden',
+              borderRadius: '6px',
+              background: 'rgba(127,127,127,0.15)',
+            },
+            style || {},
+          );
+          return h(
+            'div',
+            { style: box },
+            h('img', {
+              src: url,
+              alt: '',
+              style: {
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: '50% ' + percent + '%',
+                display: 'block',
+              },
+            }),
+          );
+        }
+
+        var CropControl = window.createClass({
+          render: function () {
+            var props = this.props;
+            var field = props.field;
+            var options = get(field, 'options');
+            options = options && options.toJS ? options.toJS() : options || [];
+            var value = props.value || DEFAULT;
+            var collection = props.entry && props.entry.get ? props.entry.get('collection') : 'race-reports';
+            var url = photoUrl(props.entry, collection);
+
+            var choices = h(
+              'div',
+              {
+                role: 'radiogroup',
+                'aria-label': 'Photo crop',
+                style: {
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
+                  gap: '8px',
+                },
+              },
+              options.map(function (option) {
+                var chosen = option.value === value;
+                return h(
+                  'button',
+                  {
+                    key: option.value,
+                    type: 'button',
+                    role: 'radio',
+                    'aria-checked': chosen ? 'true' : 'false',
+                    onClick: function () {
+                      props.onChange(option.value);
+                    },
+                    style: {
+                      font: 'inherit',
+                      color: 'inherit',
+                      textAlign: 'center',
+                      padding: '4px',
+                      cursor: 'pointer',
+                      background: 'transparent',
+                      borderRadius: '9px',
+                      border: chosen ? '3px solid currentColor' : '3px solid transparent',
+                      outlineOffset: '2px',
+                    },
+                  },
+                  url ? crop(url, PERCENT[option.value], '2 / 1') : null,
+                  h(
+                    'span',
+                    { style: { display: 'block', marginTop: '4px', fontWeight: chosen ? 700 : 400 } },
+                    (chosen ? '✓ ' : '') + option.label,
+                  ),
+                );
+              }),
+            );
+
+            if (!url) {
+              return h(
+                'div',
+                { id: props.forID, className: props.classNameWrapper },
+                h('p', { style: { margin: '0 0 8px', opacity: 0.8 } }, 'Add a main photo above to see how each crop looks.'),
+                choices,
+              );
+            }
+
+            var chosenPercent = PERCENT[value] !== undefined ? PERCENT[value] : PERCENT[DEFAULT];
+
+            return h(
+              'div',
+              { id: props.forID, className: props.classNameWrapper },
+              choices,
+              h(
+                'div',
+                {
+                  style: {
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                    gap: '12px',
+                    marginTop: '16px',
+                  },
+                },
+                h(
+                  'figure',
+                  { style: { margin: 0 } },
+                  crop(url, chosenPercent, '2 / 1'),
+                  h('figcaption', { style: { marginTop: '4px', fontSize: '0.9em', opacity: 0.8 } }, 'On the page'),
+                ),
+                h(
+                  'figure',
+                  { style: { margin: 0 } },
+                  crop(url, chosenPercent, '1200 / 630'),
+                  h('figcaption', { style: { marginTop: '4px', fontSize: '0.9em', opacity: 0.8 } }, 'When shared on Facebook or WhatsApp'),
+                ),
+              ),
+            );
+          },
+        });
+
+        window.CMS.registerFieldType('crop', CropControl);
+      })();
+    </script>
   </body>
 </html>
