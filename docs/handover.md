@@ -207,6 +207,23 @@ with the same data structures the CMS passes it; not yet tried against the
 live editing screen, so the first library pick after this lands is worth
 checking in the commit: the frontmatter should read `./images/…`.
 
+### The editor looks wrong after an update
+
+**Close the tab and open `/admin` again in a new one.** That fixes it.
+
+The editor is one page that loads once and then runs in the browser, so a tab
+left open — or one the phone restores from memory — keeps running the old copy
+after the site is updated, while reading the new settings. The two disagree,
+and it shows: on 17 October 2026, straight after the photo crop picker went
+live, the Photo crop field said **"Unsupported field type: crop"**. The
+settings asked for the new picker; the old page had never heard of it. A
+fresh tab loaded the new page and the picker appeared.
+
+Pulling down to refresh is not always enough on a phone. Closing the tab is.
+
+If a fresh tab still shows the problem, it is real: open the browser console on
+`/admin` and look for an error from the scripts in `public/admin/index.html`.
+
 ### A build that fails with nothing changed
 
 On 22 September a merge to `main` failed to deploy. The identical tree had
