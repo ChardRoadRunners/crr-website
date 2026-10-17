@@ -18,7 +18,7 @@ excerpt: A first Half for Rhys!
 draft: false
 ---
 
-The Bath & Bristol Railway Races encompasses all distances up to 50km. With over 2000 people competing over the day. 
+The Bath & Bristol Railway Races encompasses all distances up to 50km. With over 1800 people competing over the day. 
 
 The course is mostly flat and well shaded. Support was good, water stations packed with other goodies every 5km. 
 
