@@ -118,11 +118,17 @@ const showPosted = postedIsMeaningfullyLater(posted, earliestRaceDate);
 		}
 
 		{
+			/* Each photo whole, at its own shape — a width and no height. Given
+			   both, the build cut every gallery photo to 3:2 from the middle,
+			   which took the tops and bottoms off portrait shots. The grid is
+			   uneven where landscape and portrait mix; that was chosen over
+			   cropping, 17 October 2026. items-start keeps a short photo from
+			   being stretched to its taller neighbour's row. */
 			images && images.length > 0 && (
-				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				<div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
 					{images.map((img) => (
 						<figure>
-							<Image width={600} height={400} src={img.src} alt={img.alt} class="rounded-box shadow-md" />
+							<Image width={600} src={img.src} alt={img.alt} class="h-auto w-full rounded-box shadow-md" />
 							{img.alt && <figcaption class="mt-1 text-center text-sm text-base-content/60">{img.alt}</figcaption>}
 						</figure>
 					))}
