@@ -13,7 +13,7 @@ category: Race Report
 clubRace: false
 heroImage: ./images/img_2507.webp
 heroImageAlt: Matt and Rhys
-heroImagePosition: top
+heroImagePosition: bottom
 excerpt: A first Half for Rhys!
 draft: false
 ---
