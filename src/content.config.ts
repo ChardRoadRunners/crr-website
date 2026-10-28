@@ -473,9 +473,41 @@ const resultsPage = z.object({
   hero: z.object({ heading: z.string(), strapline: z.string() }),
   seo: z.object({ description: z.string() }),
 
+  // Names the row of links to each section at the top of the page.
+  jumpLabel: z.string().min(1),
+
+  // "Find your name", added 28 October 2026: one runner's championship and
+  // handicap results together. It needs a script, so it is hidden from
+  // anybody without one — see FindYourName.astro and CLAUDE.md. Words in
+  // {braces} are filled in from the sheets: {place} "1st" (or wonLabel),
+  // {group}, {points}, {races}, {date}, {run}, {start}, {count}, {shown}.
+  search: z.object({
+    label: z.string().min(1),
+    hint: z.string(),
+    championshipLine: z.string(),
+    womenGroup: z.string(),
+    menGroup: z.string(),
+    // {n} is the number. Two forms so 1 point is not "1 points".
+    points: z.object({ one: z.string(), other: z.string() }),
+    races: z.object({ one: z.string(), other: z.string() }),
+    handicapLine: z.string(),
+    // A handicap with no times recorded for that runner.
+    handicapLineShort: z.string(),
+    wonLabel: z.string(),
+    oneFound: z.string(),
+    manyFound: z.string(),
+    moreFound: z.string(),
+    noneFound: z.string(),
+  }),
+
   championship: z.object({
     heading: z.string(),
     intro: z.string(),
+
+    // Under the heading: "13 of 15 races run." and the races still to come,
+    // both counted from the sheet. {run}, {total}, {races}.
+    progress: z.string(),
+    stillToCome: z.string(),
 
     // Shown while CHAMPIONSHIP_CSV_URL is empty. A real state with real
     // copy, not an error being swallowed — everything that can actually go

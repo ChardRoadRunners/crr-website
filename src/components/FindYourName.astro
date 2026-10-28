@@ -1,0 +1,153 @@
+---
+// "Find your name" on the Results page: type part of a name, see that runner's
+// championship standing and every handicap they have run, together.
+//
+// The site's third client-side script, added 28 October 2026 because Jack and
+// Wayne asked for it. Listed with the other two in CLAUDE.md, and built to the
+// same three rules:
+//
+//   1. The working version is server-rendered. Every result the search can
+//      show is already on this page or a handicap night's page; the search
+//      only gathers one person's together. Without a script, the page is
+//      exactly what it was before, and the browser's own find-in-page still
+//      works on it.
+//   2. Hide, don't break. The box carries `hidden` in the HTML and the script
+//      reveals it, so nobody without the script is offered a search box that
+//      does nothing.
+//   3. Nothing to feature-detect beyond the data: if the list cannot be read,
+//      the box stays hidden.
+//
+// The lines are worded at build time (src/utils/find-your-name.ts). The
+// script filters them by name and builds the list with textContent only, so
+// a name can never be read as HTML.
+import type { Runner } from '../utils/find-your-name';
+
+interface Props {
+	runners: Runner[];
+	words: {
+		label: string;
+		hint: string;
+		oneFound: string;
+		manyFound: string;
+		moreFound: string;
+		noneFound: string;
+	};
+}
+
+const { runners, words } = Astro.props;
+
+// Escaped so a "</script>" in somebody's name could not end the block early.
+const json = JSON.stringify(runners).replace(/</g, '\\u003c');
+---
+
+<div
+	class="mt-8 rounded-box border border-base-300 p-4 sm:p-5"
+	role="search"
+	hidden
+	data-find-your-name
+	data-one={words.oneFound}
+	data-many={words.manyFound}
+	data-more={words.moreFound}
+	data-none={words.noneFound}
+>
+	<label for="find-your-name" class="text-xl font-bold text-primary">{words.label}</label>
+	<p id="find-your-name-hint" class="mt-1 text-sm text-base-content/80">{words.hint}</p>
+	<input
+		id="find-your-name"
+		type="search"
+		autocomplete="off"
+		spellcheck="false"
+		aria-describedby="find-your-name-hint"
+		class="input mt-3 w-full"
+	/>
+	<p class="mt-3 text-sm text-base-content/80 empty:hidden" aria-live="polite" data-status></p>
+	<ul class="mt-2 flex flex-col gap-4 empty:hidden" data-results></ul>
+</div>
+
+<script is:inline type="application/json" id="find-your-name-data" set:html={json}></script>
+
+<script>
+	const root = document.querySelector<HTMLElement>('[data-find-your-name]');
+	const source = document.getElementById('find-your-name-data');
+
+	interface Runner {
+		name: string;
+		key: string;
+		lines: { text: string; href: string }[];
+	}
+
+	let runners: Runner[] = [];
+	try {
+		runners = JSON.parse(source?.textContent ?? '[]');
+	} catch {
+		runners = [];
+	}
+
+	const input = root?.querySelector('input');
+	const status = root?.querySelector<HTMLElement>('[data-status]');
+	const list = root?.querySelector<HTMLElement>('[data-results]');
+
+	if (root && input && status && list && Array.isArray(runners) && runners.length > 0) {
+		/** How many runners to list before asking for more letters. */
+		const LIMIT = 8;
+		const words = root.dataset;
+
+		// Must match nameKey in src/utils/find-your-name.ts.
+		const key = (value: string) =>
+			value
+				.toLowerCase()
+				.normalize('NFKD')
+				.replace(/[̀-ͯ]/g, '')
+				.replace(/[^a-z0-9]+/g, ' ')
+				.trim();
+
+		const render = () => {
+			const query = key(input.value);
+			list.replaceChildren();
+			if (query.length < 2) {
+				status.textContent = '';
+				return;
+			}
+
+			// Anyone whose name contains it; those with a name starting with it first.
+			const startsWith = (runner: Runner) => runner.key.split(' ').some((part) => part.startsWith(query));
+			const matches = runners
+				.filter((runner) => runner.key.includes(query))
+				.sort((a, b) => Number(startsWith(b)) - Number(startsWith(a)));
+
+			if (matches.length === 0) {
+				status.textContent = words.none ?? '';
+				return;
+			}
+			const found =
+				matches.length === 1 ? (words.one ?? '') : (words.many ?? '').replace('{count}', String(matches.length));
+			const more = matches.length > LIMIT ? ` ${(words.more ?? '').replace('{shown}', String(LIMIT))}` : '';
+			status.textContent = found + more;
+
+			for (const runner of matches.slice(0, LIMIT)) {
+				const item = document.createElement('li');
+				const name = document.createElement('strong');
+				name.className = 'block font-semibold';
+				name.textContent = runner.name;
+				const lines = document.createElement('ul');
+				lines.className = 'mt-1 flex flex-col gap-1 text-sm';
+				for (const line of runner.lines) {
+					const entry = document.createElement('li');
+					const link = document.createElement('a');
+					link.className = 'link link-primary';
+					link.href = line.href;
+					link.textContent = line.text;
+					entry.append(link);
+					lines.append(entry);
+				}
+				item.append(name, lines);
+				list.append(item);
+			}
+		};
+
+		root.hidden = false;
+		input.addEventListener('input', render);
+		// A browser restoring the page after Back can put the last search back in.
+		render();
+	}
+</script>

@@ -1447,6 +1447,66 @@ collections:
                   One sentence, shown under the page title in search results
                   and when the page is shared.
 
+          - label: Label on the section links
+            name: jumpLabel
+            widget: string
+            hint: >-
+              Read out by screen readers for the row of links at the top
+              (Handicap, Championship, Records). The links use the section
+              headings.
+
+          # Mirrors `search` in src/content.config.ts. Added 28 Oct 2026.
+          - label: Find your name
+            name: search
+            widget: object
+            collapsed: true
+            hint: >-
+              The search box at the top of the page. It shows one runner's
+              championship and handicap results together. Words in {braces}
+              are filled in from the sheets — keep the braces.
+            fields:
+              - { label: Label on the box, name: label, widget: string }
+              - { label: Line under the box, name: hint, widget: text }
+              - label: Championship line
+                name: championshipLine
+                widget: string
+                hint: "{place} \"1st\", {group} women or men, {points} and {races} as below."
+              - { label: The women, name: womenGroup, widget: string }
+              - { label: The men, name: menGroup, widget: string }
+              - label: Points
+                name: points
+                widget: object
+                hint: "{n} is the number. One form for 1, one for everything else."
+                fields:
+                  - { label: One, name: one, widget: string }
+                  - { label: More than one, name: other, widget: string }
+              - label: Races
+                name: races
+                widget: object
+                hint: "{n} is the number. One form for 1, one for everything else."
+                fields:
+                  - { label: One, name: one, widget: string }
+                  - { label: More than one, name: other, widget: string }
+              - label: Handicap line
+                name: handicapLine
+                widget: string
+                hint: "{date}, {place} (\"13th\", or the word for won below), {run} and {start}."
+              - label: Handicap line with no times
+                name: handicapLineShort
+                widget: string
+                hint: For a night with no time recorded for that runner. {date} and {place}.
+              - { label: The word for winning, name: wonLabel, widget: string }
+              - { label: One runner found, name: oneFound, widget: string }
+              - label: Several runners found
+                name: manyFound
+                widget: string
+                hint: "{count} is filled in."
+              - label: Too many to show
+                name: moreFound
+                widget: string
+                hint: "{shown} is how many are listed."
+              - { label: Nobody found, name: noneFound, widget: string }
+
           - label: Club championship
             name: championship
             widget: object
@@ -1456,6 +1516,14 @@ collections:
             fields:
               - { label: Heading, name: heading, widget: string }
               - { label: Introduction, name: intro, widget: text }
+              - label: Races run so far
+                name: progress
+                widget: string
+                hint: "Under the heading. {run} and {total} are counted from the sheet."
+              - label: Races still to come
+                name: stillToCome
+                widget: string
+                hint: "{races} is the list of races nobody has a result for yet. Hidden when there are none."
 
               - label: Before the sheet is published
                 name: notPublished

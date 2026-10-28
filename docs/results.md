@@ -381,3 +381,57 @@ no pages are built.
 The share preview is the site's usual contour card for now. A card with the
 winner's name on it, as sketched on the design canvas, needs the build to draw
 text into an image, and is a separate piece of work.
+
+---
+
+## Where results show up besides this page
+
+Decided with the club on 28 October 2026, after the "results and news"
+sketches went round: results should not live only two taps deep.
+
+| Where | What | Made by |
+|---|---|---|
+| **Homepage**, "What's happening", straight under the hero | The latest handicap (winner, top three, link to the night), the championship leaders and how many races have been run, what is coming up, the latest posts | `src/components/WhatsHappening.astro` |
+| **News page**, `/news/` (footer link "Club news") | Every handicap night among the race reports and club news, newest first | `src/pages/news/index.astro`, merged by `src/utils/news.ts` |
+| **Results page** | Section links, **Find your name**, then the handicap, the championship and records, newest first | `src/pages/results.astro` |
+
+All three read the same two published tabs as everything above, so nothing new
+needs publishing and a correction in a sheet reaches all of them at the next
+rebuild. Every word around the numbers is in `src/content/pages/` (`home.md`,
+`news.md`, `results.md`), editable in the CMS.
+
+### Races run so far
+
+"13 of 15 races run" and "Still to come: Herepath Half and The Full Monty" are
+counted from the Standings tab: a race column where anybody has a result (a 0
+included) has been run, one where nobody does is still to come. That is a count
+of what the sheet shows, not scoring — `racesScored` in
+`src/utils/championship.ts`, pinned by `npm run check:championship`.
+
+### Find your name
+
+A search box at the top of the Results page: type part of a name and see that
+runner's championship standing and every handicap they have run, each line a
+link to where it comes from. Built at Jack and Wayne's request.
+
+- The lines are written at build time by `src/utils/find-your-name.ts`, from
+  the same standings and handicap results the page shows, worded from
+  `search` in `results.md`. The browser only filters them.
+- Names are matched ignoring case, accents and hyphens. A runner spelled two
+  ways on the two sheets shows as two runners — fix the spelling in the sheet.
+- It needs JavaScript, so it is hidden without it, and the page is otherwise
+  unchanged. It is the third script on the site; see CLAUDE.md.
+- **Worth the committee knowing:** it gathers one person's results in one
+  place. Nothing in it is not already public on the site.
+
+Races are not searchable yet; that was a "maybe" and can be added to the same
+box later.
+
+### The next handicap night
+
+The homepage's "Coming up" includes the next handicap once it is on the club's
+**Club nights** Google calendar, as any event with "handicap" in its title.
+Nothing works the date out: until somebody adds it to the calendar, it does not
+show. The calendar is downloaded overnight (see CLAUDE.md), so a new entry
+appears the next morning, or straight away if the calendar
+workflow (Actions tab, "Fetch calendars") is run by hand.

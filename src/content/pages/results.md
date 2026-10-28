@@ -2,15 +2,37 @@
 page: results
 hero:
   heading: Results
-  strapline: Championship standings, the monthly handicap, and the club records.
+  strapline: The monthly handicap, the championship standings, and the club records.
 seo:
   description: Club championship standings, the monthly handicap and club records for Chard Road Runners.
+jumpLabel: On this page
+search:
+  label: Find your name
+  hint: Type part of a name to see that runner's championship and handicap results together.
+  championshipLine: 'Championship: {place} of the {group}, {points} from {races}'
+  womenGroup: women
+  menGroup: men
+  points:
+    one: '{n} point'
+    other: '{n} points'
+  races:
+    one: '{n} race'
+    other: '{n} races'
+  handicapLine: 'Handicap, {date}: {place}, {run} off a {start} start time'
+  handicapLineShort: 'Handicap, {date}: {place}'
+  wonLabel: won
+  oneFound: 1 runner found.
+  manyFound: '{count} runners found.'
+  moreFound: 'Showing the first {shown}. Keep typing to narrow it down.'
+  noneFound: Nobody by that name in this year's results.
 championship:
   heading: Club Championship
   intro: |-
     Club members can compete in a series of races throughout the year. Bonus points awarded for extra effort. 
 
     Don’t forget to submit your own result on the championship form after every race — no form, no points!!
+  progress: '{run} of {total} races run.'
+  stillToCome: 'Still to come: {races}.'
   notPublished: The standings are moving over to this page and are not quite ready. Until they are, they go out on Facebook as they always have.
   emptyState: No results in this year's championship yet. The first race of the season will fill this in.
   womenHeading: Women
