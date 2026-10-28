@@ -19,6 +19,10 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
     silently overrides every utility class on that element. This bug was live
     site-wide for weeks before it was found.
 - **daisyUI v5** — component library, configured with `@plugin` in CSS
+  - Its card body stretches every `<p>` inside it (`.card-body p { flex-grow: 1 }`).
+    In a row of cards that opened a big gap in the shorter card, on landscape and
+    desktop only. Neutralised once, at the bottom of `src/styles/app.css` — don't
+    remove that rule, and don't fix it card by card.
 - **TypeScript**, strict
 - **Markdown** for all content
 - **Deployment: live.** Cloudflare Workers, connected to the GitHub repo
