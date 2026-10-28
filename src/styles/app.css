@@ -154,3 +154,27 @@
 	color: var(--color-chalk);
 }
 
+
+/*
+  daisyUI's card body stretches every paragraph in it.
+
+  `.card-body p { flex-grow: 1 }` is daisyUI's own rule. In a row of cards the
+  shorter card is stretched to the height of its neighbour, and that rule hands
+  the spare height to whichever paragraph sits directly in the card body. On
+  the homepage that was the Thursday card's venue line: a big gap opened under
+  it and pushed the summary and the detail to the bottom of the card. Same on
+  Join us, between a membership price and its description.
+
+  It only shows where cards sit side by side, so landscape phones and up. A
+  phone held upright stacks the cards and never stretches one, which is why it
+  looked fixed there.
+
+  This sits at the top level of the utilities layer, so it beats daisyUI's rule
+  (which is nested inside that layer) whatever the selector. The spare height
+  now goes under the last line of the shorter card, where it reads as space.
+*/
+@layer utilities {
+	.card-body p {
+		flex-grow: 0;
+	}
+}
