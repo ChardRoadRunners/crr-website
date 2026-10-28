@@ -112,3 +112,23 @@ export const CHAMPIONSHIP_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2P
  * nobody reports.
  */
 export const CHAMPIONSHIP_SEASON = '2026';
+
+/**
+ * The monthly handicap results, published from Google Sheets as CSV.
+ *
+ * The handicap is timed on the night with the timing page in the **CRR
+ * Handicap** sheet (Results > Handicap folder in the club Drive), and saving a
+ * race writes it to that sheet's History tab. Its **Results** tab is the
+ * public slice of History: date, race, position, name, run time, start time,
+ * winner and first handicap. Simon's notes, the PIN and the timing page link
+ * live on other tabs and never leave the sheet. See docs/results.md.
+ *
+ * TO SWITCH THE HANDICAP RESULTS ON: in the CRR Handicap sheet, File > Share >
+ * Publish to web, choose the **Results** tab and **Comma-separated values
+ * (.csv)**, then paste the address here. Publish that tab and nothing else.
+ *
+ * While this is empty the handicap section says it is not published yet. Once
+ * there is an address, anything that goes wrong with it fails the build, for
+ * the same reason as the championship above.
+ */
+export const HANDICAP_CSV_URL = '';

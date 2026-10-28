@@ -1,0 +1,70 @@
+---
+// One handicap night's full result, in finishing order.
+//
+// Four columns, sized for a 320px screen like the championship summary: the
+// position across the line, the name, the run time and the start time they
+// were set off on. The winner's row is filled with the accent colour — a fill,
+// never text, per the palette rules in CLAUDE.md.
+//
+// Runners with no position (they started but no finish was recorded) come
+// last with a dash, so nobody who ran is silently missing.
+import type { HandicapNight } from '../utils/handicap-results';
+
+interface Labels {
+	position: string;
+	name: string;
+	runTime: string;
+	startTime: string;
+}
+
+interface Props {
+	night: HandicapNight;
+	labels: Labels;
+	/** Caption for the table, read to assistive tech only. */
+	caption: string;
+	winnerLabel: string;
+	firstHandicapLabel: string;
+}
+
+const { night, labels, caption, winnerLabel, firstHandicapLabel } = Astro.props;
+const dash = '–';
+---
+
+<div class="scroll-region mt-4 overflow-x-auto rounded-md border border-base-300">
+	<table class="w-full border-collapse text-left text-sm sm:text-base">
+		<caption class="sr-only">{caption}</caption>
+		<thead>
+			<tr class="bg-primary text-chalk">
+				<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">{labels.position}</th>
+				<th scope="col" class="px-2 py-2 font-semibold sm:px-3">{labels.name}</th>
+				<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">{labels.runTime}</th>
+				<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">{labels.startTime}</th>
+			</tr>
+		</thead>
+		<tbody>
+			{
+				night.finishers.map((runner) => (
+					<tr class:list={[runner.winner ? 'bg-accent text-accent-content' : 'even:bg-base-200']}>
+						<td class="px-2 py-2 text-right tabular-nums sm:px-3">{runner.position ?? dash}</td>
+						<th scope="row" class="px-2 py-2 font-normal sm:px-3">
+							<span class:list={[runner.winner && 'font-semibold']}>{runner.name}</span>
+							{runner.winner && <span class="ml-1 text-xs font-semibold uppercase">{winnerLabel}</span>}
+							{runner.firstHandicap && (
+								<span class="block text-xs text-base-content/70">{firstHandicapLabel}</span>
+							)}
+						</th>
+						<td class="px-2 py-2 text-right tabular-nums sm:px-3">{runner.runTime ?? dash}</td>
+						<td class="px-2 py-2 text-right tabular-nums sm:px-3">{runner.startTime ?? dash}</td>
+					</tr>
+				))
+			}
+		</tbody>
+	</table>
+</div>
+
+<style>
+	.scroll-region:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
+</style>

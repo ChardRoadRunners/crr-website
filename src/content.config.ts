@@ -466,13 +466,37 @@ const resultsPage = z.object({
     formLabel: z.string(),
   }),
 
-  // Neither of these has a backend yet. Each says so in its own words rather
-  // than a component printing "coming soon" at them.
+  // The monthly handicap, read from the CRR Handicap sheet's Results tab at
+  // build time (HANDICAP_CSV_URL in src/consts.ts). Like the championship,
+  // nothing is worked out here: the timing page in the sheet decides positions
+  // and the winner. This is the wording around the table.
   handicap: z.object({
     heading: z.string(),
     body: z.string(),
+    // Shown while HANDICAP_CSV_URL is empty.
     notPublished: draftable,
+    // Shown when the tab is published and has no results in it.
+    emptyState: z.string(),
+    latestHeading: z.string(),
+    winnerLabel: z.string(),
+    // A night where nobody eligible finished (only first-timers, say).
+    noWinner: z.string(),
+    firstHandicapLabel: z.string(),
+    earlierHeading: z.string(),
+    // Under the earlier nights, when some only recorded the winner.
+    winnerOnlyNote: z.string(),
+    labels: z.object({
+      position: z.string(),
+      name: z.string(),
+      runTime: z.string(),
+      startTime: z.string(),
+    }),
+    updatedLabel: z.string(),
+    updatedNote: z.string(),
   }),
+
+  // No backend yet. Says so in its own words rather than a component printing
+  // "coming soon" at it.
   records: z.object({
     heading: z.string(),
     body: z.string(),

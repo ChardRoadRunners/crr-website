@@ -1,0 +1,122 @@
+---
+// The monthly handicap on the results page: the latest night in full, then
+// every earlier night as a line with its winner.
+//
+// Earlier nights that have a full result open up to show it, with <details> —
+// no JavaScript. The nights before October 2026 only recorded the winner, so
+// those are a plain line with nothing to open.
+import FormattedDate from './FormattedDate.astro';
+import HandicapTable from './HandicapTable.astro';
+import type { HandicapResults } from '../utils/handicap-results';
+
+interface Props {
+	results: HandicapResults;
+	labels: { position: string; name: string; runTime: string; startTime: string };
+	latestHeading: string;
+	winnerLabel: string;
+	noWinner: string;
+	firstHandicapLabel: string;
+	earlierHeading: string;
+	winnerOnlyNote: string;
+	emptyState: string;
+}
+
+const {
+	results,
+	labels,
+	latestHeading,
+	winnerLabel,
+	noWinner,
+	firstHandicapLabel,
+	earlierHeading,
+	winnerOnlyNote,
+	emptyState,
+} = Astro.props;
+
+const [latest, ...earlier] = results.nights;
+const anyWinnerOnly = earlier.some((night) => night.winnerOnly);
+---
+
+{
+	latest === undefined ? (
+		<p class="mt-4 text-base-content/80">{emptyState}</p>
+	) : (
+		<>
+			<div class="mt-6 rounded-box border border-base-300 p-4 sm:p-6">
+				<p class="text-sm font-semibold tracking-wide text-base-content/70 uppercase">
+					{latestHeading}
+				</p>
+				<h3 class="mt-1 text-2xl font-bold text-primary">
+					<FormattedDate date={latest.date} />
+				</h3>
+				<p class="mt-3 text-lg">
+					{latest.winner ? (
+						<>
+							{winnerLabel}: <strong>{latest.winner.name}</strong>
+						</>
+					) : (
+						noWinner
+					)}
+				</p>
+				{!latest.winnerOnly && (
+					<HandicapTable
+						night={latest}
+						labels={labels}
+						caption={`${latestHeading} — ${latest.race}`}
+						winnerLabel={winnerLabel}
+						firstHandicapLabel={firstHandicapLabel}
+					/>
+				)}
+			</div>
+
+			{earlier.length > 0 && (
+				<div class="mt-8">
+					<h3 class="text-xl font-semibold text-primary">{earlierHeading}</h3>
+					<ul class="mt-3 divide-y divide-base-300 rounded-md border border-base-300">
+						{earlier.map((night) =>
+							night.winnerOnly ? (
+								<li class="flex flex-wrap items-baseline justify-between gap-x-4 px-3 py-3">
+									<FormattedDate date={night.date} />
+									<span>
+										{night.winner ? (
+											<>
+												{winnerLabel}: <strong>{night.winner.name}</strong>
+											</>
+										) : (
+											noWinner
+										)}
+									</span>
+								</li>
+							) : (
+								<li>
+									<details class="group px-3 py-3">
+										<summary class="flex cursor-pointer flex-wrap items-baseline justify-between gap-x-4">
+											<FormattedDate date={night.date} />
+											<span>
+												{night.winner ? (
+													<>
+														{winnerLabel}: <strong>{night.winner.name}</strong>
+													</>
+												) : (
+													noWinner
+												)}
+											</span>
+										</summary>
+										<HandicapTable
+											night={night}
+											labels={labels}
+											caption={night.race}
+											winnerLabel={winnerLabel}
+											firstHandicapLabel={firstHandicapLabel}
+										/>
+									</details>
+								</li>
+							),
+						)}
+					</ul>
+					{anyWinnerOnly && <p class="mt-3 text-sm text-base-content/70">{winnerOnlyNote}</p>}
+				</div>
+			)}
+		</>
+	)
+}

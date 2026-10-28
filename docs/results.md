@@ -305,3 +305,41 @@ written. The championship-specific shaping is all in `championship.ts`.
 | The page | `src/pages/results.astro` |
 | All the wording | `src/content/pages/results.md`, editable at `/admin` |
 | The checks | `scripts/check-championship.mjs` (`npm run check:championship`) |
+
+---
+
+## The monthly handicap
+
+The same arrangement, from a different sheet. The handicap is timed on the
+night with the timing page in **CRR Handicap** (club Drive, Results > Handicap),
+and saving a race writes it to that sheet's History tab. See docs/handicap.md.
+
+| Tab | The website |
+|---|---|
+| **Results** | **reads this one** |
+| everything else (Runners, History, Timing, Settings with the PIN…) | ignores |
+
+**Results** is the public slice of History, worked out by a formula: one row
+per runner per handicap that has a position or a winner, newest first. Its
+columns are `Date` (YYYY-MM-DD), `Race`, `Position`, `Name`, `Run time`,
+`Start time`, `Winner` and `First handicap`. Simon's notes are deliberately not
+on it.
+
+### Switching it on
+
+1. Open CRR Handicap. **File → Share → Publish to web.**
+2. First dropdown: **Results**, *not* "Entire document" — the Settings tab has
+   the timing page PIN on it.
+3. Second dropdown: **Comma-separated values (.csv)**. **Publish**, copy the address.
+4. Paste it into `HANDICAP_CSV_URL` in `src/consts.ts`, commit, push.
+
+Read by `src/utils/handicap-results.ts`, pinned by
+`scripts/check-handicap-results.mjs`. Columns are found by name. What fails the
+build: a missing column, a date that is not YYYY-MM-DD, two winners on one
+night, two runners in one position, a position that is not a whole number.
+An empty `HANDICAP_CSV_URL` does not — the section says the results are not
+published yet.
+
+Nights before October 2026 came from Simon's spreadsheet with only the winner
+recorded, so they show as a date and a winner with nothing to open. From
+October on, every night has the full result.

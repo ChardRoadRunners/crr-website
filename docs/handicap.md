@@ -96,7 +96,7 @@ kept as a no-op so its old trigger can't fail; delete the trigger and park the f
 
 ## What the website needs
 
-Read the published Results CSV: `Date · Race · Position · Name · Run time · Start time · Winner ·
+Built (on a branch, 28 Oct 2026): the results page reads the published Results CSV — see docs/results.md. Columns: `Date · Race · Position · Name · Run time · Start time · Winner ·
 First handicap`, newest first. Current trophy holder = the Winner row of the latest race. Rows
 before October 2026 have a winner but no position.
 

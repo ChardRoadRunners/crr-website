@@ -40,8 +40,22 @@ championship:
   formLabel: Submit a result
 handicap:
   heading: Monthly Handicap
-  body: The latest month, and the running standings across the year.
+  body: A 5k on the last Tuesday of the month. Everyone is set off at a different time based on their 5k time, slowest first, and the first across the line wins. If it's your first handicap you race, but you can't win.
   notPublished: Not published here yet. Handicap results go out on Facebook in the meantime.
+  emptyState: No handicap results yet.
+  latestHeading: Latest handicap
+  winnerLabel: Winner
+  noWinner: No winner this time
+  firstHandicapLabel: First handicap
+  earlierHeading: Earlier handicaps
+  winnerOnlyNote: Before October 2026 only the winner was recorded.
+  labels:
+    position: Pos
+    name: Name
+    runTime: Time
+    startTime: Start time
+  updatedLabel: Results as at
+  updatedNote: The page is rebuilt every night, so a handicap shows here the morning after.
 records:
   heading: Club Records
   body: By distance and age category.

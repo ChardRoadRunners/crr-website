@@ -1388,6 +1388,10 @@ collections:
           - label: Monthly handicap
             name: handicap
             widget: object
+            hint: >-
+              The results themselves come from the CRR Handicap sheet's Results
+              tab, saved there by the timing page. These are the words around
+              them. See docs/results.md.
             fields:
               - { label: Heading, name: heading, widget: string }
               - { label: Introduction, name: body, widget: text }
@@ -1396,8 +1400,37 @@ collections:
                 widget: text
                 required: false
                 hint: >-
-                  Shown while there is no handicap data on the site. Clear it,
-                  or start it with TODO, once there is.
+                  Shown while the Results tab is not published to the website.
+                  Clear it, or start it with TODO, once it is.
+              - label: No results yet
+                name: emptyState
+                widget: string
+                hint: Shown if the Results tab is published but empty.
+              - { label: Heading over the latest night, name: latestHeading, widget: string }
+              - { label: Word for the winner, name: winnerLabel, widget: string }
+              - label: When there was no winner
+                name: noWinner
+                widget: string
+                hint: For a night when nobody who could win finished.
+              - label: First handicap marker
+                name: firstHandicapLabel
+                widget: string
+                hint: Shown under the name of anyone on their first handicap.
+              - { label: Heading over earlier nights, name: earlierHeading, widget: string }
+              - label: Note about winner-only nights
+                name: winnerOnlyNote
+                widget: string
+                hint: Shown under the earlier nights when some only have a winner recorded.
+              - label: Column headings
+                name: labels
+                widget: object
+                fields:
+                  - { label: Position, name: position, widget: string }
+                  - { label: Name, name: name, widget: string }
+                  - { label: Run time, name: runTime, widget: string }
+                  - { label: Start time, name: startTime, widget: string }
+              - { label: Updated label, name: updatedLabel, widget: string }
+              - { label: Updated note, name: updatedNote, widget: string }
 
           - label: Club records
             name: records
