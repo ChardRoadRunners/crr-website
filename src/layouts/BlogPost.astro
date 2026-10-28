@@ -13,35 +13,52 @@ import {
 	formatDistance,
 	getEarliestRaceDate,
 	postedIsMeaningfullyLater,
+	type Race,
 } from '../utils/race-reports';
 
-type Props = CollectionEntry<'race-reports'>['data'];
+/**
+ * A race report or a club news post. They share every field but the date: a
+ * race report is dated by its races, a news post (which has none) by the day
+ * it was posted. See the `news` collection in src/content.config.ts.
+ */
+type Props = (
+	| CollectionEntry<'race-reports'>['data']
+	| (CollectionEntry<'news'>['data'] & { races?: undefined; dateApproximate?: undefined; clubRace?: undefined })
+) & {
+	/** Where the post lives, e.g. "/news/2026-11-03-agm/". The share card hangs off it. */
+	path: string;
+	/** Above the share buttons. */
+	shareHeading?: string;
+};
 
 const {
 	title,
-	races,
+	races = [],
 	posted,
-	dateApproximate,
+	dateApproximate = false,
 	author,
 	category,
-	clubRace,
+	clubRace = false,
 	heroImage,
 	heroImageAlt,
 	heroImageCrop,
 	images,
 	excerpt,
+	path,
+	shareHeading,
 } = Astro.props;
 
-const earliestRaceDate = getEarliestRaceDate(races);
-const sameDay = allRacesSameDay(races);
-const showPosted = postedIsMeaningfullyLater(posted, earliestRaceDate);
+const isReport = races.length > 0;
+const earliestRaceDate = isReport ? getEarliestRaceDate(races as Race[]) : null;
+const sameDay = isReport && allRacesSameDay(races as Race[]);
+const showPosted = earliestRaceDate !== null && postedIsMeaningfullyLater(posted, earliestRaceDate);
 ---
 
 <Layout
 	title={title}
 	description={excerpt}
 	image={heroImage}
-	shareImage={heroImage ? `/race-reports/${Astro.params.slug}/share.jpg` : undefined}
+	shareImage={heroImage ? `${path}share.jpg` : undefined}
 	overlayHeader
 >
 	{/*
@@ -64,7 +81,9 @@ const showPosted = postedIsMeaningfullyLater(posted, earliestRaceDate);
 			</div>
 			<h1 class="mt-3 text-3xl font-bold text-balance sm:text-4xl">{title}</h1>
 			<div class="mt-3 text-sm text-primary-content/85">
-				{sameDay && <FormattedDate date={earliestRaceDate} approximate={dateApproximate} />}
+				{sameDay && earliestRaceDate && <FormattedDate date={earliestRaceDate} approximate={dateApproximate} />}
+				{/* A news post: its one date is the day it went up. */}
+				{!isReport && posted && <FormattedDate date={posted} />}
 				{author && <span> · {author}</span>}
 			</div>
 			{
@@ -74,8 +93,8 @@ const showPosted = postedIsMeaningfullyLater(posted, earliestRaceDate);
 					</div>
 				)
 			}
-			<ul class="mt-5 flex flex-wrap justify-center gap-2">
-				{races.map((race) => (
+			{isReport && <ul class="mt-5 flex flex-wrap justify-center gap-2">
+				{(races as Race[]).map((race) => (
 					<li class="badge badge-chalk-outline badge-wrap gap-1">
 						<span class="font-semibold">{race.name}</span>
 						{race.distance && <span>· {formatDistance(race.distance)}</span>}
@@ -86,7 +105,7 @@ const showPosted = postedIsMeaningfullyLater(posted, earliestRaceDate);
 						)}
 					</li>
 				))}
-			</ul>
+			</ul>}
 		</div>
 	</header>
 
@@ -137,7 +156,7 @@ const showPosted = postedIsMeaningfullyLater(posted, earliestRaceDate);
 		}
 
 		<div class="mt-10 border-t border-base-300 pt-6">
-			<ShareRaceReport title={title} excerpt={excerpt} />
+			<ShareRaceReport title={title} excerpt={excerpt} heading={shareHeading} />
 		</div>
 	</article>
 </Layout>

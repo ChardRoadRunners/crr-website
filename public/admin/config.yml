@@ -137,8 +137,8 @@ collections:
     label: Race reports
     label_singular: Race report
     description: >-
-      Reports from races members have run, plus club news, Couch to 5k updates
-      and social posts. There is no Delete button — a mistake is fixed by
+      Reports from races members have run. Club notices that are not about a
+      race go in Club news. There is no Delete button — a mistake is fixed by
       editing the report, and anything that genuinely needs removing goes
       through whoever looks after the website.
     folder: src/content/race-reports
@@ -264,14 +264,17 @@ collections:
         required: false
         hint: Optional. Leave empty if the report has no byline.
 
+      # "Club News" is its own collection now (Club news, below). Couch to 5k
+      # and Social stay for a report on a race that was one of those.
       - label: Category
         name: category
         widget: select
         required: false
         default: Race Report
+        hint: >-
+          Club notices that are not about a race go in Club news instead.
         options:
           - Race Report
-          - Club News
           - Couch to 5k
           - Social
 
@@ -376,6 +379,134 @@ collections:
           live site. Untick it when you are ready for people to see it.
 
       - label: The report
+        name: body
+        widget: markdown
+
+  # =========================================================================
+  # CLUB NEWS
+  # =========================================================================
+  # Mirrors the `news` collection in src/content.config.ts. Added 28 October
+  # 2026 with the News page. The photo fields copy race reports field for
+  # field, including the alt-text rule enforced in index.html.
+  - name: news
+    label: Club news
+    label_singular: News post
+    description: >-
+      Club notices, Couch to 5k updates and socials: anything that is not a
+      report on a race. A post is dated by the day it goes up, and appears on
+      the News page and the homepage. For a race, use Race reports. There is
+      no Delete button, for the same reason as race reports.
+    folder: src/content/news
+    create: true
+    # DELETION IS DISABLED ON PURPOSE, for the same reason as race reports:
+    # media_folder is entry-relative, so deleting one post deletes every photo
+    # in src/content/news/images/.
+    delete: false
+    # 2026-11-03-agm-date-set.md — the day it was posted plus the title.
+    slug: "{{posted | date('YYYY-MM-DD')}}-{{slug}}"
+    media_folder: images
+    public_folder: ./images
+    summary: "{{title}}"
+    sortable_fields: [posted, title]
+    fields:
+      - label: Title
+        name: title
+        widget: string
+        hint: The headline, as it will appear on the website.
+
+      - label: Date posted
+        name: posted
+        widget: datetime
+        format: "YYYY-MM-DD"
+        date_format: "DD/MM/YYYY"
+        time_format: false
+        default: "{{now}}"
+        hint: >-
+          Today, normally. This date orders the post on the News page and the
+          homepage.
+
+      - label: Author
+        name: author
+        widget: string
+        required: false
+        hint: Optional.
+
+      - label: Category
+        name: category
+        widget: select
+        required: false
+        default: Club News
+        options:
+          - Club News
+          - Couch to 5k
+          - Social
+
+      - label: Main photo
+        name: heroImage
+        widget: image
+        required: false
+        choose_url: false
+        hint: Optional — posts without a photo still look fine.
+
+      # Same intentional mismatch as race reports: optional here, required
+      # whenever a photo is set, via the preSave hook in index.html.
+      - label: Main photo description
+        name: heroImageAlt
+        widget: string
+        required: false
+        hint: >-
+          Describes the photo for people using a screen reader. Name anyone in
+          it if you know who they are. Required whenever there is a photo.
+
+      - label: Photo crop
+        name: heroImageCrop
+        widget: crop
+        required: false
+        default: upper
+        options:
+          - { label: "Top", value: top }
+          - { label: "Upper", value: upper }
+          - { label: "Middle", value: middle }
+          - { label: "Lower", value: lower }
+          - { label: "Bottom", value: bottom }
+        hint: >-
+          The photo is cut to a wide strip on the page and when shared. Tap the
+          one that keeps everybody's heads in. Upper suits most photos.
+
+      - label: More photos
+        name: images
+        widget: list
+        required: false
+        label_singular: Photo
+        summary: "{{fields.alt}}"
+        hint: Any other photos to show further down the post.
+        fields:
+          - label: Photo
+            name: src
+            widget: image
+            choose_url: false
+          - label: Photo description
+            name: alt
+            widget: string
+            hint: Needed for every photo — it is what a screen reader announces.
+
+      - label: Summary
+        name: excerpt
+        widget: text
+        hint: >-
+          One or two sentences. It shows on the News page and the homepage, and
+          it is what Facebook shows when somebody shares the post.
+
+      - label: Draft — hide from the website
+        name: draft
+        widget: boolean
+        required: false
+        default: false
+        hint: >-
+          While this is ticked the post is saved but does not appear on the
+          live site. Untick it when you are ready for people to see it.
+
+      - label: The post
         name: body
         widget: markdown
 
@@ -714,30 +845,64 @@ collections:
                   - { label: Button text, name: label, widget: string }
                   - { label: Button link, name: href, widget: string }
 
-          - label: Latest race reports section
-            name: latestReports
+          # Mirrors whatsOn in src/content.config.ts. Replaced the
+          # "Latest race reports" and "Coming up" sections, 28 Oct 2026.
+          - label: What's on! (top of the page)
+            name: whatsOn
             widget: object
+            hint: >-
+              The latest result, the championship leaders, what is coming up
+              and the latest posts, straight under the main heading. All of it
+              comes from the results sheets, the calendars and the posts; this
+              is only the wording around it. Words in {braces} are filled in —
+              keep the braces.
             fields:
               - { label: Heading, name: heading, widget: string }
-              - { label: Link text, name: linkLabel, widget: string }
-              - label: Message when there are no reports
-                name: emptyState
-                widget: markdown
-
-          - label: Coming up section
-            name: upcoming
-            widget: object
-            fields:
-              - { label: Heading, name: heading, widget: string }
-              - { label: Link text, name: linkLabel, widget: string }
-              - label: Message when nothing is planned
-                name: emptyState
-                widget: markdown
-              - label: Championship badge
-                name: championshipLabel
+              - label: Label over the latest handicap
+                name: handicapLabel
                 widget: string
-                hint: >-
-                  The label on a race that counts towards the championship.
+              - label: Winner line
+                name: winnerLine
+                widget: string
+                hint: "{winner} is filled in, for example \"Sean Tovey won\"."
+              - label: Line when nobody won
+                name: noWinnerLine
+                widget: string
+                hint: "{month} is filled in."
+              - label: Number who ran
+                name: ranLabel
+                widget: string
+                hint: "{count} is filled in."
+              - { label: Link to the full result, name: fullResultLabel, widget: string }
+              - label: Championship heading
+                name: championshipHeading
+                widget: string
+                hint: The season's year is added after it.
+              - label: Races run so far
+                name: racesRunLabel
+                widget: string
+                hint: "{run} and {total} are filled in, for example \"13 of 15 races run\"."
+              - { label: Women label, name: womenLabel, widget: string }
+              - { label: Men label, name: menLabel, widget: string }
+              - label: Points
+                name: pointsLabel
+                widget: string
+                hint: "{points} is filled in."
+              - { label: Link to the standings, name: standingsLabel, widget: string }
+              - { label: Coming up heading, name: comingUpHeading, widget: string }
+              - { label: Link to the calendar, name: comingUpLinkLabel, widget: string }
+              - label: Message when nothing is coming up
+                name: comingUpEmpty
+                widget: text
+              - label: Championship badge
+                name: championshipBadge
+                widget: string
+                hint: The label on a race that counts towards the championship.
+              - { label: Latest posts heading, name: latestHeading, widget: string }
+              - { label: Link to the News page, name: latestLinkLabel, widget: string }
+              - label: Message when there are no posts
+                name: latestEmpty
+                widget: text
 
           - label: Our races section
             name: ourRaces
@@ -1282,6 +1447,66 @@ collections:
                   One sentence, shown under the page title in search results
                   and when the page is shared.
 
+          - label: Label on the section links
+            name: jumpLabel
+            widget: string
+            hint: >-
+              Read out by screen readers for the row of links at the top
+              (Handicap, Championship, Records). The links use the section
+              headings.
+
+          # Mirrors `search` in src/content.config.ts. Added 28 Oct 2026.
+          - label: Find your name
+            name: search
+            widget: object
+            collapsed: true
+            hint: >-
+              The search box at the top of the page. It shows one runner's
+              championship and handicap results together. Words in {braces}
+              are filled in from the sheets — keep the braces.
+            fields:
+              - { label: Label on the box, name: label, widget: string }
+              - { label: Line under the box, name: hint, widget: text }
+              - label: Championship line
+                name: championshipLine
+                widget: string
+                hint: "{place} \"1st\", {group} women or men, {points} and {races} as below."
+              - { label: The women, name: womenGroup, widget: string }
+              - { label: The men, name: menGroup, widget: string }
+              - label: Points
+                name: points
+                widget: object
+                hint: "{n} is the number. One form for 1, one for everything else."
+                fields:
+                  - { label: One, name: one, widget: string }
+                  - { label: More than one, name: other, widget: string }
+              - label: Races
+                name: races
+                widget: object
+                hint: "{n} is the number. One form for 1, one for everything else."
+                fields:
+                  - { label: One, name: one, widget: string }
+                  - { label: More than one, name: other, widget: string }
+              - label: Handicap line
+                name: handicapLine
+                widget: string
+                hint: "{date}, {place} (\"13th\", or the word for won below), {run} and {start}."
+              - label: Handicap line with no times
+                name: handicapLineShort
+                widget: string
+                hint: For a night with no time recorded for that runner. {date} and {place}.
+              - { label: The word for winning, name: wonLabel, widget: string }
+              - { label: One runner found, name: oneFound, widget: string }
+              - label: Several runners found
+                name: manyFound
+                widget: string
+                hint: "{count} is filled in."
+              - label: Too many to show
+                name: moreFound
+                widget: string
+                hint: "{shown} is how many are listed."
+              - { label: Nobody found, name: noneFound, widget: string }
+
           - label: Club championship
             name: championship
             widget: object
@@ -1291,6 +1516,14 @@ collections:
             fields:
               - { label: Heading, name: heading, widget: string }
               - { label: Introduction, name: intro, widget: text }
+              - label: Races run so far
+                name: progress
+                widget: string
+                hint: "Under the heading. {run} and {total} are counted from the sheet."
+              - label: Races still to come
+                name: stillToCome
+                widget: string
+                hint: "{races} is the list of races nobody has a result for yet. Hidden when there are none."
 
               - label: Before the sheet is published
                 name: notPublished
@@ -1484,6 +1717,72 @@ collections:
             widget: text
             hint: >-
               The line at the bottom of the page. Markdown links work here.
+
+      # The News page, /news/. Mirrors newsPage in src/content.config.ts.
+      - name: news
+        label: News page
+        file: src/content/pages/news.md
+        fields:
+          - { name: page, widget: hidden, default: news }
+
+          - label: Top of the page
+            name: hero
+            widget: object
+            fields:
+              - { label: Heading, name: heading, widget: string }
+              - { label: Strapline, name: strapline, widget: text }
+
+          - label: Search engines
+            name: seo
+            widget: object
+            fields:
+              - label: Description
+                name: description
+                widget: text
+                hint: What Google shows under the page title.
+
+          - label: Label on a handicap result
+            name: handicapLabel
+            widget: string
+            hint: >-
+              Shown over each handicap night in the list. Posts are labelled
+              by their own category instead.
+
+          - label: Handicap headline
+            name: handicapTitle
+            widget: string
+            hint: >-
+              {winner} and {month} are filled in from the handicap sheet —
+              keep the braces. {monthYear} gives "October 2026".
+
+          - label: Handicap headline when nobody won
+            name: handicapTitleNoWinner
+            widget: string
+            hint: For a night when nobody eligible finished. {month} works here.
+
+          - label: Number who ran
+            name: ranLabel
+            widget: string
+            hint: "{count} is filled in, for example \"17 ran\"."
+
+          - label: Winner label
+            name: winnerLabel
+            widget: string
+            hint: For the older handicaps, where only the winner was recorded.
+
+          - label: Heading over older items
+            name: olderHeading
+            widget: string
+            hint: The newest items show in full; everything older is a list of headlines under this.
+
+          - label: Message when there is nothing yet
+            name: emptyState
+            widget: text
+
+          - label: Share heading on a news post
+            name: shareHeading
+            widget: string
+            hint: Above the share buttons at the foot of each club news post.
 
   # =========================================================================
   # LEGAL AND POLICY PAGES

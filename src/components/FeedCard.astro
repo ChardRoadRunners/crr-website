@@ -1,0 +1,132 @@
+---
+// One item of news: a handicap result, a race report or a club news post.
+//
+// Used by the News page (`card`, a photo beside the words) and the homepage's
+// "What's on!" (`compact`, a thumbnail and a headline). The whole card
+// is one link — the headline's, stretched over the card with ::after — so a
+// thumb landing anywhere on it works, and a screen reader hears one link with
+// the headline as its name rather than an image link and a text link to the
+// same place.
+//
+// A handicap night has no photo. Its picture slot is the top three on the
+// accent colour instead: a fill with dark text, which is what the accent is
+// for (CLAUDE.md, palette rules).
+import { Image } from 'astro:assets';
+
+import FormattedDate from './FormattedDate.astro';
+import ImageFallback from './ImageFallback.astro';
+import { objectPosition } from '../utils/crop';
+import { fillNight } from '../utils/handicap-results';
+import type { FeedItem } from '../utils/news';
+
+interface Props {
+	item: FeedItem;
+	/** The News page's wording for handicap items, from src/content/pages/news.md. */
+	words: {
+		handicapLabel: string;
+		handicapTitle: string;
+		handicapTitleNoWinner: string;
+		ranLabel: string;
+		winnerLabel: string;
+	};
+	/** Whatever keeps the page's outline in order. */
+	headingLevel?: 2 | 3 | 4;
+	variant?: 'card' | 'compact';
+}
+
+const { item, words, headingLevel = 2, variant = 'card' } = Astro.props;
+const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
+const compact = variant === 'compact';
+
+let label: string;
+let title: string;
+let summary: string | null = null;
+let approximate = false;
+
+if (item.kind === 'handicap') {
+	const { night } = item;
+	label = words.handicapLabel;
+	title = fillNight(night.winner ? words.handicapTitle : words.handicapTitleNoWinner, night);
+	summary = night.winnerOnly ? null : fillNight(words.ranLabel, night);
+} else {
+	label = item.post.data.category;
+	title = item.post.data.title;
+	summary = item.post.data.excerpt;
+	approximate = item.kind === 'report' && item.post.data.dateApproximate;
+}
+
+const photo = item.kind === 'handicap' ? undefined : item.post.data;
+const podium = item.kind === 'handicap' ? item.night.finishers.filter((f) => f.position !== null).slice(0, 3) : [];
+---
+
+<article
+	class:list={[
+		'relative',
+		compact ? 'flex items-start gap-3' : 'grid grid-cols-1 gap-3 sm:grid-cols-[13rem_1fr] sm:gap-6',
+	]}
+>
+	<div
+		class:list={[
+			'overflow-hidden',
+			compact
+				? 'aspect-[3/2] w-24 shrink-0 rounded-md'
+				: // On a phone a handicap's three lines sit in a panel their own
+					// height; a photo-shaped block would be mostly empty sky blue.
+					item.kind === 'handicap'
+					? 'rounded-box sm:aspect-[3/2]'
+					: 'aspect-[2/1] rounded-box sm:aspect-[3/2]',
+		]}
+	>
+		{
+			item.kind === 'handicap' ? (
+				<div class="flex h-full flex-col justify-center bg-accent px-4 py-4 text-accent-content">
+					{compact ? null : item.night.winnerOnly || podium.length === 0 ? (
+						<p>
+							<span class="text-sm">{words.winnerLabel}</span>
+							<span class="block text-lg font-bold">{item.night.winner?.name}</span>
+						</p>
+					) : (
+						<ol class="space-y-0.5 text-sm">
+							{podium.map((runner) => (
+								<li class="flex gap-2">
+									<span class="w-4 text-right tabular-nums">{runner.position}</span>
+									<span class:list={['min-w-0 flex-1 truncate', runner.winner && 'font-bold']}>
+										{runner.name}
+									</span>
+									<span class="tabular-nums">{runner.runTime}</span>
+								</li>
+							))}
+						</ol>
+					)}
+				</div>
+			) : photo?.heroImage ? (
+				<Image
+					src={photo.heroImage}
+					widths={compact ? [96, 192] : [416, 832]}
+					sizes={compact ? '6rem' : '(min-width: 640px) 13rem, 100vw'}
+					alt={photo.heroImageAlt ?? ''}
+					class="h-full w-full object-cover"
+					style={{ objectPosition: objectPosition(photo.heroImageCrop) }}
+				/>
+			) : (
+				<ImageFallback />
+			)
+		}
+	</div>
+
+	<div class="min-w-0">
+		<p class:list={['flex flex-wrap items-center gap-x-2 text-base-content/80', compact ? 'text-xs' : 'text-sm']}>
+			<span class:list={['badge badge-purple', compact ? 'badge-xs' : 'badge-sm']}>{label}</span>
+			<FormattedDate date={item.date} approximate={approximate} />
+		</p>
+		<Heading class:list={['font-bold text-base-content', compact ? 'mt-1 text-base leading-snug' : 'mt-1 text-xl']}>
+			<a
+				href={item.href}
+				class="hover:underline focus-visible:outline-none after:absolute after:inset-0 after:rounded-box after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-primary"
+			>
+				{title}
+			</a>
+		</Heading>
+		{!compact && summary && <p class="mt-1 line-clamp-3 text-base-content/80">{summary}</p>}
+	</div>
+</article>

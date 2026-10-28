@@ -22,8 +22,7 @@ import Layout from '../../../layouts/Layout.astro';
 import PageHeader from '../../../components/PageHeader.astro';
 import RichText from '../../../components/RichText.astro';
 import ShareRaceReport from '../../../components/ShareRaceReport.astro';
-import { formatDate } from '../../../utils/date';
-import { getHandicapResults, type HandicapNight } from '../../../utils/handicap-results';
+import { fillNight, getHandicapResults, type HandicapNight } from '../../../utils/handicap-results';
 
 export const getStaticPaths = (async () => {
 	const results = await getHandicapResults();
@@ -49,15 +48,8 @@ if (!page) throw new Error('src/content/pages/results.md is missing.');
 const { handicap } = page.data;
 const words = handicap.night;
 
-/** Fills {monthYear}, {date}, {winner}, {count}, {run} and {start} in a line of content. */
-const fill = (line: string) =>
-	line
-		.replaceAll('{monthYear}', formatDate(night.date, { monthOnly: true }))
-		.replaceAll('{date}', formatDate(night.date))
-		.replaceAll('{winner}', night.winner?.name ?? '')
-		.replaceAll('{count}', String(night.finishers.length))
-		.replaceAll('{run}', night.winner?.runTime ?? '')
-		.replaceAll('{start}', night.winner?.startTime ?? '');
+/** See fillNight for the {placeholders}. */
+const fill = (line: string) => fillNight(line, night);
 
 const title = fill(words.title);
 const description = fill(night.winnerOnly ? words.descriptionWinnerOnly : words.description);

@@ -1,0 +1,224 @@
+---
+// "What's on!" — the top of the homepage, straight under the hero.
+//
+// Sketch A from the 28 October 2026 feedback round ("top of the site, where it
+// should be"), filled with what Jack asked for: recent results, race reports
+// and what is coming up, together. It replaced two sections further down the
+// page, "Latest race reports" and "Coming up", which it now carries, so the
+// homepage got shorter rather than longer. A newcomer still meets the hero and
+// the Join us button first, then sees a club that is busy, then reads how to
+// join in.
+//
+// Four blocks, each of which hides itself when it has nothing honest to say:
+//
+//   - the latest handicap night (needs HANDICAP_CSV_URL);
+//   - the championship leaders (needs CHAMPIONSHIP_CSV_URL);
+//   - coming up: the next races, and the next handicap night once it is on
+//     the Club nights calendar (src/utils/coming-up.ts);
+//   - the latest posts: race reports and club news (src/utils/news.ts).
+//
+// Every word on it is in src/content/pages/home.md under whatsOn.
+import FeedCard from './FeedCard.astro';
+import FormattedDate from './FormattedDate.astro';
+import { CHAMPIONSHIP_SEASON } from '../consts';
+import { getChampionshipStandings, racesScored, type RunnerStanding } from '../utils/championship';
+import { getComingUp } from '../utils/coming-up';
+import { fillNight, getHandicapResults } from '../utils/handicap-results';
+import { getPosts, nightHref } from '../utils/news';
+
+interface Props {
+	heading: string;
+	handicapLabel: string;
+	winnerLine: string;
+	noWinnerLine: string;
+	ranLabel: string;
+	fullResultLabel: string;
+	championshipHeading: string;
+	racesRunLabel: string;
+	womenLabel: string;
+	menLabel: string;
+	pointsLabel: string;
+	standingsLabel: string;
+	comingUpHeading: string;
+	comingUpLinkLabel: string;
+	comingUpEmpty: string;
+	championshipBadge: string;
+	latestHeading: string;
+	latestLinkLabel: string;
+	latestEmpty: string;
+	/** The News page's wording for a handicap item, for FeedCard. */
+	feedWords: {
+		handicapLabel: string;
+		handicapTitle: string;
+		handicapTitleNoWinner: string;
+		ranLabel: string;
+		winnerLabel: string;
+	};
+}
+
+const words = Astro.props;
+
+const [handicap, standings, comingUp, posts] = await Promise.all([
+	getHandicapResults(),
+	getChampionshipStandings(),
+	getComingUp({ limit: 4 }),
+	getPosts(),
+]);
+
+const night = handicap?.nights[0];
+const podium = night && !night.winnerOnly ? night.finishers.filter((f) => f.position !== null).slice(0, 3) : [];
+
+/** Everyone in first place — joint leaders share it. */
+const leaders = (runners: RunnerStanding[]) => runners.filter((r) => r.position === 1);
+const groups = standings
+	? [
+			{ label: words.womenLabel, leaders: leaders(standings.women) },
+			{ label: words.menLabel, leaders: leaders(standings.men) },
+		].filter((group) => group.leaders.length > 0)
+	: [];
+const racesRun = standings
+	? words.racesRunLabel
+			.replaceAll('{run}', String(racesScored(standings)))
+			.replaceAll('{total}', String(standings.races.length))
+	: '';
+const points = (n: number) => words.pointsLabel.replaceAll('{points}', String(n));
+
+const latest = posts.slice(0, 3);
+---
+
+<section aria-labelledby="whats-on" class="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+	<h2 id="whats-on" class="text-center text-3xl font-bold text-base-content sm:text-4xl">
+		{words.heading}
+	</h2>
+
+	<div class="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+		{
+			(night || groups.length > 0) && (
+				<div class="flex flex-col gap-4">
+					{night && (
+						<article class="rounded-box bg-accent p-5 text-accent-content">
+							<p class="text-sm font-semibold tracking-wide uppercase">
+								{words.handicapLabel} · <FormattedDate date={night.date} />
+							</p>
+							<h3 class="mt-1 text-2xl font-bold">
+								{fillNight(night.winner ? words.winnerLine : words.noWinnerLine, night)}
+							</h3>
+							{podium.length > 0 && (
+								<ol class="mt-3 space-y-1">
+									{podium.map((runner) => (
+										<li class="flex gap-2">
+											<span class="w-5 text-right tabular-nums">{runner.position}</span>
+											<span class:list={['min-w-0 flex-1', runner.winner && 'font-bold']}>
+												{runner.name}
+											</span>
+											<span class="tabular-nums">{runner.runTime}</span>
+										</li>
+									))}
+								</ol>
+							)}
+							<p class="mt-3 flex flex-wrap items-baseline justify-between gap-x-4">
+								{!night.winnerOnly && <span>{fillNight(words.ranLabel, night)}</span>}
+								<a class="font-semibold underline underline-offset-2" href={nightHref(night.dateIso)}>
+									{words.fullResultLabel}
+								</a>
+							</p>
+						</article>
+					)}
+
+					{groups.length > 0 && (
+						<article class="rounded-box border border-base-300 p-5">
+							<h3 class="text-xl font-bold text-primary">
+								{words.championshipHeading} {CHAMPIONSHIP_SEASON}
+							</h3>
+							<p class="text-sm text-base-content/80">{racesRun}</p>
+							<dl class="mt-3 grid grid-cols-2 gap-4">
+								{groups.map((group) => (
+									<div>
+										<dt class="text-sm text-base-content/80">{group.label}</dt>
+										<dd class="font-semibold">{group.leaders.map((r) => r.name).join(', ')}</dd>
+										<dd class="text-sm tabular-nums">{points(group.leaders[0].pointsSoFar)}</dd>
+									</div>
+								))}
+							</dl>
+							<p class="mt-3">
+								<a class="link link-primary font-semibold" href="/results/#championship">
+									{words.standingsLabel}
+								</a>
+							</p>
+						</article>
+					)}
+				</div>
+			)
+		}
+
+		<div>
+			<h3 class="text-xl font-bold text-primary">{words.comingUpHeading}</h3>
+			{
+				comingUp.length === 0 ? (
+					<p class="mt-3 text-base-content/80">{words.comingUpEmpty}</p>
+				) : (
+					<ul class="mt-3 flex flex-col gap-3">
+						{comingUp.map((entry) => (
+							<li class:list={['coming-up-entry', entry.exact ? 'is-exact' : 'is-approximate']}>
+								<span class="font-bold text-primary">{entry.name}</span>
+								{entry.championship && (
+									<span class="badge badge-purple badge-wrap ml-2 align-middle">{words.championshipBadge}</span>
+								)}
+								<span class="block text-sm text-base-content/80">
+									{entry.exact ? (
+										<strong>
+											<FormattedDate date={entry.date} timeZone={entry.showTime ? 'Europe/London' : 'UTC'} />
+										</strong>
+									) : (
+										entry.timing
+									)}
+								</span>
+							</li>
+						))}
+					</ul>
+				)
+			}
+			<p class="mt-4">
+				<a href="/calendar#race-calendar" class="link link-primary font-semibold">{words.comingUpLinkLabel}</a>
+			</p>
+		</div>
+
+		<div class="md:col-span-2 lg:col-span-1">
+			<h3 class="text-xl font-bold text-primary">{words.latestHeading}</h3>
+			{
+				latest.length === 0 ? (
+					<p class="mt-3 text-base-content/80">{words.latestEmpty}</p>
+				) : (
+					<ul class="mt-3 flex flex-col gap-4">
+						{latest.map((item) => (
+							<li>
+								<FeedCard item={item} words={words.feedWords} headingLevel={4} variant="compact" />
+							</li>
+						))}
+					</ul>
+				)
+			}
+			<p class="mt-4">
+				<a href="/news" class="link link-primary font-semibold">{words.latestLinkLabel}</a>
+			</p>
+		</div>
+	</div>
+</section>
+
+<style>
+	/* As on the calendar: a solid rule for a checked date, dashed for a
+	   worked-out one, so the two mean the same thing in both places. */
+	.coming-up-entry {
+		padding: 0.25rem 0 0.25rem 0.85rem;
+		border-left: 3px solid var(--color-base-300);
+	}
+
+	.coming-up-entry.is-exact {
+		border-left-style: solid;
+		border-left-color: var(--color-primary);
+	}
+
+	.coming-up-entry.is-approximate {
+		border-left-style: dashed;
+	}
+</style>

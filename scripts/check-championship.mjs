@@ -22,7 +22,7 @@
 import assert from 'node:assert/strict';
 
 const { parseCsv } = await import(new URL('../src/utils/csv.ts', import.meta.url).href);
-const { parseStandings } = await import(new URL('../src/utils/championship.ts', import.meta.url).href);
+const { parseStandings, racesScored } = await import(new URL('../src/utils/championship.ts', import.meta.url).href);
 const { assertNotHtml, retryDelayMs, describeStatus } = await import(
 	new URL('../src/utils/sheet.ts', import.meta.url).href
 );
@@ -133,6 +133,17 @@ check('summary columns are found by name, not by position', () => {
 check('unused race slots are dropped, and the named ones keep sheet order', () => {
 	const { races } = parse(standingsCsv());
 	assert.deepEqual(races, ['Axmouth Challenge', 'Slay the dragon 10k', 'Frogmary Parkrun']);
+});
+
+check('races scored counts a race anybody ran, a 0 included, and not one nobody has', () => {
+	// Axmouth: a 10. Slay the dragon: only a 0, still run. Frogmary: nobody yet.
+	const rows = [
+		['Ann Example', 'F', '10', '', ''],
+		['Bob Example', 'M', '', '0', ''],
+	];
+	const standings = parse(standingsCsv({ rows }));
+	assert.equal(standings.races.length, 3);
+	assert.equal(racesScored(standings), 2);
 });
 
 check('a renamed summary column fails the build, naming the column', () => {

@@ -79,8 +79,14 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
 
 ## Collections
 
-Five, all in `src/content/`: **`race-reports`**, **`races`**, **`pages`**,
-**`legal`** and **`calendar-events`**.
+Seven, all in `src/content/`: **`race-reports`**, **`news`**, **`races`**,
+**`pages`**, **`legal`**, **`calendar-events`** and **`navigation`**.
+
+`news` (added 28 October 2026) is club notices — anything that is not a report
+on a race. It is separate from `race-reports` because a race report is dated
+by its races and a notice has none: a news post is dated by `posted`. The News
+page, `/news/`, and the homepage's "What's on!" put both in one line with
+the handicap results, through `src/utils/news.ts`.
 
 **See `docs/content-model.md`** for what each one holds, the race-reports
 frontmatter rules, and how the two schemas are kept in step.
@@ -234,7 +240,8 @@ and troubleshooting, but learning this stack as I go. So:
   flag what needs updating rather than inventing a replacement.
 - Copy comes from content files. No user-facing text hardcoded in components.
   Link labels are content; route paths stay in code.
-- Categories: Race Report, Club News, Couch to 5k, Social.
+- Categories: race reports are Race Report, Couch to 5k or Social; club news
+  posts are Club News, Couch to 5k or Social. Club News is only in `news`.
 
 ## Standards
 
@@ -256,13 +263,13 @@ and troubleshooting, but learning this stack as I go. So:
 
 ## Client-side JavaScript
 
-The standing rule is minimal. Not none — the site ships two scripts, listed
+The standing rule is minimal. Not none — the site ships three scripts, listed
 below — but each one had to earn its place, and every one of them is
 **progressive enhancement**: the page is complete and usable with JavaScript
 off, and the script only removes friction.
 
 This list exists so the next person can tell a deliberate exception from an
-accumulated one. **Adding a third means adding it here, in the same commit.**
+accumulated one. **Adding a fourth means adding it here, in the same commit.**
 
 Three rules for any new script:
 
@@ -277,7 +284,7 @@ Three rules for any new script:
    not availability: `navigator.share` exists in some browsers that then reject,
    and the clipboard is unreachable outside a secure context.
 
-### The two exceptions
+### The three exceptions
 
 **`Header.astro` — the header over a banner.** Sets `data-scrolled` past 72px so
 the transparent header goes solid, and re-checks on `load` because iOS can
@@ -296,11 +303,23 @@ less tidy, still perfectly readable, because the scrim behind it is pure CSS
 and the contours sit at an opacity measured to be safe under text.
 
 **`ShareRaceReport.astro` — sharing a race report** (and, since 28 October 2026,
-a handicap night's page, with its own heading). Two copy buttons and the
+a handicap night's page and a club news post, each with its own heading). Two
+copy buttons and the
 phone's native share sheet, all three `hidden` in the HTML and revealed only
 where the API exists. Without it the Facebook and WhatsApp links are plain
 anchors that work as normal, and the paste block is ordinary selectable text.
 Nothing is lost but a long-press.
+
+**`FindYourName.astro` — "Find your name" on the Results page.** Added 28
+October 2026 at Jack and Wayne's request: type part of a name, see that
+runner's championship standing and every handicap they have run, together.
+The box is `hidden` in the HTML and revealed by the script. The lines are
+worded at build time by `src/utils/find-your-name.ts` and arrive as JSON; the
+script only filters them by name and builds the list with `textContent`.
+Without it the page is exactly what it was — every result is still on it or on
+a night's page, and the browser's own find-in-page works. It puts one person's
+results in one view, which the committee should know about before launch —
+though nothing in it is not already public on the site.
 
 Note the homepage carries the first of these. An earlier version of this file
 said the homepage had no JavaScript at all; the built HTML disagreed, which is
