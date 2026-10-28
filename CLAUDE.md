@@ -17,7 +17,12 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
   - Base element styles go in `@layer base`, never unlayered. Unlayered CSS beats
     anything in a cascade layer whatever the selector, so an unlayered `a` or `h2`
     silently overrides every utility class on that element. This bug was live
-    site-wide for weeks before it was found.
+    site-wide for weeks before it was found — and again on 28 October 2026, when
+    `p { margin-bottom: 1em }` and a dozen more rules in `global.css` turned out
+    to be outside the layer too. Exactly two rules are unlayered on purpose, at
+    the bottom of `global.css`, each saying why: form fields at 16px (daisyUI's
+    `.input` is 14px, and iPhones zoom the page in on anything smaller than
+    16px) and reduced motion. Anything else unlayered is a bug.
 - **daisyUI v5** — component library, configured with `@plugin` in CSS
   - Its card body stretches every `<p>` inside it (`.card-body p { flex-grow: 1 }`).
     In a row of cards that opened a big gap in the shorter card, on landscape and
