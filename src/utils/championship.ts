@@ -207,6 +207,20 @@ export function parseStandings(rows: string[][], readAt = new Date()): Standings
 }
 
 /**
+ * How many of the season's races have been scored: a race column where
+ * anybody has a result, 0 included (ran, scored nothing). For "13 of 15 races"
+ * on the homepage and the Results page.
+ *
+ * A count of what the sheet shows, not a sum of points — no scoring happens
+ * here, as above. A race with no Chard runners at all would not count; with
+ * a club this size that has not happened.
+ */
+export function racesScored(standings: Standings): number {
+	const everyone = [...standings.women, ...standings.men];
+	return standings.races.filter((_, i) => everyone.some((runner) => runner.racePoints[i] !== null)).length;
+}
+
+/**
  * The standings, or `null` while the sheet has not been published yet.
  *
  * `null` is a real state with its own wording on the page, not a swallowed

@@ -1,19 +1,21 @@
-import { getCollection } from 'astro:content';
 import rss from '@astrojs/rss';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import { getEarliestRaceDate } from '../utils/race-reports';
+import { getPosts } from '../utils/news';
 
+// Race reports and club news posts, newest first, each dated by its own rule
+// (see src/utils/news.ts). Handicap results are not in the feed: they are a
+// table, not a post, and the News page is where they sit among the posts.
 export async function GET(context) {
-	const posts = await getCollection('race-reports', ({ data }) => !data.draft);
+	const posts = await getPosts();
 	return rss({
 		title: SITE_TITLE,
 		description: SITE_DESCRIPTION,
 		site: context.site,
-		items: posts.map((post) => ({
+		items: posts.map(({ post, date, href }) => ({
 			title: post.data.title,
 			description: post.data.excerpt,
-			pubDate: getEarliestRaceDate(post.data.races),
-			link: `/race-reports/${post.id}/`,
+			pubDate: date,
+			link: href,
 		})),
 	});
 }

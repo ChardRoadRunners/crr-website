@@ -10,12 +10,14 @@ See also `docs/handover.md` for the decisions that look like oversights.
 
 ## Collections
 
-Five, all in `src/content/`:
+Seven, all in `src/content/`:
 
-- **`race-reports`** — race reports and club news. Note the hyphen.
+- **`race-reports`** — reports on races members have run. Note the hyphen.
+- **`news`** — club notices, Couch to 5k updates and socials: anything that is
+  not a report on a race. Added 28 October 2026. See *news frontmatter* below.
 - **`races`** — the two club-hosted races.
 - **`pages`** — copy for one-off pages (`home.md`, `join-us.md`, `pub-runs.md`,
-  `calendar.md`, `contact.md`, `results.md`).
+  `calendar.md`, `contact.md`, `results.md`, `news.md`).
   A discriminated union: each entry is its own shape, picked by the `page`
   field. Some of these pages carry only the wording around a list whose
   contents come from elsewhere — `calendar.md`, `pub-runs.md` and `results.md`
@@ -33,8 +35,11 @@ Five, all in `src/content/`:
   page must never render those as a specific day. `docs/race-diary.md` has the
   reasoning; `src/utils/race-diary.ts` is the only place a rule becomes a date.
 
-`race-reports` and `races` each have their own `images/` folder beside the
-Markdown, because image paths are relative to the file. A photo used in two
+- **`navigation`** — the top menu and the footer, labels and addresses both.
+  `scripts/check-cms-schema.mjs` fails the build if an address is not a page.
+
+`race-reports`, `news` and `races` each have their own `images/` folder beside
+the Markdown, because image paths are relative to the file. A photo used in two
 collections needs a copy in both.
 
 ### race-reports frontmatter
@@ -57,6 +62,28 @@ collections needs a copy in both.
   registered in `public/admin/index.html`) that shows the photo cropped at each
   position. Replaced `heroImagePosition`, which had three values and only moved
   the share card.
+
+### news frontmatter
+
+- **`posted`** — required. The day the post went up, and the only date a news
+  post has, so it is what orders it on the News page and the homepage. The CMS
+  fills in today. The file is named from it: `2026-11-03-agm-date-set.md`.
+- `category` — Club News (the default), Couch to 5k or Social.
+- Everything else — `title`, `author`, `excerpt`, `draft`, and the photo fields
+  with their alt-text rule — is the same as a race report.
+
+Why a separate collection rather than a category of race reports: the rule
+"there is no top-level date field; sort by the earliest race" is right for a
+race report and impossible for a notice. Making `races` optional "unless it is
+club news" is a conditional rule the CMS cannot express, so a committee member
+would find out from a failed build. Two collections, each with one simple
+rule, avoid that. "Club News" was taken out of the race reports' categories at
+the same time; no report had used it.
+
+Pages: `/news/<file name>/`, from `src/pages/news/[...slug].astro`, with the
+same layout (`BlogPost.astro`) and share card as a race report. The News page
+is `/news/`. Both kinds, and the handicap results, are merged newest first by
+`src/utils/news.ts`, which keeps each kind's own date rule.
 
 ### The CMS mirrors this schema
 

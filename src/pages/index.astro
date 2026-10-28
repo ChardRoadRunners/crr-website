@@ -1,13 +1,12 @@
 ---
 import { getEntry } from 'astro:content';
 import ClubNights from '../components/ClubNights.astro';
-import ComingUp from '../components/ComingUp.astro';
 import CouchTo5k from '../components/CouchTo5k.astro';
 import Handicap from '../components/Handicap.astro';
 import Hero from '../components/Hero.astro';
 import PubRuns from '../components/PubRuns.astro';
-import LatestRaceReports from '../components/LatestRaceReports.astro';
 import OurRaces from '../components/OurRaces.astro';
+import WhatsHappening from '../components/WhatsHappening.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import Layout from '../layouts/Layout.astro';
 
@@ -16,17 +15,20 @@ const home = await getEntry('pages', 'home');
 // home shape, so the sections below are type-checked.
 if (home?.data.page !== 'home') throw new Error('Missing src/content/pages/home.md');
 
-const { hero, clubNights, handicap, pubRuns, couchTo5k, latestReports, upcoming, ourRaces } =
-	home.data;
+// What's happening borrows the News page's wording for a handicap result, so
+// the same night is described the same way in both places.
+const news = await getEntry('pages', 'news');
+if (news?.data.page !== 'news') throw new Error('Missing src/content/pages/news.md');
+
+const { hero, whatsHappening, clubNights, handicap, pubRuns, couchTo5k, ourRaces } = home.data;
 ---
 
 <Layout title={SITE_TITLE} description={SITE_DESCRIPTION} overlayHeader hideLogoUntilScrolled>
 	<Hero {...hero} />
+	<WhatsHappening {...whatsHappening} feedWords={news.data} />
 	<ClubNights {...clubNights} />
 	<Handicap {...handicap} />
 	<PubRuns {...pubRuns} />
 	<CouchTo5k {...couchTo5k} />
-	<LatestRaceReports {...latestReports} />
-	<ComingUp {...upcoming} />
 	<OurRaces {...ourRaces} />
 </Layout>

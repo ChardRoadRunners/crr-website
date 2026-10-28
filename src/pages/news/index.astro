@@ -1,0 +1,78 @@
+---
+// The News page: every handicap result, race report and club news post,
+// newest first. Decided 28 October 2026 with the club's feedback on the
+// "results and news" sketches: News has its own page, linked from the footer
+// and from the homepage, rather than a seventh item in the top menu. Race
+// reports keep their own page; this one puts them in line with everything
+// else.
+//
+// The newest items show as cards; the rest are a plain list of headlines, so
+// the page stays a reasonable length on a phone without paging or a script.
+import { getEntry } from 'astro:content';
+
+import FeedCard from '../../components/FeedCard.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import Layout from '../../layouts/Layout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { fillNight } from '../../utils/handicap-results';
+import { getFeed, type FeedItem } from '../../utils/news';
+
+const page = await getEntry('pages', 'news');
+if (page?.data.page !== 'news') throw new Error('src/content/pages/news.md is missing.');
+const words = page.data;
+
+/** How many items show in full before the rest become a list of headlines. */
+const IN_FULL = 12;
+
+const feed = await getFeed();
+const [recent, older] = [feed.slice(0, IN_FULL), feed.slice(IN_FULL)];
+
+const titleOf = (item: FeedItem) =>
+	item.kind === 'handicap'
+		? fillNight(item.night.winner ? words.handicapTitle : words.handicapTitleNoWinner, item.night)
+		: item.post.data.title;
+---
+
+<Layout title={words.hero.heading} description={words.seo.description} overlayHeader>
+	<PageHeader heading={words.hero.heading} strapline={words.hero.strapline} />
+
+	<div class="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+		{
+			feed.length === 0 ? (
+				<p class="text-base-content/80">{words.emptyState}</p>
+			) : (
+				<ul class="flex flex-col gap-10">
+					{recent.map((item) => (
+						<li>
+							<FeedCard item={item} words={words} headingLevel={2} />
+						</li>
+					))}
+				</ul>
+			)
+		}
+
+		{
+			older.length > 0 && (
+				<section class="mt-14 border-t border-base-300 pt-8">
+					<h2 class="text-2xl font-bold text-primary">{words.olderHeading}</h2>
+					<ul class="mt-4 divide-y divide-base-300">
+						{older.map((item) => (
+							<li class="py-3">
+								<a href={item.href} class="link link-primary font-semibold">
+									{titleOf(item)}
+								</a>
+								<span class="block text-sm text-base-content/80">
+									{item.kind === 'handicap' ? words.handicapLabel : item.post.data.category} ·{' '}
+									<FormattedDate
+										date={item.date}
+										approximate={item.kind === 'report' && item.post.data.dateApproximate}
+									/>
+								</span>
+							</li>
+						))}
+					</ul>
+				</section>
+			)
+		}
+	</div>
+</Layout>

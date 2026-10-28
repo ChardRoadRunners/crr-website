@@ -46,8 +46,12 @@ const raceReports = defineCollection({
       // Empty string allowed: archive posts often have no byline.
       author: z.string().default(""),
 
+      // "Club News" moved to its own collection, `news`, on 28 October 2026:
+      // a notice has no race to be dated by. No report ever used it. Couch to
+      // 5k and Social stay, for a report on a race that was one of those — a
+      // Couch to 5k graduation parkrun, say.
       category: z
-        .enum(["Race Report", "Club News", "Couch to 5k", "Social"])
+        .enum(["Race Report", "Couch to 5k", "Social"])
         .default("Race Report"),
 
       // True for Chard Flyer and Forde Abbey — races the club puts on.
@@ -81,6 +85,43 @@ const raceReports = defineCollection({
         .array(z.object({ src: image(), alt: z.string() }))
         .default([]),
 
+      excerpt: z.string(),
+      draft: z.boolean().default(false),
+    }),
+});
+
+// Club news: notices, Couch to 5k updates, socials — anything that is not a
+// report on a race. Added 28 October 2026, with the News page.
+//
+// Its own collection rather than a category of race-reports, because what
+// dates a post is different. A race report is dated by its races, and that
+// rule is worth keeping exactly as it is. A notice has no race, so here the
+// date is `posted`, required, and it is what orders the post. Keeping the two
+// apart means neither has a conditional rule ("races, unless…") for the CMS
+// to fail to express.
+//
+// Routed at /news/<file name>/ by src/pages/news/[...slug].astro, and listed
+// with race reports and handicap results on the News page and the homepage.
+const news = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/news" }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      // The day the post went up. Required: it is the only date a news post
+      // has, and it orders it among the race reports and results.
+      posted: z.date(),
+      author: z.string().default(""),
+      category: z
+        .enum(["Club News", "Couch to 5k", "Social"])
+        .default("Club News"),
+      // The photo fields work exactly as on race reports, including the
+      // deliberate looseness of heroImageAlt — see there.
+      heroImage: image().optional(),
+      heroImageAlt: z.string().optional(),
+      heroImageCrop: z.enum(CROP_NAMES).default(DEFAULT_CROP),
+      images: z
+        .array(z.object({ src: image(), alt: z.string() }))
+        .default([]),
       excerpt: z.string(),
       draft: z.boolean().default(false),
     }),
@@ -208,19 +249,35 @@ const homePage = z.object({
     emptyState: z.string(),
     cta,
   }),
-  latestReports: z.object({
+  // The top of the page, under the hero: latest result, championship
+  // leaders, coming up and the latest posts. Replaced the separate "Latest
+  // race reports" and "Coming up" sections on 28 October 2026 and carries
+  // their wording. Words in {braces} are filled in at build time: {winner},
+  // {month}, {count} from the handicap sheet; {run}, {total} and {points}
+  // from the championship sheet.
+  whatsHappening: z.object({
     heading: z.string(),
-    linkLabel: z.string(),
-    emptyState: z.string(),
-  }),
-  upcoming: z.object({
-    heading: z.string(),
-    linkLabel: z.string(),
-    emptyState: z.string(),
+    handicapLabel: z.string(),
+    winnerLine: z.string(),
+    noWinnerLine: z.string(),
+    ranLabel: z.string(),
+    fullResultLabel: z.string(),
+    championshipHeading: z.string(),
+    racesRunLabel: z.string(),
+    womenLabel: z.string(),
+    menLabel: z.string(),
+    pointsLabel: z.string(),
+    standingsLabel: z.string(),
+    comingUpHeading: z.string(),
+    comingUpLinkLabel: z.string(),
+    comingUpEmpty: z.string(),
     // Shown on a race that counts towards the championship. The homepage
     // carries its own wording rather than reading the calendar page's — each
     // page owns what it says.
-    championshipLabel: z.string().min(1),
+    championshipBadge: z.string().min(1),
+    latestHeading: z.string(),
+    latestLinkLabel: z.string(),
+    latestEmpty: z.string(),
   }),
   ourRaces: z.object({
     heading: z.string(),
@@ -594,6 +651,31 @@ const navigation = defineCollection({
   }),
 });
 
+// src/content/pages/news.md — the wording on the News page, /news/.
+//
+// The list itself is not here: it is every handicap result, race report and
+// club news post, newest first, from src/utils/news.ts. Words in {braces} are
+// filled in from the handicap sheet: {winner}, {month} "October", {monthYear}
+// "October 2026", {count} runners.
+const newsPage = z.object({
+  page: z.literal("news"),
+  hero: z.object({ heading: z.string(), strapline: z.string() }),
+  seo: z.object({ description: z.string() }),
+  // The label over a handicap result in the list. Posts are labelled by
+  // their own category.
+  handicapLabel: z.string(),
+  handicapTitle: z.string(),
+  // A night where nobody eligible finished.
+  handicapTitleNoWinner: z.string(),
+  ranLabel: z.string(),
+  winnerLabel: z.string(),
+  // After this many items the rest are a plain list of titles.
+  olderHeading: z.string(),
+  emptyState: z.string(),
+  // Above the share buttons on a club news post.
+  shareHeading: z.string(),
+});
+
 // One collection, one file per page, each page its own shape. The `page`
 // field picks the branch — which also means a validation error names the
 // field that's wrong instead of listing every page's fields at once.
@@ -606,6 +688,7 @@ const pages = defineCollection({
     calendarPage,
     pubRunsPage,
     resultsPage,
+    newsPage,
   ]),
 });
 
@@ -740,6 +823,7 @@ const calendarEvents = defineCollection({
 
 export const collections = {
   "race-reports": raceReports,
+  news,
   races,
   pages,
   legal,

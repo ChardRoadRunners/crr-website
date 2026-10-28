@@ -16,6 +16,7 @@
  * That is a real state the page shows as such, not a broken result.
  */
 import { HANDICAP_CSV_URL } from '../consts.ts';
+import { formatDate } from './date.ts';
 import { fetchSheetCsv } from './sheet.ts';
 
 export interface HandicapFinisher {
@@ -237,6 +238,27 @@ export function parseHandicapResults(rows: string[][], readAt = new Date()): Han
 
 	nights.sort((a, b) => (a.dateIso < b.dateIso ? 1 : a.dateIso > b.dateIso ? -1 : 0));
 	return { nights, readAt };
+}
+
+/**
+ * Fills the {placeholders} in a line of content about one night.
+ *
+ * {monthYear} "October 2026", {month} "October", {date} "Tue 27th Oct 2026",
+ * {winner}, {count} runners, and the winner's {run} and {start} times. The
+ * wording is the committee's, in src/content/pages/; this only puts the
+ * sheet's facts into it. Used by the night pages, the News page and the
+ * homepage, so a placeholder means the same everywhere.
+ */
+export function fillNight(line: string, night: HandicapNight): string {
+	const month = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', month: 'long' }).format(night.date);
+	return line
+		.replaceAll('{monthYear}', formatDate(night.date, { monthOnly: true }))
+		.replaceAll('{month}', month)
+		.replaceAll('{date}', formatDate(night.date))
+		.replaceAll('{winner}', night.winner?.name ?? '')
+		.replaceAll('{count}', String(night.finishers.length))
+		.replaceAll('{run}', night.winner?.runTime ?? '')
+		.replaceAll('{start}', night.winner?.startTime ?? '');
 }
 
 /**

@@ -1,0 +1,28 @@
+---
+// One club news post: /news/<file name>/.
+//
+// The same layout as a race report. A news post has no races, so BlogPost
+// shows the day it was posted where a report shows its race date.
+import { getCollection, getEntry, render, type CollectionEntry } from 'astro:content';
+
+import BlogPost from '../../layouts/BlogPost.astro';
+
+export async function getStaticPaths() {
+	const posts = await getCollection('news', ({ data }) => !data.draft);
+	return posts.map((post) => ({
+		params: { slug: post.id },
+		props: post,
+	}));
+}
+type Props = CollectionEntry<'news'>;
+
+const post = Astro.props;
+const { Content } = await render(post);
+
+const page = await getEntry('pages', 'news');
+if (page?.data.page !== 'news') throw new Error('src/content/pages/news.md is missing.');
+---
+
+<BlogPost {...post.data} path={`/news/${post.id}/`} shareHeading={page.data.shareHeading}>
+	<Content />
+</BlogPost>

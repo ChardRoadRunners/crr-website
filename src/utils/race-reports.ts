@@ -3,7 +3,7 @@ import type { CollectionEntry } from "astro:content";
 export { formatDistance } from "./distance";
 
 type RaceReport = CollectionEntry<"race-reports">;
-type Race = RaceReport["data"]["races"][number];
+export type Race = RaceReport["data"]["races"][number];
 
 // The only date a race report is ordered by. There is no top-level `date`
 // field on purpose — a post can cover several races on different days, so

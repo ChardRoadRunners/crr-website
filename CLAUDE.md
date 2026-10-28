@@ -79,8 +79,14 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
 
 ## Collections
 
-Five, all in `src/content/`: **`race-reports`**, **`races`**, **`pages`**,
-**`legal`** and **`calendar-events`**.
+Seven, all in `src/content/`: **`race-reports`**, **`news`**, **`races`**,
+**`pages`**, **`legal`**, **`calendar-events`** and **`navigation`**.
+
+`news` (added 28 October 2026) is club notices — anything that is not a report
+on a race. It is separate from `race-reports` because a race report is dated
+by its races and a notice has none: a news post is dated by `posted`. The News
+page, `/news/`, and the homepage's "What's happening" put both in one line with
+the handicap results, through `src/utils/news.ts`.
 
 **See `docs/content-model.md`** for what each one holds, the race-reports
 frontmatter rules, and how the two schemas are kept in step.
@@ -234,7 +240,8 @@ and troubleshooting, but learning this stack as I go. So:
   flag what needs updating rather than inventing a replacement.
 - Copy comes from content files. No user-facing text hardcoded in components.
   Link labels are content; route paths stay in code.
-- Categories: Race Report, Club News, Couch to 5k, Social.
+- Categories: race reports are Race Report, Couch to 5k or Social; club news
+  posts are Club News, Couch to 5k or Social. Club News is only in `news`.
 
 ## Standards
 

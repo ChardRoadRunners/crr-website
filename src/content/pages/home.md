@@ -64,15 +64,26 @@ couchTo5k:
   cta:
     label: Find out more
     href: /join-us
-latestReports:
-  heading: Latest race reports
-  linkLabel: All race reports
-  emptyState: No race reports, something has gone awfully wrong...
-upcoming:
-  heading: Coming up
-  linkLabel: Full race calendar
-  emptyState: Nothing on the calendar just now. See the calendar page for what's being planned.
-  championshipLabel: Championship
+whatsHappening:
+  heading: What's happening
+  handicapLabel: Handicap
+  winnerLine: '{winner} won'
+  noWinnerLine: The {month} handicap
+  ranLabel: '{count} ran'
+  fullResultLabel: Full result
+  championshipHeading: Championship
+  racesRunLabel: '{run} of {total} races run'
+  womenLabel: Women
+  menLabel: Men
+  pointsLabel: '{points} points'
+  standingsLabel: Standings
+  comingUpHeading: Coming up
+  comingUpLinkLabel: Full race calendar
+  comingUpEmpty: Nothing on the calendar just now. See the calendar page for what's being planned.
+  championshipBadge: Championship
+  latestHeading: Latest news
+  latestLinkLabel: All club news
+  latestEmpty: No race reports, something has gone awfully wrong...
 ourRaces:
   heading: Our races
   intro: |-
