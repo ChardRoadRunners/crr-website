@@ -43,11 +43,12 @@ const REAL = [
 	HEADER,
 	'2026-10-27,27 Oct 2026,1,Sean Tovey,24:49,26:30,TRUE,',
 	'2026-10-27,27 Oct 2026,2,Helen Hickley,27:10,28:00,,',
-	'2026-10-27,27 Oct 2026,3,Wayne Loveridge,16:46,17:30,,',
+	'2026-10-27,27 Oct 2026,3,Wayne Loveridge,17:46,17:30,,',
 	'2026-10-27,27 Oct 2026,4,Martin Holley,20:37,21:15,,',
 	'2026-10-27,27 Oct 2026,5,Joe Chlopecki-Carslake,20:28,21:00,,TRUE',
 	'2026-10-27,27 Oct 2026,15,Lisa Palmer,,,,',
 	'2026-10-27,27 Oct 2026,16,Lydia Heywood,27:43,25:00,,',
+	// Not Matt's real row (27:02): kept without a run time to pin that case.
 	'2026-10-27,27 Oct 2026,17,Matt Sheahan,,22:30,,',
 	'2026-09-29,29 Sep 2026,,Thomas Wallis,19:42,20:15,TRUE,',
 	'2026-08-25,25 Aug 2026,,Katie Hobbs,22:20,25:30,TRUE,',
@@ -70,7 +71,7 @@ check('nights come out newest first, blank rows dropped', () => {
 check('the winner is whoever the sheet says, not the fastest run time', () => {
 	const [october] = parse(REAL).nights;
 	assert.equal(october.winner.name, 'Sean Tovey');
-	// Wayne ran 16:46, by far the fastest, and finished third. Still third.
+	// Wayne ran 17:46, by far the fastest, and finished third. Still third.
 	assert.equal(october.finishers.find((f) => f.name === 'Wayne Loveridge').position, 3);
 });
 
