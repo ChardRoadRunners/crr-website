@@ -116,7 +116,7 @@ const latest = posts.slice(0, 3);
 									))}
 								</ol>
 							)}
-							<p class="mt-3 flex flex-wrap items-baseline justify-between gap-x-4">
+							<p class="mt-3 mb-0 flex flex-wrap items-baseline justify-between gap-x-4">
 								{!night.winnerOnly && <span>{fillNight(words.ranLabel, night)}</span>}
 								<a class="font-semibold underline underline-offset-2" href={nightHref(night.dateIso)}>
 									{words.fullResultLabel}
@@ -140,7 +140,7 @@ const latest = posts.slice(0, 3);
 									</div>
 								))}
 							</dl>
-							<p class="mt-3">
+							<p class="mt-3 mb-0">
 								<a class="link link-primary font-semibold" href="/results/#championship">
 									{words.standingsLabel}
 								</a>
