@@ -1,0 +1,114 @@
+---
+// The monthly handicap on the results page: the latest night in full, then
+// every earlier night as a line with its winner.
+//
+// Each night has its own page, /results/handicap/<date>/, with the highlights,
+// the full result and the share links. The latest night's table is repeated
+// here so the Results page answers "who won on Tuesday" without a second tap;
+// the archive below links to each night's page.
+import FormattedDate from './FormattedDate.astro';
+import HandicapTable from './HandicapTable.astro';
+import type { HandicapResults } from '../utils/handicap-results';
+
+interface Props {
+	results: HandicapResults;
+	labels: { position: string; name: string; runTime: string; startTime: string };
+	latestHeading: string;
+	latestLink: string;
+	winnerLabel: string;
+	noWinner: string;
+	firstHandicapLabel: string;
+	earlierHeading: string;
+	winnerOnlyNote: string;
+	emptyState: string;
+}
+
+const {
+	results,
+	labels,
+	latestHeading,
+	latestLink,
+	winnerLabel,
+	noWinner,
+	firstHandicapLabel,
+	earlierHeading,
+	winnerOnlyNote,
+	emptyState,
+} = Astro.props;
+
+const [latest, ...earlier] = results.nights;
+const anyWinnerOnly = earlier.some((night) => night.winnerOnly);
+const nightHref = (dateIso: string) => `/results/handicap/${dateIso}/`;
+---
+
+{
+	latest === undefined ? (
+		<p class="mt-4 text-base-content/80">{emptyState}</p>
+	) : (
+		<>
+			<div class="mt-6 rounded-box border border-base-300 p-4 sm:p-6">
+				<p class="text-sm font-semibold tracking-wide text-base-content/70 uppercase">
+					{latestHeading}
+				</p>
+				<h3 class="mt-1 text-2xl font-bold text-primary">
+					<a class="hover:underline" href={nightHref(latest.dateIso)}>
+						<FormattedDate date={latest.date} />
+					</a>
+				</h3>
+				<p class="mt-3 text-lg">
+					{latest.winner ? (
+						<>
+							{winnerLabel}: <strong>{latest.winner.name}</strong>
+						</>
+					) : (
+						noWinner
+					)}
+				</p>
+				{!latest.winnerOnly && (
+					<HandicapTable
+						night={latest}
+						labels={labels}
+						caption={`${latestHeading} — ${latest.race}`}
+						winnerLabel={winnerLabel}
+						firstHandicapLabel={firstHandicapLabel}
+					/>
+				)}
+				<p class="mt-4">
+					<a class="link link-primary font-semibold" href={nightHref(latest.dateIso)}>
+						{latestLink}
+					</a>
+				</p>
+			</div>
+
+			{earlier.length > 0 && (
+				<div class="mt-8">
+					<h3 class="text-xl font-semibold text-primary">{earlierHeading}</h3>
+					<ul class="mt-3 divide-y divide-base-300 rounded-md border border-base-300">
+						{earlier.map((night) => (
+							<li>
+								<a
+									class="flex flex-wrap items-baseline justify-between gap-x-4 px-3 py-3 hover:bg-base-200"
+									href={nightHref(night.dateIso)}
+								>
+									<span class="link link-primary">
+										<FormattedDate date={night.date} />
+									</span>
+									<span>
+										{night.winner ? (
+											<>
+												{winnerLabel}: <strong>{night.winner.name}</strong>
+											</>
+										) : (
+											noWinner
+										)}
+									</span>
+								</a>
+							</li>
+						))}
+					</ul>
+					{anyWinnerOnly && <p class="mt-3 text-sm text-base-content/70">{winnerOnlyNote}</p>}
+				</div>
+			)}
+		</>
+	)
+}

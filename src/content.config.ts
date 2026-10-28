@@ -466,13 +466,62 @@ const resultsPage = z.object({
     formLabel: z.string(),
   }),
 
-  // Neither of these has a backend yet. Each says so in its own words rather
-  // than a component printing "coming soon" at them.
+  // The monthly handicap, read from the CRR Handicap sheet's Results tab at
+  // build time (HANDICAP_CSV_URL in src/consts.ts). Like the championship,
+  // nothing is worked out here: the timing page in the sheet decides positions
+  // and the winner. This is the wording around the table.
   handicap: z.object({
     heading: z.string(),
     body: z.string(),
+    // Shown while HANDICAP_CSV_URL is empty.
     notPublished: draftable,
+    // Shown when the tab is published and has no results in it.
+    emptyState: z.string(),
+    latestHeading: z.string(),
+    winnerLabel: z.string(),
+    // A night where nobody eligible finished (only first-timers, say).
+    noWinner: z.string(),
+    firstHandicapLabel: z.string(),
+    earlierHeading: z.string(),
+    // Under the earlier nights, when some only recorded the winner.
+    winnerOnlyNote: z.string(),
+    labels: z.object({
+      position: z.string(),
+      name: z.string(),
+      runTime: z.string(),
+      startTime: z.string(),
+    }),
+    updatedLabel: z.string(),
+    updatedNote: z.string(),
+    // Under the latest night on the Results page, linking to its own page.
+    latestLink: z.string(),
+
+    // Each night's own page, /results/handicap/<date>/. Words in {braces} are
+    // filled in from the sheet: {monthYear} "October 2026", {date} "Tue 27th
+    // Oct 2026", {winner}, {count} runners, {run} and {start} times.
+    night: z.object({
+      title: z.string(),
+      description: z.string(),
+      descriptionWinnerOnly: z.string(),
+      strapline: z.string(),
+      straplineWinnerOnly: z.string(),
+      backLabel: z.string(),
+      winnerHeading: z.string(),
+      winnerTimes: z.string(),
+      quickestLabel: z.string(),
+      furthestUnderLabel: z.string(),
+      fullResultHeading: z.string(),
+      vsStartLabel: z.string(),
+      vsStartNote: z.string(),
+      shareHeading: z.string(),
+      earlierLabel: z.string(),
+      laterLabel: z.string(),
+      howItWorksHeading: z.string(),
+    }),
   }),
+
+  // No backend yet. Says so in its own words rather than a component printing
+  // "coming soon" at it.
   records: z.object({
     heading: z.string(),
     body: z.string(),

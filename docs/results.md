@@ -55,13 +55,22 @@ says the standings are not ready yet, which is true and is not an error.
 2. **File → Share → Publish to web.**
 3. In the first dropdown pick **Standings** — *not* "Entire document".
 4. In the second pick **Comma-separated values (.csv)**.
-5. **Publish**, and copy the address Google gives you. It looks like
+5. Open **Published content & settings** and set it to **Standings** too.
+6. Leave **Automatically republish when changes are made** ticked.
+7. **Publish**, and copy the address Google gives you. It looks like
    `https://docs.google.com/spreadsheets/d/e/2PACX-…/pub?gid=…&single=true&output=csv`
-6. Paste it into `CHAMPIONSHIP_CSV_URL` in `src/consts.ts`, commit, push.
+8. Paste it into `CHAMPIONSHIP_CSV_URL` in `src/consts.ts`, commit, push.
 
 **Publish the Standings tab and nothing else.** "Entire document" would also
 publish `Form responses`, which is every submission exactly as it was typed.
 The tidied, checked names on `Standings` are what belongs on a public page.
+
+**The dialog has two settings, and the second one is what protects you.** The
+first dropdown only picks which tab the link points at. **Published content &
+settings**, further down, decides what is published. Left on "All sheets",
+every tab is readable by anyone who changes the `gid=` number at the end of
+the link, even though the link itself shows only one. Set it to the one tab.
+Found while publishing the handicap on 28 Oct 2026.
 
 Publishing makes that one tab readable by anyone who has the address. That is
 fine here — it is names and points that are going on a public web page anyway —
@@ -305,3 +314,70 @@ written. The championship-specific shaping is all in `championship.ts`.
 | The page | `src/pages/results.astro` |
 | All the wording | `src/content/pages/results.md`, editable at `/admin` |
 | The checks | `scripts/check-championship.mjs` (`npm run check:championship`) |
+
+---
+
+## The monthly handicap
+
+The same arrangement, from a different sheet. The handicap is timed on the
+night with the timing page in **CRR Handicap** (club Drive, Results > Handicap),
+and saving a race writes it to that sheet's History tab. See docs/handicap.md.
+
+| Tab | The website |
+|---|---|
+| **Results** | **reads this one** |
+| everything else (Runners, History, Timing, Settings with the PIN…) | ignores |
+
+**Results** is the public slice of History, worked out by a formula: one row
+per runner per handicap that has a position or a winner, newest first. Its
+columns are `Date` (YYYY-MM-DD), `Race`, `Position`, `Name`, `Run time`,
+`Start time`, `Winner` and `First handicap`. Simon's notes are deliberately not
+on it.
+
+### Switching it on
+
+**Done 28 Oct 2026.** The Results tab is published and its address is in
+`HANDICAP_CSV_URL`. The steps, for setting it up again:
+
+1. Open CRR Handicap. **File → Share → Publish to web.**
+2. First dropdown: **Results**, *not* "Entire document" — the Settings tab has
+   the timing page PIN on it.
+3. Second dropdown: **Comma-separated values (.csv)**.
+4. Open **Published content & settings** and set it to **Results** too. See
+   the note under *Publishing the Standings tab*: this is the setting that
+   keeps the other tabs private.
+5. Leave **Automatically republish when changes are made** ticked.
+   **Publish**, copy the address.
+6. Paste it into `HANDICAP_CSV_URL` in `src/consts.ts`, commit, push.
+
+Read by `src/utils/handicap-results.ts`, pinned by
+`scripts/check-handicap-results.mjs`. Columns are found by name. What fails the
+build: a missing column, a date that is not YYYY-MM-DD, two winners on one
+night, two runners in one position, a position that is not a whole number.
+An empty `HANDICAP_CSV_URL` does not — the section says the results are not
+published yet.
+
+Nights before October 2026 came from Simon's spreadsheet with only the winner
+recorded, so they show as a date and a winner with nothing to open. From
+October on, every night has the full result.
+
+### A page for each night
+
+Every handicap in the Results tab also gets its own page,
+`/results/handicap/<date>/` (for example `/results/handicap/2026-10-27/`), made
+by `src/pages/results/handicap/[date].astro`. It has the winner, two highlights
+(the quickest run, and whoever finished furthest under their start time,
+leaving out first handicaps), the full result with a "vs start" column, share
+links, and links to the nights either side. The Results page shows the latest
+night in full and lists every night, each linking to its page; the homepage and
+News will link to them too.
+
+Nobody writes these pages. A night appears the morning after it is saved in the
+sheet. The only sums on them are time differences (run time minus start time,
+for "vs start" and the highlights); positions and the winner are exactly what
+the timing page saved. While `HANDICAP_CSV_URL` is empty there are no nights, so
+no pages are built.
+
+The share preview is the site's usual contour card for now. A card with the
+winner's name on it, as sketched on the design canvas, needs the build to draw
+text into an image, and is a separate piece of work.

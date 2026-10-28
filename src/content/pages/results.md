@@ -40,8 +40,41 @@ championship:
   formLabel: Submit a result
 handicap:
   heading: Monthly Handicap
-  body: The latest month, and the running standings across the year.
+  body: A 5k on the last Tuesday of the month. Everyone is set off at a different time based on their 5k time, slowest first, and the first across the line wins. If it's your first handicap you race, but you can't win.
   notPublished: Not published here yet. Handicap results go out on Facebook in the meantime.
+  emptyState: No handicap results yet.
+  latestHeading: Latest handicap
+  winnerLabel: Winner
+  noWinner: No winner this time
+  firstHandicapLabel: First handicap
+  earlierHeading: Earlier handicaps
+  winnerOnlyNote: Before October 2026 only the winner was recorded.
+  labels:
+    position: Pos
+    name: Name
+    runTime: Time
+    startTime: Start time
+  updatedLabel: Results as at
+  updatedNote: The page is rebuilt every night, so a handicap shows here the morning after.
+  latestLink: Highlights and the full result
+  night:
+    title: '{monthYear} handicap'
+    description: '{winner} won the Chard Road Runners handicap on {date}. {count} ran.'
+    descriptionWinnerOnly: '{winner} won the Chard Road Runners handicap on {date}.'
+    strapline: '{date} · {count} ran'
+    straplineWinnerOnly: '{date}'
+    backLabel: All handicap results
+    winnerHeading: Winner, first across the line
+    winnerTimes: 'Ran {run} off a {start} start time'
+    quickestLabel: Quickest run
+    furthestUnderLabel: Furthest under their start time
+    fullResultHeading: Full result
+    vsStartLabel: vs start
+    vsStartNote: How far under (−) or over (+) their start time each runner ran.
+    shareHeading: Share this result
+    earlierLabel: Earlier handicap
+    laterLabel: Later handicap
+    howItWorksHeading: How the handicap works
 records:
   heading: Club Records
   body: By distance and age category.

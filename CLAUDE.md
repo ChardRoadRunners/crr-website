@@ -295,7 +295,8 @@ solid bar. Without the script the header stays transparent over the banner —
 less tidy, still perfectly readable, because the scrim behind it is pure CSS
 and the contours sit at an opacity measured to be safe under text.
 
-**`ShareRaceReport.astro` — sharing a race report.** Two copy buttons and the
+**`ShareRaceReport.astro` — sharing a race report** (and, since 28 October 2026,
+a handicap night's page, with its own heading). Two copy buttons and the
 phone's native share sheet, all three `hidden` in the HTML and revealed only
 where the API exists. Without it the Facebook and WhatsApp links are plain
 anchors that work as normal, and the paste block is ordinary selectable text.
