@@ -255,7 +255,7 @@ const homePage = z.object({
   // their wording. Words in {braces} are filled in at build time: {winner},
   // {month}, {count} from the handicap sheet; {run}, {total} and {points}
   // from the championship sheet.
-  whatsHappening: z.object({
+  whatsOn: z.object({
     heading: z.string(),
     handicapLabel: z.string(),
     winnerLine: z.string(),

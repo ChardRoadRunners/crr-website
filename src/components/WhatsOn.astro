@@ -1,5 +1,5 @@
 ---
-// "What's happening" — the top of the homepage, straight under the hero.
+// "What's on!" — the top of the homepage, straight under the hero.
 //
 // Sketch A from the 28 October 2026 feedback round ("top of the site, where it
 // should be"), filled with what Jack asked for: recent results, race reports
@@ -17,7 +17,7 @@
 //     the Club nights calendar (src/utils/coming-up.ts);
 //   - the latest posts: race reports and club news (src/utils/news.ts).
 //
-// Every word on it is in src/content/pages/home.md under whatsHappening.
+// Every word on it is in src/content/pages/home.md under whatsOn.
 import FeedCard from './FeedCard.astro';
 import FormattedDate from './FormattedDate.astro';
 import { CHAMPIONSHIP_SEASON } from '../consts';
@@ -86,8 +86,8 @@ const points = (n: number) => words.pointsLabel.replaceAll('{points}', String(n)
 const latest = posts.slice(0, 3);
 ---
 
-<section aria-labelledby="whats-happening" class="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-	<h2 id="whats-happening" class="text-center text-3xl font-bold text-base-content sm:text-4xl">
+<section aria-labelledby="whats-on" class="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+	<h2 id="whats-on" class="text-center text-3xl font-bold text-base-content sm:text-4xl">
 		{words.heading}
 	</h2>
 

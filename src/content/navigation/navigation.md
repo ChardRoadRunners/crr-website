@@ -66,7 +66,7 @@ footerGroups:
   - label: "The Club"
     links:
       # The News page lives here rather than in the top menu, decided 28 Oct
-      # 2026: the menu stays at six, and the homepage's "What's happening" is
+      # 2026: the menu stays at six, and the homepage's "What's on!" is
       # where most people will meet the news anyway.
       - label: "Club news"
         href: "/news"

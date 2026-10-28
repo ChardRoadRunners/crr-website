@@ -2,7 +2,7 @@
  * Everything that counts as news, newest first: handicap results, race
  * reports and club news posts.
  *
- * The News page lists all of it; the homepage's "What's happening" shows the
+ * The News page lists all of it; the homepage's "What's on!" shows the
  * top of it. Both read from here so the two can never disagree about what is
  * newest.
  *

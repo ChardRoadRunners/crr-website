@@ -391,7 +391,7 @@ sketches went round: results should not live only two taps deep.
 
 | Where | What | Made by |
 |---|---|---|
-| **Homepage**, "What's happening", straight under the hero | The latest handicap (winner, top three, link to the night), the championship leaders and how many races have been run, what is coming up, the latest posts | `src/components/WhatsHappening.astro` |
+| **Homepage**, "What's on!", straight under the hero | The latest handicap (winner, top three, link to the night), the championship leaders and how many races have been run, what is coming up, the latest posts | `src/components/WhatsOn.astro` |
 | **News page**, `/news/` (footer link "Club news") | Every handicap night among the race reports and club news, newest first | `src/pages/news/index.astro`, merged by `src/utils/news.ts` |
 | **Results page** | Section links, **Find your name**, then the handicap, the championship and records, newest first | `src/pages/results.astro` |
 

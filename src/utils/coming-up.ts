@@ -2,7 +2,7 @@
  * What is coming up: the next few races, and the next handicap night.
  *
  * Moved out of the homepage's old "Coming up" section on 28 October 2026, when
- * it was folded into "What's happening" and the Results page started showing
+ * it was folded into "What's on!" and the Results page started showing
  * the next championship race too. The reasoning is unchanged:
  *
  * Two sources for races, deliberately merged rather than one replacing the

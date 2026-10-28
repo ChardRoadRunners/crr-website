@@ -85,7 +85,7 @@ Seven, all in `src/content/`: **`race-reports`**, **`news`**, **`races`**,
 `news` (added 28 October 2026) is club notices — anything that is not a report
 on a race. It is separate from `race-reports` because a race report is dated
 by its races and a notice has none: a news post is dated by `posted`. The News
-page, `/news/`, and the homepage's "What's happening" put both in one line with
+page, `/news/`, and the homepage's "What's on!" put both in one line with
 the handicap results, through `src/utils/news.ts`.
 
 **See `docs/content-model.md`** for what each one holds, the race-reports

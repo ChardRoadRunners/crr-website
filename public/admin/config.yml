@@ -845,10 +845,10 @@ collections:
                   - { label: Button text, name: label, widget: string }
                   - { label: Button link, name: href, widget: string }
 
-          # Mirrors whatsHappening in src/content.config.ts. Replaced the
+          # Mirrors whatsOn in src/content.config.ts. Replaced the
           # "Latest race reports" and "Coming up" sections, 28 Oct 2026.
-          - label: What's happening (top of the page)
-            name: whatsHappening
+          - label: What's on! (top of the page)
+            name: whatsOn
             widget: object
             hint: >-
               The latest result, the championship leaders, what is coming up

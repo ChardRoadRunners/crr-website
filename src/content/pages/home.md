@@ -64,8 +64,8 @@ couchTo5k:
   cta:
     label: Find out more
     href: /join-us
-whatsHappening:
-  heading: What's happening
+whatsOn:
+  heading: What's on!
   handicapLabel: Handicap
   winnerLine: '{winner} won'
   noWinnerLine: The {month} handicap
