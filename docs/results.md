@@ -343,3 +343,24 @@ published yet.
 Nights before October 2026 came from Simon's spreadsheet with only the winner
 recorded, so they show as a date and a winner with nothing to open. From
 October on, every night has the full result.
+
+### A page for each night
+
+Every handicap in the Results tab also gets its own page,
+`/results/handicap/<date>/` (for example `/results/handicap/2026-10-27/`), made
+by `src/pages/results/handicap/[date].astro`. It has the winner, two highlights
+(the quickest run, and whoever finished furthest under their start time,
+leaving out first handicaps), the full result with a "vs start" column, share
+links, and links to the nights either side. The Results page shows the latest
+night in full and lists every night, each linking to its page; the homepage and
+News will link to them too.
+
+Nobody writes these pages. A night appears the morning after it is saved in the
+sheet. The only sums on them are time differences (run time minus start time,
+for "vs start" and the highlights); positions and the winner are exactly what
+the timing page saved. While `HANDICAP_CSV_URL` is empty there are no nights, so
+no pages are built.
+
+The share preview is the site's usual contour card for now. A card with the
+winner's name on it, as sketched on the design canvas, needs the build to draw
+text into an image, and is a separate piece of work.

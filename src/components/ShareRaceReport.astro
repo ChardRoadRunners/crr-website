@@ -15,12 +15,14 @@
 // nothing else — the headline, description and picture all come from the page's
 // own Open Graph tags, set in BaseHead. So the sentence somebody sees on
 // Facebook is the report's `excerpt`, and improving one improves the other.
+// Also used on each handicap night's page, which passes its own heading.
 interface Props {
 	title: string;
 	excerpt: string;
+	heading?: string;
 }
 
-const { title, excerpt } = Astro.props;
+const { title, excerpt, heading = 'Share this report' } = Astro.props;
 
 // Absolute, because a share link containing "/race-reports/..." would send
 // people to their own machine. Built the same way as the canonical URL in
@@ -37,7 +39,7 @@ const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${title} — ${ur
 ---
 
 <section class="share not-prose" aria-labelledby="share-heading">
-	<h2 id="share-heading" class="text-lg font-bold text-primary">Share this report</h2>
+	<h2 id="share-heading" class="text-lg font-bold text-primary">{heading}</h2>
 
 	{/*
 	  The phone's own share sheet, when there is one: one tap to whichever app

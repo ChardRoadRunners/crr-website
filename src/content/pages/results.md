@@ -56,6 +56,25 @@ handicap:
     startTime: Start time
   updatedLabel: Results as at
   updatedNote: The page is rebuilt every night, so a handicap shows here the morning after.
+  latestLink: Highlights and the full result
+  night:
+    title: '{monthYear} handicap'
+    description: '{winner} won the Chard Road Runners handicap on {date}. {count} ran.'
+    descriptionWinnerOnly: '{winner} won the Chard Road Runners handicap on {date}.'
+    strapline: '{date} · {count} ran'
+    straplineWinnerOnly: '{date}'
+    backLabel: All handicap results
+    winnerHeading: Winner, first across the line
+    winnerTimes: 'Ran {run} off a {start} start time'
+    quickestLabel: Quickest run
+    furthestUnderLabel: Furthest under their start time
+    fullResultHeading: Full result
+    vsStartLabel: vs start
+    vsStartNote: How far under (−) or over (+) their start time each runner ran.
+    shareHeading: Share this result
+    earlierLabel: Earlier handicap
+    laterLabel: Later handicap
+    howItWorksHeading: How the handicap works
 records:
   heading: Club Records
   body: By distance and age category.

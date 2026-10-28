@@ -29,6 +29,13 @@ export interface HandicapFinisher {
 	winner: boolean;
 	/** First handicap: races, but can't win. */
 	firstHandicap: boolean;
+	/**
+	 * Run time minus start time, as people say it: "−1:41" is 1 min 41 under
+	 * their start time, "+0:17" over. Null without both times.
+	 */
+	vsStart: string | null;
+	/** The same, in seconds, negative when under. */
+	vsStartSeconds: number | null;
 }
 
 export interface HandicapNight {
@@ -44,6 +51,13 @@ export interface HandicapNight {
 	winner: HandicapFinisher | null;
 	/** True when only the winner was recorded (the handicaps before Oct 2026). */
 	winnerOnly: boolean;
+	/** Fastest run time of the night. Null on a winner-only night. */
+	quickest: HandicapFinisher | null;
+	/**
+	 * Furthest under their start time. First handicaps are left out — their
+	 * start time was a guess — and so is anybody who was not under at all.
+	 */
+	furthestUnder: HandicapFinisher | null;
 }
 
 export interface HandicapResults {
@@ -68,6 +82,29 @@ const tidy = (value: string) => value.replace(/\s+/g, ' ').trim();
 const sameHeader = (a: string, b: string) => tidy(a).toLowerCase() === tidy(b).toLowerCase();
 const yes = (value: string) => tidy(value).toUpperCase() === 'TRUE';
 const orNull = (value: string) => (tidy(value) === '' ? null : tidy(value));
+
+/**
+ * "24:49" or "1:02:30" to seconds; anything else is null.
+ *
+ * Only ever used for the highlights and the "vs start" column on a night's
+ * page. Positions and the winner are never worked out here — they are what the
+ * sheet's timing page saved.
+ */
+export function timeToSeconds(text: string | null): number | null {
+	if (!text) return null;
+	const parts = text.split(':');
+	if (parts.length < 2 || parts.length > 3 || !parts.every((p) => /^\d+$/.test(p))) return null;
+	const n = parts.map(Number);
+	if (n[n.length - 1] >= 60) return null;
+	return n.length === 3 ? n[0] * 3600 + n[1] * 60 + n[2] : n[0] * 60 + n[1];
+}
+
+/** Seconds to "−1:41", "+0:17" or "0:00". The minus is a real minus sign. */
+export function formatDifference(seconds: number): string {
+	const sign = seconds < 0 ? '\u2212' : seconds > 0 ? '+' : '';
+	const abs = Math.abs(seconds);
+	return `${sign}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, '0')}`;
+}
 
 /**
  * Turns the Results CSV into handicap nights, newest first.
@@ -127,13 +164,20 @@ export function parseHandicapResults(rows: string[][], readAt = new Date()): Han
 		}
 
 		const night = byDate.get(dateIso) ?? { race: tidy(cell('race')) || dateIso, finishers: [] };
+		const runTime = orNull(cell('runTime'));
+		const startTime = orNull(cell('startTime'));
+		const run = timeToSeconds(runTime);
+		const start = timeToSeconds(startTime);
+		const vsStartSeconds = run !== null && start !== null ? run - start : null;
 		night.finishers.push({
 			position,
 			name,
-			runTime: orNull(cell('runTime')),
-			startTime: orNull(cell('startTime')),
+			runTime,
+			startTime,
 			winner: yes(cell('winner')),
 			firstHandicap: yes(cell('firstHandicap')),
+			vsStart: vsStartSeconds === null ? null : formatDifference(vsStartSeconds),
+			vsStartSeconds,
 		});
 		byDate.set(dateIso, night);
 	}
@@ -169,13 +213,25 @@ export function parseHandicapResults(rows: string[][], readAt = new Date()): Han
 			return a.name.localeCompare(b.name, 'en-GB');
 		});
 
+		const winnerOnly = finishers.every((f) => f.position === null);
+		const timed = finishers.filter((f) => timeToSeconds(f.runTime) !== null);
+		const quickest = winnerOnly || timed.length === 0
+			? null
+			: timed.reduce((a, b) => (timeToSeconds(b.runTime)! < timeToSeconds(a.runTime)! ? b : a));
+		const under = finishers.filter((f) => !f.firstHandicap && f.vsStartSeconds !== null && f.vsStartSeconds < 0);
+		const furthestUnder = winnerOnly || under.length === 0
+			? null
+			: under.reduce((a, b) => (b.vsStartSeconds! < a.vsStartSeconds! ? b : a));
+
 		return {
 			dateIso,
 			date: new Date(`${dateIso}T00:00:00Z`),
 			race,
 			finishers,
 			winner: winners[0] ?? null,
-			winnerOnly: finishers.every((f) => f.position === null),
+			winnerOnly,
+			quickest,
+			furthestUnder,
 		};
 	});
 

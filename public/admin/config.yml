@@ -1431,6 +1431,39 @@ collections:
                   - { label: Start time, name: startTime, widget: string }
               - { label: Updated label, name: updatedLabel, widget: string }
               - { label: Updated note, name: updatedNote, widget: string }
+              - label: Link to the latest night's page
+                name: latestLink
+                widget: string
+              - label: Each night's own page
+                name: night
+                widget: object
+                hint: >-
+                  Words in {braces} are filled in from the sheet: {monthYear}
+                  (October 2026), {date} (Tue 27th Oct 2026), {winner}, {count}
+                  (how many ran), {run} and {start} (the winner's times). Keep
+                  the braces exactly as they are.
+                fields:
+                  - { label: Page title, name: title, widget: string }
+                  - { label: Search and share description, name: description, widget: string }
+                  - label: Description when only the winner was recorded
+                    name: descriptionWinnerOnly
+                    widget: string
+                  - { label: Line under the title, name: strapline, widget: string }
+                  - label: Line under the title when only the winner was recorded
+                    name: straplineWinnerOnly
+                    widget: string
+                  - { label: Link back to Results, name: backLabel, widget: string }
+                  - { label: Heading over the winner, name: winnerHeading, widget: string }
+                  - { label: Winner's times, name: winnerTimes, widget: string }
+                  - { label: Quickest run label, name: quickestLabel, widget: string }
+                  - { label: Furthest under label, name: furthestUnderLabel, widget: string }
+                  - { label: Full result heading, name: fullResultHeading, widget: string }
+                  - { label: vs start column heading, name: vsStartLabel, widget: string }
+                  - { label: Note explaining vs start, name: vsStartNote, widget: string }
+                  - { label: Share heading, name: shareHeading, widget: string }
+                  - { label: Link to the night before, name: earlierLabel, widget: string }
+                  - { label: Link to the night after, name: laterLabel, widget: string }
+                  - { label: How it works heading, name: howItWorksHeading, widget: string }
 
           - label: Club records
             name: records

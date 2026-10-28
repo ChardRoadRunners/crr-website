@@ -493,6 +493,31 @@ const resultsPage = z.object({
     }),
     updatedLabel: z.string(),
     updatedNote: z.string(),
+    // Under the latest night on the Results page, linking to its own page.
+    latestLink: z.string(),
+
+    // Each night's own page, /results/handicap/<date>/. Words in {braces} are
+    // filled in from the sheet: {monthYear} "October 2026", {date} "Tue 27th
+    // Oct 2026", {winner}, {count} runners, {run} and {start} times.
+    night: z.object({
+      title: z.string(),
+      description: z.string(),
+      descriptionWinnerOnly: z.string(),
+      strapline: z.string(),
+      straplineWinnerOnly: z.string(),
+      backLabel: z.string(),
+      winnerHeading: z.string(),
+      winnerTimes: z.string(),
+      quickestLabel: z.string(),
+      furthestUnderLabel: z.string(),
+      fullResultHeading: z.string(),
+      vsStartLabel: z.string(),
+      vsStartNote: z.string(),
+      shareHeading: z.string(),
+      earlierLabel: z.string(),
+      laterLabel: z.string(),
+      howItWorksHeading: z.string(),
+    }),
   }),
 
   // No backend yet. Says so in its own words rather than a component printing

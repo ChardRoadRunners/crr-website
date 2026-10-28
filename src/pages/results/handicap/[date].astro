@@ -1,0 +1,202 @@
+---
+// One handicap night: /results/handicap/2026-10-27/.
+//
+// A page per night so a result has an address of its own: share "October
+// handicap" in the club WhatsApp and the link still shows October in December,
+// where the Results page will have moved on. Results lists every night and
+// links here; the homepage and News will link here too once they exist.
+//
+// Made from the same Results tab as the results page — see
+// src/utils/handicap-results.ts. Nobody writes these pages; a night appears
+// the morning after it is saved in the sheet. While the tab is not published
+// there are no nights, so no pages are built at all.
+//
+// The highlights and the "vs start" column are the only sums on the page, and
+// they are plain time differences. Positions and the winner are exactly what
+// the sheet's timing page saved.
+import type { GetStaticPaths } from 'astro';
+import { getEntry } from 'astro:content';
+
+import FormattedDate from '../../../components/FormattedDate.astro';
+import Layout from '../../../layouts/Layout.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+import RichText from '../../../components/RichText.astro';
+import ShareRaceReport from '../../../components/ShareRaceReport.astro';
+import { formatDate } from '../../../utils/date';
+import { getHandicapResults, type HandicapNight } from '../../../utils/handicap-results';
+
+export const getStaticPaths = (async () => {
+	const results = await getHandicapResults();
+	if (results === null) return [];
+	const { nights } = results;
+	// Newest first, so the "later" night is the one before in the list.
+	return nights.map((night, i) => ({
+		params: { date: night.dateIso },
+		props: { night, later: nights[i - 1] ?? null, earlier: nights[i + 1] ?? null },
+	}));
+}) satisfies GetStaticPaths;
+
+interface Props {
+	night: HandicapNight;
+	later: HandicapNight | null;
+	earlier: HandicapNight | null;
+}
+
+const { night, later, earlier } = Astro.props;
+
+const page = await getEntry('pages', 'results');
+if (!page) throw new Error('src/content/pages/results.md is missing.');
+const { handicap } = page.data;
+const words = handicap.night;
+
+/** Fills {monthYear}, {date}, {winner}, {count}, {run} and {start} in a line of content. */
+const fill = (line: string) =>
+	line
+		.replaceAll('{monthYear}', formatDate(night.date, { monthOnly: true }))
+		.replaceAll('{date}', formatDate(night.date))
+		.replaceAll('{winner}', night.winner?.name ?? '')
+		.replaceAll('{count}', String(night.finishers.length))
+		.replaceAll('{run}', night.winner?.runTime ?? '')
+		.replaceAll('{start}', night.winner?.startTime ?? '');
+
+const title = fill(words.title);
+const description = fill(night.winnerOnly ? words.descriptionWinnerOnly : words.description);
+const strapline = fill(night.winnerOnly ? words.straplineWinnerOnly : words.strapline);
+const winnerTimes = night.winner?.runTime && night.winner.startTime ? fill(words.winnerTimes) : null;
+const resultsHref = '/results/#handicap';
+const nightHref = (n: HandicapNight) => `/results/handicap/${n.dateIso}/`;
+const dash = '–';
+---
+
+<Layout title={title} description={description} overlayHeader>
+	<PageHeader heading={title} strapline={strapline} />
+
+	<div class="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+		<p>
+			<a class="link link-primary font-semibold" href={resultsHref}>{words.backLabel}</a>
+		</p>
+
+		<section class="mt-6 rounded-box bg-accent p-5 text-accent-content sm:p-6">
+			<h2 class="text-sm font-semibold tracking-wide uppercase">{words.winnerHeading}</h2>
+			<p class="winner-name mt-1 text-3xl font-bold">{night.winner?.name ?? handicap.noWinner}</p>
+			{winnerTimes && <p class="mt-1">{winnerTimes}</p>}
+		</section>
+
+		{
+			(night.quickest || night.furthestUnder) && (
+				<dl class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+					{night.quickest && (
+						<div class="rounded-box bg-base-200 p-4">
+							<dt class="text-sm text-base-content/80">{words.quickestLabel}</dt>
+							<dd class="mt-1">
+								<span class="font-semibold">{night.quickest.name}</span>{' '}
+								<span class="tabular-nums">{night.quickest.runTime}</span>
+							</dd>
+						</div>
+					)}
+					{night.furthestUnder && (
+						<div class="rounded-box bg-base-200 p-4">
+							<dt class="text-sm text-base-content/80">{words.furthestUnderLabel}</dt>
+							<dd class="mt-1">
+								<span class="font-semibold">{night.furthestUnder.name}</span>{' '}
+								<span class="tabular-nums">{night.furthestUnder.vsStart}</span>
+							</dd>
+						</div>
+					)}
+				</dl>
+			)
+		}
+
+		{
+			night.winnerOnly ? (
+				<p class="mt-8 text-base-content/80">{handicap.winnerOnlyNote}</p>
+			) : (
+				<section class="mt-10">
+					<h2 class="text-2xl font-bold text-primary">{words.fullResultHeading}</h2>
+					<p class="mt-2 text-sm text-base-content/80">{words.vsStartNote}</p>
+					<div class="scroll-region mt-4 overflow-x-auto rounded-md border border-base-300">
+						<table class="w-full border-collapse text-left text-sm sm:text-base">
+							<caption class="sr-only">{title}</caption>
+							<thead>
+								<tr class="bg-primary text-chalk">
+									<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">
+										{handicap.labels.position}
+									</th>
+									<th scope="col" class="px-2 py-2 font-semibold sm:px-3">{handicap.labels.name}</th>
+									<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">
+										{handicap.labels.runTime}
+									</th>
+									<th scope="col" class="px-2 py-2 text-right font-semibold sm:px-3">
+										{words.vsStartLabel}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{night.finishers.map((runner) => (
+									<tr class:list={[runner.winner ? 'bg-accent text-accent-content' : 'even:bg-base-200']}>
+										<td class="px-2 py-2 text-right tabular-nums sm:px-3">{runner.position ?? dash}</td>
+										<th scope="row" class="px-2 py-2 font-normal sm:px-3">
+											<span class:list={[runner.winner && 'font-semibold']}>{runner.name}</span>
+											{runner.winner && (
+												<span class="ml-1 text-xs font-semibold uppercase">{handicap.winnerLabel}</span>
+											)}
+											{runner.firstHandicap && (
+												<span class="block text-xs text-base-content/80">{handicap.firstHandicapLabel}</span>
+											)}
+										</th>
+										<td class="px-2 py-2 text-right tabular-nums sm:px-3">{runner.runTime ?? dash}</td>
+										<td class="px-2 py-2 text-right tabular-nums sm:px-3">{runner.vsStart ?? dash}</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				</section>
+			)
+		}
+
+		<div class="mt-10">
+			<ShareRaceReport title={title} excerpt={description} heading={words.shareHeading} />
+		</div>
+
+		{
+			(earlier || later) && (
+				<nav
+					class="mt-10 flex flex-wrap justify-between gap-4 border-t border-base-300 pt-6"
+					aria-label={`${words.earlierLabel} / ${words.laterLabel}`}
+				>
+					{earlier ? (
+						<a class="link link-primary" href={nightHref(earlier)}>
+							<span aria-hidden="true">←</span> {words.earlierLabel}: <FormattedDate date={earlier.date} />
+						</a>
+					) : (
+						<span />
+					)}
+					{later && (
+						<a class="link link-primary" href={nightHref(later)}>
+							{words.laterLabel}: <FormattedDate date={later.date} /> <span aria-hidden="true">→</span>
+						</a>
+					)}
+				</nav>
+			)
+		}
+
+		<section class="mt-10 border-t border-base-300 pt-6">
+			<h2 class="text-xl font-semibold text-primary">{words.howItWorksHeading}</h2>
+			<RichText text={handicap.body} class="mt-2 text-base-content/80" />
+		</section>
+	</div>
+</Layout>
+
+<style>
+	/* The winner's name in the heading face, without making it a heading. */
+	.winner-name {
+		font-family: var(--font-outfit);
+		letter-spacing: -0.02em;
+	}
+
+	.scroll-region:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
+</style>

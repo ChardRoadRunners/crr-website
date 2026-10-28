@@ -17,7 +17,7 @@
 import assert from 'node:assert/strict';
 
 const { parseCsv } = await import(new URL('../src/utils/csv.ts', import.meta.url).href);
-const { parseHandicapResults } = await import(
+const { parseHandicapResults, timeToSeconds, formatDifference } = await import(
 	new URL('../src/utils/handicap-results.ts', import.meta.url).href
 );
 
@@ -89,6 +89,35 @@ check('nights before October 2026 are winner-only, not empty', () => {
 	assert.equal(september.winnerOnly, true);
 	assert.equal(september.winner.name, 'Thomas Wallis');
 	assert.equal(parse(REAL).nights[0].winnerOnly, false);
+});
+
+check('vs start is run time minus start time, with a real minus sign', () => {
+	const runners = parse(REAL).nights[0].finishers;
+	const by = (name) => runners.find((f) => f.name === name);
+	assert.equal(by('Sean Tovey').vsStart, '\u22121:41');
+	assert.equal(by('Lydia Heywood').vsStart, '+2:43');
+	assert.equal(by('Lisa Palmer').vsStart, null);
+	assert.equal(by('Matt Sheahan').vsStart, null, 'a start time with no run time is no difference');
+});
+
+check('highlights: quickest run, and furthest under start time leaving out first handicaps', () => {
+	const [october, september] = parse(REAL).nights;
+	assert.equal(october.quickest.name, 'Wayne Loveridge');
+	assert.equal(october.furthestUnder.name, 'Sean Tovey');
+	// Joe was 0:32 under on his first handicap: a guessed start time, so not a highlight.
+	const csv = [HEADER, '2026-11-24,x,1,New Runner,20:00,23:00,,TRUE', '2026-11-24,x,2,Old Hand,21:00,21:30,TRUE,'].join('\n');
+	assert.equal(parse(csv).nights[0].furthestUnder.name, 'Old Hand');
+	// Winner-only nights have nothing to compare.
+	assert.equal(september.quickest, null);
+	assert.equal(september.furthestUnder, null);
+});
+
+check('times are read as minutes, and nonsense is no time rather than zero', () => {
+	assert.equal(timeToSeconds('24:49'), 1489);
+	assert.equal(timeToSeconds('1:02:30'), 3750);
+	assert.equal(timeToSeconds('24:75'), null);
+	assert.equal(timeToSeconds(''), null);
+	assert.equal(formatDifference(0), '0:00');
 });
 
 check('finishing order, with anyone who has no position last', () => {
