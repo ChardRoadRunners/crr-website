@@ -429,9 +429,27 @@ box later.
 
 ### The next handicap night
 
-The homepage's "Coming up" includes the next handicap once it is on the club's
-**Club nights** Google calendar, as any event with "handicap" in its title.
-Nothing works the date out: until somebody adds it to the calendar, it does not
-show. The calendar is downloaded overnight (see CLAUDE.md), so a new entry
-appears the next morning, or straight away if the calendar
-workflow (Actions tab, "Fetch calendars") is run by hand.
+The homepage's "Coming up" includes the next handicap from the club's **Club
+nights** Google calendar: any event with "handicap" in its title. Nothing on
+the website works the date out; the calendar does.
+
+Set up on 28 October 2026 as two repeating events, replacing the weekly
+"Tuesday Club Run" (which now ends on 28 Oct 2026):
+
+| Event | Repeats | First |
+|---|---|---|
+| Tuesday Club Run, 7pm | Every Tuesday **except the last** of the month (`RRULE:FREQ=MONTHLY;BYDAY=1TU,2TU,3TU,-2TU`) | Tue 3 Nov 2026 |
+| Monthly Handicap Race, 7pm | The **last** Tuesday of the month (`BYDAY=-1TU`) | Tue 24 Nov 2026 |
+
+"Last", not "fourth": in a month with five Tuesdays the handicap is on the
+fifth, as it was on 29 Sep 2026. The `-2TU` in the club-run rule is "second to
+last", which is what makes the fourth Tuesday a club run in those months.
+Google's own repeat menu cannot build the club-run rule, so it was created
+through the API; to change it, end the series and create a new one rather than
+editing its repeat.
+
+A month the handicap is off (Christmas, say): delete that one occurrence in
+Google Calendar ("This event" only), and add a one-off Tuesday Club Run if
+there is a club run instead. The calendar is downloaded overnight (see
+CLAUDE.md), so a change appears the next morning, or straight away if the
+calendar workflow (Actions tab, "Fetch calendars") is run by hand.

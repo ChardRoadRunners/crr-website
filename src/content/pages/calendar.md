@@ -14,7 +14,7 @@ seo:
 
 clubNights:
   heading: "Club nights"
-  intro: "When we next meet. Club nights run every week, so this is simply the next one of each."
+  intro: "When we next meet: the next of each club night. On the last Tuesday of the month the Tuesday run is the handicap race instead."
   emptyState: "Club nights are not in the calendar at the moment. They still run — Tuesday and Thursday, 7pm at the cricket club."
 
 socials:
