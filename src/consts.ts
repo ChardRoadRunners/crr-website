@@ -87,8 +87,10 @@ export const CALENDAR_IDS = {
  * docs/results.md for the sheet, the tabs, and who edits what.
  *
  * TO SWITCH THE STANDINGS ON: in the sheet, File > Share > Publish to web,
- * choose the **Standings** tab and **Comma-separated values (.csv)**, then
- * paste the address Google gives you here. It looks like
+ * choose the **Standings** tab and **Comma-separated values (.csv)**, set
+ * **Published content & settings** to Standings as well (that setting, not the
+ * first dropdown, decides what is published), then paste the address Google
+ * gives you here. It looks like
  * `https://docs.google.com/spreadsheets/d/e/2PACX-…/pub?gid=…&single=true&output=csv`.
  *
  * Publish the Standings tab and nothing else. "Entire document" would publish
@@ -123,12 +125,14 @@ export const CHAMPIONSHIP_SEASON = '2026';
  * winner and first handicap. Simon's notes, the PIN and the timing page link
  * live on other tabs and never leave the sheet. See docs/results.md.
  *
- * TO SWITCH THE HANDICAP RESULTS ON: in the CRR Handicap sheet, File > Share >
- * Publish to web, choose the **Results** tab and **Comma-separated values
- * (.csv)**, then paste the address here. Publish that tab and nothing else.
+ * Switched on 28 Oct 2026. To set it up again (a new sheet, say): in the CRR
+ * Handicap sheet, File > Share > Publish to web, choose the **Results** tab and
+ * **Comma-separated values (.csv)**, set **Published content & settings** to
+ * Results as well, then paste the address here. Publish that tab and nothing
+ * else.
  *
- * While this is empty the handicap section says it is not published yet. Once
- * there is an address, anything that goes wrong with it fails the build, for
- * the same reason as the championship above.
+ * Empty, the handicap section says it is not published yet. With an address,
+ * anything that goes wrong with it fails the build, for the same reason as the
+ * championship above.
  */
-export const HANDICAP_CSV_URL = '';
+export const HANDICAP_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREOKUftjpqek53TfF5F0YufusECV5zVBanPOsa8FleBVD6fOCg-JKtiTH140ElyVa_IahREU4wX3SZ/pub?gid=2&single=true&output=csv';

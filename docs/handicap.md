@@ -3,7 +3,8 @@
 **Status (1 Oct 2026): rebuilt around finishing order.** The sheet is **CRR Handicap** in the club
 Drive's Results folder. Its script is `sheets/handicap/scoring.gs` + `sheets/handicap/setup.gs`, with
 the phone timing page in `sheets/handicap/timing.html`, all pasted into the sheet's Apps Script.
-First real use: the October handicap, Tue 27 Oct 2026. The website side is not started.
+First real use: the October handicap, Tue 27 Oct 2026. The website reads its Results tab, live
+from 28 Oct 2026.
 
 This replaces the 29 Sep design (handicap = last 5k time, winner = best finish − handicap, results
 from a form of runners' own watch times). Simon, who times the handicap and sets the start times,
@@ -96,7 +97,7 @@ kept as a no-op so its old trigger can't fail; delete the trigger and park the f
 
 ## What the website needs
 
-Built (on a branch, 28 Oct 2026): the results page reads the published Results CSV — see docs/results.md. Columns: `Date · Race · Position · Name · Run time · Start time · Winner ·
+Live (28 Oct 2026): the results page and a page per night read the published Results CSV — see docs/results.md. Columns: `Date · Race · Position · Name · Run time · Start time · Winner ·
 First handicap`, newest first. Current trophy holder = the Winner row of the latest race. Rows
 before October 2026 have a winner but no position.
 

@@ -55,13 +55,22 @@ says the standings are not ready yet, which is true and is not an error.
 2. **File → Share → Publish to web.**
 3. In the first dropdown pick **Standings** — *not* "Entire document".
 4. In the second pick **Comma-separated values (.csv)**.
-5. **Publish**, and copy the address Google gives you. It looks like
+5. Open **Published content & settings** and set it to **Standings** too.
+6. Leave **Automatically republish when changes are made** ticked.
+7. **Publish**, and copy the address Google gives you. It looks like
    `https://docs.google.com/spreadsheets/d/e/2PACX-…/pub?gid=…&single=true&output=csv`
-6. Paste it into `CHAMPIONSHIP_CSV_URL` in `src/consts.ts`, commit, push.
+8. Paste it into `CHAMPIONSHIP_CSV_URL` in `src/consts.ts`, commit, push.
 
 **Publish the Standings tab and nothing else.** "Entire document" would also
 publish `Form responses`, which is every submission exactly as it was typed.
 The tidied, checked names on `Standings` are what belongs on a public page.
+
+**The dialog has two settings, and the second one is what protects you.** The
+first dropdown only picks which tab the link points at. **Published content &
+settings**, further down, decides what is published. Left on "All sheets",
+every tab is readable by anyone who changes the `gid=` number at the end of
+the link, even though the link itself shows only one. Set it to the one tab.
+Found while publishing the handicap on 28 Oct 2026.
 
 Publishing makes that one tab readable by anyone who has the address. That is
 fine here — it is names and points that are going on a public web page anyway —
@@ -327,11 +336,19 @@ on it.
 
 ### Switching it on
 
+**Done 28 Oct 2026.** The Results tab is published and its address is in
+`HANDICAP_CSV_URL`. The steps, for setting it up again:
+
 1. Open CRR Handicap. **File → Share → Publish to web.**
 2. First dropdown: **Results**, *not* "Entire document" — the Settings tab has
    the timing page PIN on it.
-3. Second dropdown: **Comma-separated values (.csv)**. **Publish**, copy the address.
-4. Paste it into `HANDICAP_CSV_URL` in `src/consts.ts`, commit, push.
+3. Second dropdown: **Comma-separated values (.csv)**.
+4. Open **Published content & settings** and set it to **Results** too. See
+   the note under *Publishing the Standings tab*: this is the setting that
+   keeps the other tabs private.
+5. Leave **Automatically republish when changes are made** ticked.
+   **Publish**, copy the address.
+6. Paste it into `HANDICAP_CSV_URL` in `src/consts.ts`, commit, push.
 
 Read by `src/utils/handicap-results.ts`, pinned by
 `scripts/check-handicap-results.mjs`. Columns are found by name. What fails the
