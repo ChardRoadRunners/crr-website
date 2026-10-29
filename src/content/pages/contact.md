@@ -18,7 +18,7 @@ races:
   label: Our races
   detail: Entries, road closures, parking, volunteering, or the junior race.
 whereWeAre:
-  heading: Where we are
+  heading: Where’s that to
   address: |
     Chard Cricket Club
     Dening Field
