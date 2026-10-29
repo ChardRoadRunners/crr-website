@@ -1408,15 +1408,39 @@ collections:
             widget: object
             fields:
               - { label: Heading, name: heading, widget: string }
-              - label: Names and roles
-                name: body
-                widget: markdown
+              - label: Introduction
+                name: intro
+                widget: text
                 required: false
+              - label: Roles
+                name: roles
+                widget: list
+                required: false
+                label_singular: Role
+                summary: "{{fields.role}}"
                 hint: >-
-                  Roles and names only - never anyone's personal email or
-                  address. Nothing shows on the page while this starts with
-                  TODO, so it is safe to leave until the committee has said who
-                  is happy to be listed.
+                  One entry per role, in the order they should appear. A role
+                  with an address shows straight away. Add a person's name
+                  ONLY once they have said they are happy to be listed - the
+                  website's files are public, so a name saved here is
+                  published even before the page shows it. The membership,
+                  welfare and race director addresses must match the Join us
+                  page, the welfare page and the race pages, or the site will
+                  not update.
+                fields:
+                  - { label: Role, name: role, widget: string }
+                  - label: Name
+                    name: name
+                    widget: string
+                    required: false
+                    hint: Leave empty until this person has agreed to be listed.
+                  - label: Club email address
+                    name: email
+                    widget: string
+                    required: false
+                    pattern:
+                      - "^[a-z0-9.+-]+@chardroadrunners\\.com$"
+                      - "Use the club address ending @chardroadrunners.com, never someone's own email."
 
       - name: results
         label: Results page

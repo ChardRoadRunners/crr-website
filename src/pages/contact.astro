@@ -37,6 +37,29 @@ const raceContacts = races
 	.sort((a, b) => a.data.order - b.data.order)
 	.filter((race) => race.data.contactEmail)
 	.map((race) => ({ title: race.data.title, email: race.data.contactEmail! }));
+
+// The committee list repeats the membership, welfare and race addresses,
+// because a list of roles missing those three would look broken. The blocks
+// above still read them from their owners; this checks the list agrees, and
+// stops the build if it does not. A stale welfare address on this page would
+// send a safeguarding concern into a dead mailbox with nothing failing — a
+// failed build with this message in it is the better outcome.
+const committeeRoles = committee.roles.filter((entry) => entry.name || entry.email);
+for (const entry of committeeRoles) {
+	if (!entry.email) continue;
+	const fix = (owner: string) =>
+		`Contact page, committee list: "${entry.role}" says ${entry.email}, but ${owner}. ` +
+		'Change the committee list in src/content/pages/contact.md (Pages › Contact in the CMS) to match.';
+	if (/welfare officer/i.test(entry.role) && welfareOfficer && entry.email !== welfareOfficer.email) {
+		throw new Error(fix(`the welfare page says ${welfareOfficer.email}`));
+	}
+	if (/membership/i.test(entry.role) && membershipEmail && entry.email !== membershipEmail) {
+		throw new Error(fix(`the Join us page says ${membershipEmail}`));
+	}
+	if (/race director/i.test(entry.role) && !raceContacts.some((r) => r.email === entry.email)) {
+		throw new Error(fix(`no race page uses that address`));
+	}
+}
 ---
 
 <Layout title="Contact" description="Who to email at Chard Road Runners, and what about."
@@ -154,14 +177,30 @@ const raceContacts = races
 		</section>
 
 		{/*
-		  committee.body is stripped by the schema while it is still a TODO, so
-		  the heading goes with it rather than standing over nothing.
+		  A role with an address shows straight away; its holder's name joins it
+		  once they have agreed to be listed. If nothing is ready, the heading
+		  goes too rather than standing over nothing.
 		*/}
 		{
-			committee.body && (
+			committeeRoles.length > 0 && (
 				<section class="mt-12 border-t border-base-300 pt-8">
 					<h2 class="text-3xl font-bold text-primary">{committee.heading}</h2>
-					<RichText text={committee.body} class="mt-3 text-base-content/80" />
+					{committee.intro && (
+						<RichText text={committee.intro} class="mt-3 text-base-content/80" />
+					)}
+					<ul class="mt-6 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+						{committeeRoles.map((entry) => (
+							<li class="contact-entry">
+								<p class="mb-0 font-bold text-primary">{entry.role}</p>
+								{entry.name && <p class="mb-0 text-base-content/80">{entry.name}</p>}
+								{entry.email && (
+									<a href={`mailto:${entry.email}`} class="link link-primary wrap-anywhere">
+										{entry.email}
+									</a>
+								)}
+							</li>
+						))}
+					</ul>
 				</section>
 			)
 		}

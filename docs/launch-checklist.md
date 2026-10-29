@@ -332,9 +332,18 @@ source.
 ### Words nobody has written yet
 
 - **The privacy page** — three sections still empty, awaiting committee wording.
-- **The committee list** on the contact page (`src/content/pages/contact.md`) —
-  roles and names, once people have said they are happy to be listed. Nothing
-  renders while it starts with `TODO`.
+- **Names on the committee list** (`src/content/pages/contact.md`). The roles
+  and their club addresses are in and showing, taken from the "CRR Roles,
+  Contacts and Email Forwarders" sheet. A name goes in only once that person
+  has said yes — only the welfare officer, already named on the welfare page,
+  is listed so far. The two committee members without a role address show
+  nothing until named.
+- **Forwarders for the committee addresses.** chair@, secretary@, treasurer@,
+  captain@, championship@, handicap@, social@, couchto5k@ and media@ are
+  published on the contact page and must each have a Cloudflare Email Routing
+  rule before launch — tracked on the sheet's Email forwarders tab. A routing
+  rule sends to one inbox only, so social@ (two social secretaries) needs one
+  of them to own it, a shared inbox, or a small Email Worker.
 - **Both race pages** (`src/content/races/`) — parking, registration times,
   facilities, baggage, prizes, the course description, and who marshals contact.
   Chard Flyer also has no race director named and no alt text on its hero image.

@@ -35,5 +35,35 @@ whereWeAre:
   credit: © OpenStreetMap contributors
 committee:
   heading: The committee
-  body: TODO — names and roles, once the committee has confirmed who is happy to be listed. Roles only, no personal addresses.
+  intro: Each address belongs to the role rather than the person, so it still reaches the right inbox when a role changes hands at the AGM.
+  roles:
+    - role: Chair
+      email: chair@chardroadrunners.com
+    - role: Secretary
+      email: secretary@chardroadrunners.com
+    - role: Treasurer
+      email: treasurer@chardroadrunners.com
+    - role: Membership secretary
+      email: membership@chardroadrunners.com
+    - role: Welfare officer
+      name: Lizzie Cox
+      email: welfare@chardroadrunners.com
+    - role: Club captain
+      email: captain@chardroadrunners.com
+    - role: Championship organiser
+      email: championship@chardroadrunners.com
+    - role: Handicap timekeeper
+      email: handicap@chardroadrunners.com
+    - role: Race director, Chard Flyer
+      email: chardflyer@chardroadrunners.com
+    - role: Race director, Forde Abbey 10k
+      email: fordeabbey@chardroadrunners.com
+    - role: Social secretaries
+      email: social@chardroadrunners.com
+    - role: Couch to 5k lead
+      email: couchto5k@chardroadrunners.com
+    - role: PR and media
+      email: media@chardroadrunners.com
+    - role: Welfare committee member
+    - role: Committee member
 ---
