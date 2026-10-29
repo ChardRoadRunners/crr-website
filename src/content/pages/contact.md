@@ -62,6 +62,7 @@ committee:
       name: Simon Hall
       email: handicap@chardroadrunners.com
     - role: Race director, Chard Flyer
+      name: Phil Goodridge-Reynolds
       email: chardflyer@chardroadrunners.com
     - role: Race director, Forde Abbey 10k
       name: Simon Hall
@@ -73,6 +74,7 @@ committee:
       name: Kate Dobson
       email: couchto5k@chardroadrunners.com
     - role: PR and media
+      name: Phil Goodridge-Reynolds
       email: media@chardroadrunners.com
     - role: Welfare committee member
       name: Nicky Smith

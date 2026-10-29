@@ -332,12 +332,10 @@ source.
 ### Words nobody has written yet
 
 - **The privacy page** — three sections still empty, awaiting committee wording.
-- **Phil's surname on the committee list** (`src/content/pages/contact.md`).
-  Every committee member agreed to be listed (29 October 2026) and is named,
-  except Phil G-R on Race director, Chard Flyer and PR and media: his full
-  surname is still to come. Roles are from the "CRR Roles, Contacts and Email
-  Forwarders" sheet. When a role changes hands, the new holder's name goes in
-  only once they have said yes.
+- **The committee list** (`src/content/pages/contact.md`) is complete: every
+  committee member agreed to be listed on 29 October 2026. Roles are from the
+  "CRR Roles, Contacts and Email Forwarders" sheet. When a role changes hands,
+  the new holder's name goes in only once they have said yes.
 - **Forwarders for the committee addresses.** chair@, secretary@, treasurer@,
   captain@, championship@, handicap@, social@, couchto5k@ and media@ are
   published on the contact page and must each have a Cloudflare Email Routing
