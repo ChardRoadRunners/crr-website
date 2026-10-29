@@ -332,12 +332,12 @@ source.
 ### Words nobody has written yet
 
 - **The privacy page** — three sections still empty, awaiting committee wording.
-- **Names on the committee list** (`src/content/pages/contact.md`). The roles
-  and their club addresses are in and showing, taken from the "CRR Roles,
-  Contacts and Email Forwarders" sheet. A name goes in only once that person
-  has said yes — only the welfare officer, already named on the welfare page,
-  is listed so far. The two committee members without a role address show
-  nothing until named.
+- **Phil's surname on the committee list** (`src/content/pages/contact.md`).
+  Every committee member agreed to be listed (29 October 2026) and is named,
+  except Phil G-R on Race director, Chard Flyer and PR and media: his full
+  surname is still to come. Roles are from the "CRR Roles, Contacts and Email
+  Forwarders" sheet. When a role changes hands, the new holder's name goes in
+  only once they have said yes.
 - **Forwarders for the committee addresses.** chair@, secretary@, treasurer@,
   captain@, championship@, handicap@, social@, couchto5k@ and media@ are
   published on the contact page and must each have a Cloudflare Email Routing
