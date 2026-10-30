@@ -300,6 +300,41 @@ source.
   `public/_redirects`, tested locally.** All eleven old addresses go somewhere;
   the five that needed a choice were decided by Matthew. Still to do on launch
   day: try a few old addresses on the real domain once it has switched.
+
+  **They will almost certainly never fire, and that was understood too late to
+  change the work.** The old site's only address was
+  `chard-road-runners.webador.co.uk` — it never answered on
+  `chardroadrunners.com`. A `_redirects` rule matches paths on the hostname
+  serving this Worker, so these rules answer new-domain addresses that have
+  never existed. Every link anybody shared points at Webador's subdomain, and
+  that site was cancelled on 30 September 2026. Keep the rules: they cost
+  nothing and `docs/old-site-urls.md` is the record of where each old page
+  went. Do not read a passing test as old links being safe.
+
+- **Old links live on other people's websites.** This is what the redirects
+  turned out not to cover, and it is the actual continuity job. Every place the
+  club is listed carries whichever address it was given, and most of them
+  carry the dead Webador one. Nothing in Cloudflare can fix any of it, and
+  nobody will tell the club it is broken.
+
+  Worth working through before the launch is announced, because the
+  announcement is what sends people looking:
+
+  - the club Facebook page — the About section, the pinned post, and any post
+    that links the calendar, a race or the membership form
+  - the England Athletics club listing
+  - the Somerset Series, and runbritain
+  - race-entry listings for the Chard Flyer and Forde Abbey 10k, including
+    Race Nation
+  - anywhere else the club turns up in a search for it
+
+  **And the new domain starts from zero.** There is no inherited search
+  standing, because there is no old path on this domain for a 301 to carry it
+  over. Being findable depends on the sitemap and on real links from the places
+  above, not on a redirect. So after `PRE_LAUNCH` goes `false`, add the site to
+  Google Search Console and submit `https://chardroadrunners.com/sitemap-index.xml`
+  — otherwise the first few weeks are quieter than they need to be, with
+  nothing looking broken.
 - ~~**Capture every old Webador URL by 30 September 2026**, before the old site
   is cancelled.~~ **Done — captured 19 September 2026 from the old site's own
   sitemap, while it was still up. All eleven are in `docs/old-site-urls.md`,

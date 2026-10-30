@@ -12,6 +12,33 @@ anybody has ever shared breaks with nothing to redirect it to.
 address with a permanent (301) redirect. Change a destination here, change it
 there, in the same commit.
 
+## The old site never used `chardroadrunners.com`
+
+Established 30 October 2026, and it changes what this file is for. The old
+site's only address was `chard-road-runners.webador.co.uk`. The club bought
+`chardroadrunners.com` for the new site, so **no old page was ever reachable at
+the new domain**.
+
+`_redirects` rules only match paths on the hostname serving the Worker. So
+every link anybody actually shared — every Facebook post, every race listing —
+points at the Webador subdomain, which is Webador's hostname and not the
+club's, and the old site was cancelled on 30 September 2026. **Nothing in this
+repository can catch those links, and nothing ever will.**
+
+That leaves the rules in `public/_redirects` as insurance rather than
+migration: they answer `chardroadrunners.com/race-calendar` and the rest,
+addresses that have never existed and that nobody holds a link to. They are
+kept because they cost nothing, because somebody may yet type an old path from
+a flyer or a forwarded document, and because the table below is the written
+record of where each old page went — which is handover material whether or not
+a rule ever fires.
+
+**Two things follow from this, and neither is a Cloudflare job.** There is no
+inherited search standing to carry over: the new domain starts from zero, so
+being found depends on the sitemap and on real links, not on a 301. And the
+links themselves have to be changed at source. See **Old links live on other
+people's websites** in `docs/launch-checklist.md`.
+
 ## The eleven pages
 
 All eleven, exactly as the old sitemap gave them. The paths are what matter;
@@ -48,9 +75,17 @@ Tested on 30 October 2026 with `wrangler dev`, which runs Cloudflare's own
 redirect handling locally: every old address, with and without a trailing
 slash, answers 301 and arrives in one hop, `#championship` included.
 
+The rules are already deployed and working on
+`crr-website.chardrunners.workers.dev`: `_redirects` is supported natively on
+Workers static assets, not only on Pages, and Cloudflare parses it at deploy
+time rather than serving it. Nothing about them waits on launch day.
+
 On the live site, after the domain moves, try each old address in a browser.
-None of it does anything until `chardroadrunners.com` points at the new site —
-the rules only match paths on whichever domain is serving this Worker.
+None of it answers on `chardroadrunners.com` until the domain points at the new
+site — the rules only match paths on whichever domain is serving this Worker.
+And see the section at the top of this file before reading a passing test as
+old links being safe: these rules catch paths on the new domain, which is not
+where anybody's old links point.
 
 ## Also captured
 
