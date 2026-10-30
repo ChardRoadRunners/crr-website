@@ -1,0 +1,39 @@
+# Redirects from the old Webador site.
+#
+# Cloudflare reads this file at deploy time; it is never served as a page.
+# Format: old path, new path, status. 301 means "moved for good", which tells
+# Google to move the old page's standing to the new one and lets browsers
+# remember the move.
+#
+# The full list of old addresses, and why each one goes where it does, is in
+# docs/old-site-urls.md. Change one, change the other.
+#
+# Not listed: /, /contact, /pub-runs and /our-races. The new site has pages at
+# exactly those addresses, so old links to them already work. Don't add them
+# here — a rule always wins over a real page, and a rule pointing a page at
+# itself is a loop.
+#
+# Destinations end in a slash because that is the address each page really
+# lives at. Without it, the visitor gets this redirect and then a second one
+# from Cloudflare adding the slash.
+#
+# Each old path is listed twice, with and without a trailing slash, because a
+# rule only matches the exact path written.
+
+/race-calendar                                /calendar/                 301
+/race-calendar/                               /calendar/                 301
+/boring-legal-stuff/rules-and-constitution    /rules-and-constitution/   301
+/boring-legal-stuff/rules-and-constitution/   /rules-and-constitution/   301
+
+# The five that needed a decision — decided by Matthew, 30 October 2026.
+
+/our-races/chard-flyer                        /our-races/                301
+/our-races/chard-flyer/                       /our-races/                301
+/our-races/forde-abbey-10k                    /our-races/                301
+/our-races/forde-abbey-10k/                   /our-races/                301
+/club-championship                            /results/#championship     301
+/club-championship/                           /results/#championship     301
+/membership-form                              /join-us/                  301
+/membership-form/                             /join-us/                  301
+/boring-legal-stuff                           /rules-and-constitution/   301
+/boring-legal-stuff/                          /rules-and-constitution/   301

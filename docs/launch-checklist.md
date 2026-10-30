@@ -296,15 +296,15 @@ source.
   trying again from her own phone, worth doing before launch.
 
   See **Photo uploads from a phone** in `docs/handover.md`.
-- **Redirects from the old Webador URLs.** Needs the list of old addresses
-  captured *before* that site is switched off. Without them, every link anyone
-  has ever shared breaks on launch day.
+- ~~**Redirects from the old Webador URLs.**~~ **Done, 30 October 2026 —
+  `public/_redirects`, tested locally.** All eleven old addresses go somewhere;
+  the five that needed a choice were decided by Matthew. Still to do on launch
+  day: try a few old addresses on the real domain once it has switched.
 - ~~**Capture every old Webador URL by 30 September 2026**, before the old site
   is cancelled.~~ **Done — captured 19 September 2026 from the old site's own
   sitemap, while it was still up. All eleven are in `docs/old-site-urls.md`,
-  with the old pub runs wording alongside them.** Writing the redirects is
-  still to do: six map straight across, five need somebody to choose, and the
-  doc says which are which.
+  with the old pub runs wording alongside them.** The redirects are written
+  too — see above.
 - **Test every published email address end to end.** Not "the address is
   spelled right" — send a real message to each and have the recipient confirm
   it arrived. Covers `welfare@`, `membership@`, `hello@` and the two race
