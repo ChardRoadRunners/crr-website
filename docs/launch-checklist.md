@@ -338,7 +338,15 @@ source.
 - **Both race pages** (`src/content/races/`) — parking, registration times,
   facilities, baggage, prizes, the course description, and who marshals contact.
   Chard Flyer also has no race director named and no alt text on its hero image.
-- **Join Us** — when membership renews.
+- ~~**Join Us** — when membership renews.~~ **Done — renewals are due by the end
+  of April** (confirmed 30 October 2026). The page had said 18th May, which was
+  stale carry-over from the old site and contradicted
+  `src/content/legal/rules-and-constitution.md`, where clause wording puts
+  annual subscriptions at 30th April. The two agree now. Still undecided, and
+  deliberately not written: whether Join Us should also say that anyone more
+  than 60 days late is deemed to have left the club and rejoins as a new member
+  without new-member benefits. The constitution says so; Join Us is where
+  somebody would look for it.
 
 ### Decisions
 

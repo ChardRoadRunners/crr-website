@@ -65,7 +65,7 @@ membership:
     - name: Chard Road Runners + England Athletics
       price: £41
       detail: Club membership and kit, plus England Athletics registration. EA membership brings discounts on affiliated race entries and running kit, and entry to the club ballot for the London Marathon. If you race a lot, it pays for itself.
-  renewal: Renewals are due by 18th May
+  renewal: Renewals are due by the end of April.
   howToPay: Card through Connect My Club, or bank transfer.
   connectMyClubCode: 67a1c8f4
   membershipEmail: membership@chardroadrunners.com
