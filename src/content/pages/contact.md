@@ -43,9 +43,6 @@ committee:
     - role: Secretary
       name: Mylena Wheaton
       email: secretary@chardroadrunners.com
-    - role: Treasurer
-      name: Hannah Gibbs
-      email: treasurer@chardroadrunners.com
     - role: Membership secretary
       name: Helen Hickley
       email: membership@chardroadrunners.com
@@ -78,6 +75,6 @@ committee:
       email: media@chardroadrunners.com
     - role: Welfare committee member
       name: Nicky Smith
-    - role: Committee member
-      name: Maria Wadey
+    - role: Committee members
+      name: Maria Wadey and Steve Crook
 ---
