@@ -338,6 +338,22 @@ source.
 - **Both race pages** (`src/content/races/`) — parking, registration times,
   facilities, baggage, prizes, the course description, and who marshals contact.
   Chard Flyer also has no race director named and no alt text on its hero image.
+
+  **Parking is answered for club nights, and not for race day** (noted 30
+  October 2026). Join Us now carries the club-night answer in full: the Cricket
+  Club gate, the gravel car park opposite the school and Essex Close, each with
+  a what3words address, the Thursday meet point out of season, and "please do
+  not park at the football club". Both race files still read
+  `- **Parking:** TODO` — `src/content/races/chard-flyer.md:32` and
+  `src/content/races/forde-abbey-10k.md:48`.
+
+  **Don't copy the Join Us wording across.** A dozen cars on a Tuesday and a
+  New Year's Day field arriving inside the same half hour are different
+  problems: the Flyer's answer has to say where several hundred people put a
+  car and who is directing them, and Forde Abbey's is an evening race at
+  somebody else's venue. The football club line is the one part likely to
+  carry over word for word, and even that wants confirming rather than
+  assuming.
 - ~~**Join Us** — when membership renews.~~ **Done — renewals are due by the end
   of April** (confirmed 30 October 2026). The page had said 18th May, which was
   stale carry-over from the old site and contradicted
