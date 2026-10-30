@@ -336,8 +336,8 @@ source.
   committee member agreed to be listed on 29 October 2026. Roles are from the
   "CRR Roles, Contacts and Email Forwarders" sheet. When a role changes hands,
   the new holder's name goes in only once they have said yes.
-- **Forwarders for the committee addresses.** chair@, secretary@, treasurer@,
-  captain@, championship@, handicap@, social@, couchto5k@ and media@ are
+- **Forwarders for the committee addresses.** chair@, secretary@, captain@,
+  championship@, handicap@, social@, couchto5k@ and media@ are
   published on the contact page and must each have a Cloudflare Email Routing
   rule before launch — tracked on the sheet's Email forwarders tab. A routing
   rule sends to one inbox only, so social@ (two social secretaries) needs one
