@@ -264,16 +264,24 @@ source.
 
 ### Must be done, or the site is wrong
 
-- **Check the championship sheet publishes Standings and nothing else.** Both
+- ~~**Check the championship sheet publishes Standings and nothing else.**~~
+  **Done — checked 30 October 2026 and it is set to Standings only.** Both
   results feeds are switched on: the championship Standings tab and, since
   28 Oct 2026, the handicap Results tab. When the handicap was published we
   found that the Publish to web dialog has a second setting, **Published
   content & settings**, and that it decides what is public, not the first
-  dropdown. The handicap's is set to Results only. The championship sheet's
-  has not been looked at since it was published. In that sheet, File > Share >
-  Publish to web: if it says "All sheets" or "Entire document", set it to
-  **Standings**. If left, the raw form responses are one edited link away. The
-  site only reads Standings, so nothing breaks. See `docs/results.md`.
+  dropdown. Both sheets are now confirmed narrow — the handicap's to Results
+  only, the championship's to Standings only — so the raw form responses are
+  not reachable by editing a published link.
+
+  Kept rather than deleted, because it is the check to repeat and not a job
+  that is finished for good. The setting lives in Google's dialog rather than
+  in this repository, so nothing here can hold it in place or notice it
+  changing — and the site reads Standings and looks perfectly normal whichever
+  way it is set, which is what makes it invisible. Whether republishing or
+  adding a tab can reset it has not been tested. Worth re-checking after any
+  change to either sheet, and at the November handover: File > Share > Publish
+  to web, in each sheet. See `docs/results.md`.
 
 - **DNS and the custom domain in Cloudflare.** `site` in `astro.config.mjs` is
   already `https://chardroadrunners.com`, which is what makes canonical URLs,
