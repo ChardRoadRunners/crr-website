@@ -29,7 +29,7 @@ firstVisit:
         credit: © OpenStreetMap contributors
     - label: Parking
       detail: |-
-        There is often parking at the Cricket Club (gate to the car park ///valley.flat.charts). If it's busy, parking is also available in the gravel car park opposite the school, or in Essex Close Public Parking (///cards.pounces.graph). If you live locally, we encourage runners to walk or run to the club.
+        There is often parking at the Cricket Club (gate to the car park ///valley.flat.charts). If it's busy, parking is also available in the gravel car park opposite the school (///holds.elect.skim), or in Essex Close Public Parking (///cards.pounces.graph). If you live locally, we encourage runners to walk or run to the club.
 
         Please do not park at the football club.
     - label: Who to look for
