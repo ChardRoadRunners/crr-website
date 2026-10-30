@@ -28,12 +28,15 @@ firstVisit:
         url: https://www.google.com/maps/search/?api=1&query=Chard+Cricket+Club,+Dening+Field,+Zembard+Lane,+Chard,+TA20+1JL
         credit: © OpenStreetMap contributors
     - label: Parking
-      detail: There is often parking at the Cricket Club (gate to the car park ///valley.flat.charts). If it's busy, parking is also available in Essex Close Public Parking (///cards.pounces.graph). If you live locally, we encourage runners to walk or run to the club.
+      detail: |-
+        There is often parking at the Cricket Club (gate to the car park ///valley.flat.charts). If it's busy, parking is also available in the gravel car park opposite the school, or in Essex Close Public Parking (///cards.pounces.graph). If you live locally, we encourage runners to walk or run to the club.
+
+        Please do not park at the football club.
     - label: Who to look for
       detail: |-
         You'll find runners outside the cricket club house in the drier months, and often in the changing room foyer when it's less so.
 
-        On a Thursday we generally just meet in the carpark as the clubhouse isn't open.
+        On a Thursday we generally just meet in the carpark as the clubhouse isn't open. During the cricket season, that's the gravel car park opposite the school.
     - label: What to bring
       detail: Bring whatever you need to be comfortable running — trainers, water, a head torch if it's dark, a towel if you want to be dry after a shower.
     - label: Afterwards
