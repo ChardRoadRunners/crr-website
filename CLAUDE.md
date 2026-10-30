@@ -10,16 +10,6 @@ The end goal is a **documented handover to the club as an organisation**, not to
 
 See `crr-sitemap.md` for the page structure and content plan. Read it before proposing structural changes.
 
-## Starting a new chat
-
-**Attach this repository to the chat when you start it** — `ChardRoadRunners/crr-website`, with write access — whether or not the plan is to change any code.
-
-A chat started without it can still read everything, because the repository is public and can be cloned without signing in. What it cannot do is push. That difference stays invisible until the end of a piece of work: the clone succeeds, the files are all there, edits and commits behave normally, and only the push fails. By then the work sits in a copy that disappears when the session ends.
-
-This happened on 30 October 2026. Two documentation commits had to be written out by hand for somebody else to apply, twice, before the cause was spotted. Attaching the repository mid-chat fixed it in seconds and the same commits pushed straight away — so attaching late is the remedy if it has already happened, and attaching at the start is how you avoid the detour.
-
-Worth knowing either way: a chat with the repository attached also loads this file, the `docs/` notes and anything else the repository carries, so it starts out knowing the project's own rules rather than being told them.
-
 ## Stack
 
 - **Astro** — static site
