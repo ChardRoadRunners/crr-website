@@ -45,6 +45,36 @@ flag, deliberately, so there is only one thing to remember.
 This is not security. Anyone with the address can read every page today, and
 this repository is public. It only stops the site being found by accident.
 
+### Old links live on other people's websites
+
+**This is the continuity job the redirects turned out not to cover**, and it
+waits on the domain because nothing can point at an address that does not
+resolve yet. The old site only ever lived at `chard-road-runners.webador.co.uk`,
+so every link the club has ever been given out there points at a hostname
+Cloudflare cannot touch — see `docs/old-site-urls.md`. Changing the links at
+source is the only fix, and nobody will tell the club they are broken.
+
+Once the domain resolves, work through:
+
+- the club Facebook page — the About section, the pinned post, and any post
+  that links the calendar, a race or the membership form
+- the England Athletics club listing
+- the Somerset Series, and runbritain
+- race-entry listings for the Chard Flyer and Forde Abbey 10k, including
+  Race Nation
+- anywhere else the club turns up in a search for it
+
+Who can edit each of these is worth establishing *before* the day — it is on
+the **Before the day** list for that reason.
+
+**And the new domain starts from zero.** There is no inherited search standing,
+because there is no old path on this domain for a 301 to carry it over. Being
+findable depends on the sitemap and on real links from the places above, not on
+a redirect. So once `PRE_LAUNCH` is `false`, add the site to Google Search
+Console and submit `https://chardroadrunners.com/sitemap-index.xml`. Skip it
+and the first few weeks are quieter than they need to be, with nothing looking
+broken.
+
 ### ~~And confirm ALLOWED_DOMAINS includes the live domain~~
 
 **Done — read from the new Worker on 20 September 2026, and correct.** It was
@@ -319,30 +349,14 @@ source.
   nothing and `docs/old-site-urls.md` is the record of where each old page
   went. Do not read a passing test as old links being safe.
 
-- **Old links live on other people's websites.** This is what the redirects
-  turned out not to cover, and it is the actual continuity job. Every place the
-  club is listed carries whichever address it was given, and most of them
-  carry the dead Webador one. Nothing in Cloudflare can fix any of it, and
-  nobody will tell the club it is broken.
-
-  Worth working through before the launch is announced, because the
-  announcement is what sends people looking:
-
-  - the club Facebook page — the About section, the pinned post, and any post
-    that links the calendar, a race or the membership form
-  - the England Athletics club listing
-  - the Somerset Series, and runbritain
-  - race-entry listings for the Chard Flyer and Forde Abbey 10k, including
-    Race Nation
-  - anywhere else the club turns up in a search for it
-
-  **And the new domain starts from zero.** There is no inherited search
-  standing, because there is no old path on this domain for a 301 to carry it
-  over. Being findable depends on the sitemap and on real links from the places
-  above, not on a redirect. So after `PRE_LAUNCH` goes `false`, add the site to
-  Google Search Console and submit `https://chardroadrunners.com/sitemap-index.xml`
-  — otherwise the first few weeks are quieter than they need to be, with
-  nothing looking broken.
+- **Find out where the club is listed, and who can change each entry.** The
+  changing itself happens after the domain resolves — see **Old links live on
+  other people's websites** under the switch — but the finding out does not,
+  and it is the slow half. Who administers the Facebook page. Who holds the
+  England Athletics login. Whether a listings site changes a URL on request or
+  needs an account nobody has used in three years. Done beforehand, launch day
+  is pasting a new address; left until then, it is a fortnight of chasing
+  people while the old links are already dead.
 - ~~**Capture every old Webador URL by 30 September 2026**, before the old site
   is cancelled.~~ **Done — captured 19 September 2026 from the old site's own
   sitemap, while it was still up. All eleven are in `docs/old-site-urls.md`,
