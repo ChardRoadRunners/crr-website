@@ -1878,6 +1878,14 @@ collections:
           The top menu and the footer columns. Renaming or reordering an item
           here changes it everywhere on the site.
         fields:
+          - label: Home link
+            name: homeLabel
+            widget: string
+            hint: >-
+              The word in the top bar that takes visitors back to the homepage.
+              It always goes to the homepage, so only the wording can change
+              here. Keep it to one short word.
+
           - label: Top menu
             name: primary
             widget: list

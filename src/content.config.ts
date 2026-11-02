@@ -670,6 +670,8 @@ const pubRunsPage = z.object({
 const navigation = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/navigation" }),
   schema: z.object({
+    // The "Home" link in the top bar. Wording only: it always goes to "/".
+    homeLabel: z.string().min(1),
     primary: z.array(navLink).min(1),
     cta: navLink,
     footerGroups: z

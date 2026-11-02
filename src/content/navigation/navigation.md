@@ -14,11 +14,19 @@
 # be ticked — an external link gets target="_blank" and rel="noopener" on its
 # own, which is one fewer thing for an editor to get wrong.
 
+# The word in the top bar that takes you to the homepage.
+#
+# Added 2 November 2026. The logo links home too, and still does, but members
+# trying the site could not work that out - everyone was struggling to find
+# the homepage. So there is now a plain "Home" beside the menu button on a
+# phone, and first in the menu on a wide screen. The address is always the
+# homepage, so only the wording is here.
+homeLabel: "Home"
+
 # The top menu.
 #
-# Home is deliberately not here. The logo links to / from every page, which is
-# where people look for it, and a menu item saying the same thing spent a slot
-# that Race reports now uses.
+# Home is not in this list: it is the homeLabel above, placed in the bar by
+# the header itself.
 #
 # Order is by what a newcomer wants first: joining, then the club's own races,
 # then when things happen, then how we did, then the writing, then how to ask.

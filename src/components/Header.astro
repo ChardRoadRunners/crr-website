@@ -19,14 +19,17 @@ interface Props {
 
 const { overlay = false, hideLogo = false } = Astro.props;
 
-const { primary, cta } = await getNavigation();
+const { homeLabel, primary, cta } = await getNavigation();
 ---
 
 <header
 	id="site-header"
 	data-scrolled="false"
 	class:list={[
-		'navbar px-4 text-primary-content sm:px-6 lg:px-8',
+		// A three-column grid on phones and tablets — Home on the left, the mark
+		// in the true centre, Join us on the right — and the usual flex row
+		// from lg, where the full menu appears. See the note on .site-mark.
+		'navbar site-header grid grid-cols-[1fr_auto_1fr] gap-2 px-4 text-primary-content sm:px-6 lg:flex lg:px-8',
 		overlay
 			? 'site-header--overlay fixed inset-x-0 top-0 z-50 bg-transparent data-[scrolled=true]:bg-primary data-[scrolled=true]:shadow-sm'
 			: 'bg-primary shadow-sm',
@@ -34,18 +37,17 @@ const { primary, cta } = await getNavigation();
 	]}
 >
 	{/*
-	  w-auto, because daisyUI gives .navbar-start a flat 50% of the bar. At 1024px
-	  — the exact width the desktop nav appears at — that reserved 512px for a
-	  138px logo and left the (then seven) nav items 500px to fit in, so they wrapped to
-	  a second row and the header grew from 64px to 108px. The logo takes what it
-	  needs and the nav takes the rest.
+	  The menu button and a plain "Home". Added 2 November 2026: the logo has
+	  always linked home, but members trying the site could not work that out,
+	  so the way back is now a word. On a wide screen it moves into the
+	  horizontal menu instead, so this whole column hides from lg.
 	*/}
-	<div class="navbar-start w-auto">
+	<div class="flex min-w-0 items-center gap-1 justify-self-start lg:hidden">
 		<div class="dropdown">
 			<div
 				tabindex="0"
 				role="button"
-				class="btn btn-ghost text-primary-content focus-visible:outline-white lg:hidden"
+				class="btn btn-ghost px-3 text-primary-content focus-visible:outline-white"
 				aria-label="Open menu"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
@@ -65,9 +67,22 @@ const { primary, cta } = await getNavigation();
 				}
 			</ul>
 		</div>
+		<HeaderLink href="/" class="btn btn-ghost px-2 font-medium">{homeLabel}</HeaderLink>
+	</div>
+
+	{/*
+	  The mark, centred, in chalk to match the one in the hero. Still a link
+	  home: anyone who does try the logo gets there too.
+
+	  lg:order-first puts it back at the left on a wide screen. A centred mark
+	  there would leave each side about 430px at 1024px, and the six menu items
+	  plus Join us need closer to 700, so they would wrap or push the mark off
+	  centre. Logo left, menu right is what a desktop visitor expects anyway.
+	*/}
+	<div class="site-mark justify-self-center lg:order-first">
 		<a
 			href="/"
-			class="site-logo-link btn btn-ghost px-2 text-sky hover:text-primary-content focus-visible:outline-white"
+			class="site-logo-link btn btn-ghost px-2 text-chalk hover:text-sky focus-visible:outline-white"
 		>
 			{/* The mark reads "CRR", so the link needs the club's full name for
 			    anyone who cannot see it. The SVG itself is decorative. */}
@@ -75,13 +90,17 @@ const { primary, cta } = await getNavigation();
 			<span class="site-logo" aria-hidden="true" set:html={logoMark} />
 		</a>
 	</div>
+
 	{/*
 	  The menu hides below lg; the button does not. Joining is the one thing
 	  this site is asking anybody to do, and behind a hamburger it is two taps
 	  away on the pages most likely to be somebody's first.
 	*/}
-	<div class="navbar-end w-auto flex-1 gap-2">
+	<div class="flex items-center justify-end gap-2 justify-self-end lg:flex-1">
 		<ul class="menu menu-horizontal hidden gap-1 px-1 lg:flex">
+			<li>
+				<HeaderLink href="/">{homeLabel}</HeaderLink>
+			</li>
 			{
 				primary.map((link) => (
 					<li>
@@ -106,7 +125,7 @@ const { primary, cta } = await getNavigation();
 		*/}
 		<a
 			href={cta.href}
-			class="btn btn-accent btn-sm sm:btn-md focus-visible:outline-white"
+			class="btn btn-accent btn-sm whitespace-nowrap sm:btn-md focus-visible:outline-white"
 		>
 			{cta.label}
 		</a>
@@ -114,10 +133,22 @@ const { primary, cta } = await getNavigation();
 </header>
 
 <style>
-	/* The mark is roughly 2.7:1, so width drives the sizing and height follows. */
+	/*
+	  The mark is roughly 2.7:1, so width drives the sizing and height follows.
+
+	  4.5rem on the narrowest phones. The bar centres the mark with a column
+	  either side as wide as the wider of menu-plus-Home and Join us, so at
+	  320px the full 5.5rem would push the bar wider than the screen.
+	*/
 	.site-logo {
 		display: block;
-		width: 5.5rem;
+		width: 4.5rem;
+	}
+
+	@media (min-width: 360px) {
+		.site-logo {
+			width: 5.5rem;
+		}
 	}
 
 	.site-logo :global(svg) {
@@ -189,6 +220,60 @@ const { primary, cta } = await getNavigation();
 	.site-header--hide-logo[data-scrolled='true'] .site-logo-link {
 		visibility: visible;
 		opacity: 1;
+	}
+
+	/*
+	  THE HANDOVER, in CSS rather than script (2 November 2026). On the
+	  homepage the bar's mark fades in as the hero's mark slides up under the
+	  bar, so it looks like one mark taking over from the other.
+
+	  A scroll-driven animation: the browser ties the fade to how far the
+	  hero's mark has scrolled, with no JavaScript. Hero.astro names that mark
+	  as a "view timeline" (--crr-hero-mark), body makes the name visible to
+	  the header, and the fade runs from the moment the hero mark's top meets
+	  the bottom of the bar (the 4rem inset, the bar's height) to the moment
+	  it has gone under completely.
+
+	  Browsers without scroll-driven animations skip this block and keep the
+	  rules above: the mark arrives with the solid bar, 72px down, as it did
+	  before. Nothing breaks either way, and no fourth script was needed.
+
+	  An animation outranks the rules above in the cascade, so inside this
+	  block the data-scrolled switch no longer decides anything about the
+	  mark. It still turns the bar solid.
+	*/
+	@supports (animation-timeline: view()) {
+		:global(body) {
+			timeline-scope: --crr-hero-mark;
+		}
+
+		/*
+		  Longhands, deliberately, and no animation-duration. Written as the
+		  `animation` shorthand plus `animation-timeline`, the build's CSS
+		  minifier folded the timeline into the shorthand, where browsers do
+		  not accept it, and dropped the whole rule: the mark just snapped in
+		  at 72px. Leaving one longhand out stops it merging them.
+		*/
+		.site-header--hide-logo .site-logo-link {
+			transition: none;
+			animation-name: crr-mark-handover;
+			animation-timing-function: linear;
+			animation-fill-mode: both;
+			animation-timeline: --crr-hero-mark;
+			animation-range-start: exit 0%;
+			animation-range-end: exit 100%;
+		}
+
+		@keyframes crr-mark-handover {
+			from {
+				opacity: 0;
+				visibility: hidden;
+			}
+			to {
+				opacity: 1;
+				visibility: visible;
+			}
+		}
 	}
 
 </style>

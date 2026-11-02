@@ -25,6 +25,8 @@ export interface FooterGroup {
 }
 
 export interface SiteNavigation {
+	/** The wording of the header's "Home" link. Its address is always "/". */
+	homeLabel: string;
 	primary: NavLink[];
 	/** The header's call-to-action button, shown on every page. */
 	cta: NavLink;

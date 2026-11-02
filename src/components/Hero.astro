@@ -17,7 +17,7 @@ interface Props {
 const { heading, strapline, primaryCta, secondaryCta } = Astro.props;
 ---
 
-<section id="hero" class="site-hero relative overflow-hidden bg-primary text-primary-content">
+<section id="hero" class="site-hero relative bg-primary text-primary-content">
 	{/*
 	  0.25, the same value the race report masthead uses.
 	
@@ -86,6 +86,19 @@ const { heading, strapline, primaryCta, secondaryCta } = Astro.props;
 	.site-hero {
 		/* A floor, in rem, so a short strapline cannot squash it. Not vh. */
 		min-height: 30rem;
+
+		/*
+		  Clips the contours to the hero. `clip` rather than `hidden`, with
+		  `hidden` first as the fallback for old browsers that don't know clip.
+
+		  The difference matters for the header's handover (Header.astro):
+		  `hidden` quietly makes the hero a scroll box of its own, so the
+		  browser would measure the hero mark's position against the hero
+		  rather than the screen, and the header's mark would never appear.
+		  `clip` cuts off the overflow the same way without that side effect.
+		*/
+		overflow: hidden;
+		overflow: clip;
 	}
 
 	.hero-content {
@@ -126,6 +139,15 @@ const { heading, strapline, primaryCta, secondaryCta } = Astro.props;
 	.hero-logo {
 		width: min(18rem, 62%);
 		color: var(--color-chalk);
+
+		/*
+		  Names this mark for the header, which fades its own mark in as this
+		  one goes under the bar. The 4rem inset is the bar's height, so the
+		  handover starts when this mark reaches the bar, not the top of the
+		  screen. Ignored by browsers without scroll-driven animations.
+		*/
+		view-timeline: --crr-hero-mark block;
+		view-timeline-inset: 4rem 0;
 	}
 
 	.hero-logo :global(svg) {

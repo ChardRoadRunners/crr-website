@@ -301,6 +301,14 @@ script happened to run. On iOS it ran too early, the padding came up short and
 the logo sat under the bar. Both the variable and that dependency are gone;
 banner padding is a plain number. **Don't reintroduce it.**
 
+The homepage's logo handover is **not** this script. Since 2 November 2026 the
+bar's mark fades in as the hero's mark scrolls under it, using a CSS
+scroll-driven animation (see the notes in `Header.astro` and `Hero.astro`). In
+a browser without scroll-driven animations it falls back to arriving with the
+solid bar, at this script's 72px. Write those animation rules as longhands: the
+build's minifier folds `animation-timeline` into an `animation` shorthand,
+which browsers reject, and the rule silently disappears.
+
 It loads on every page with a purple banner, which is all of them except Our
 Races and the race reports index: those start with white content and keep a
 solid bar. Without the script the header stays transparent over the banner —
