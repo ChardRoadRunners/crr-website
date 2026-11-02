@@ -8,7 +8,7 @@ races:
     raceDate: 2026-11-01
 dateApproximate: false
 posted: 2026-11-02
-author: Jack Isaacs
+author: Maria Wadey
 category: Race Report
 clubRace: false
 heroImage: ./images/pasted-image-1793631353514.webp
