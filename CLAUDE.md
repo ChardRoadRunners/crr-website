@@ -396,8 +396,12 @@ you can see in a screenshot is a reason to distrust the tool, not the screenshot
   read at build time. **Only finishing times and names go in that sheet.** Dates
   of birth, phone numbers, addresses, medical information and emergency contacts
   live in a separate, never-published file.
-- Photographs of identifiable members need a privacy policy and a stated consent
-  position before galleries go live.
+- **Photographs.** Photos shared by members are fine in race reports and club
+  news: the people in them have consented, and any photo comes down on request
+  (the privacy page says how). **Anything that puts members' photos next to
+  their names — a who's who, a picture board, member pages — needs each
+  person's individual consent first.** That is a different thing from a race
+  photo, even if Facebook already shows as much.
 
 ## Housekeeping
 

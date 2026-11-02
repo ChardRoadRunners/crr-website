@@ -388,7 +388,9 @@ source.
 
 ### Words nobody has written yet
 
-- **The privacy page** — three sections still empty, awaiting committee wording.
+- **The privacy page** — two sections still empty (Your rights, Who to
+  contact), awaiting committee wording. Photographs was written on 2 November
+  2026.
 - **The committee list** on the contact page (`src/content/pages/contact.md`) —
   roles and names, once people have said they are happy to be listed. Nothing
   renders while it starts with `TODO`.
