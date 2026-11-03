@@ -15,7 +15,7 @@ heroImage: ./images/img-20261101-wa0009.webp
 heroImageAlt: Helen, a Chard Road Runner's club member with her medal after the race.
 heroImageCrop: upper
 excerpt: A great day out on the Granite Way near Okehampton at Running Events Devon's Spooky Challenge. Despite hip pain, forgotten caffeine and a spot of chafing, a bit of run/walk pacing with Baz helped secure an unofficial 5:03 marathon... my fastest since Newport last year! A brilliant route, a fantastic medal and a few lessons learnt along the way.
-draft: true
+draft: false
 ---
 
 This was another event held by Running Events Devon on the Granite way near Oakhampton. 
