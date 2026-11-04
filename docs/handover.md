@@ -126,6 +126,37 @@ That is the failure to recognise: not a broken site, a frozen one.
    publishes without it, everything queued behind it publishes too, and the
    photo can go back later. An unpublished post helps nobody.
 
+### Photo uploads: three failures, and the one pattern so far
+
+**Third failure, 4 November 2026, from a PC.** Shelley saved a new race report
+(`3928465`) with three new photos — a main photo and two in the gallery — and
+the commit carried none of them: one file, no `+1`. A second save (`a2bddad`,
+`+1`) brought the main photo; the two gallery photos never arrived, and two
+later saves changed nothing. The build stayed red behind it for four hours
+until the two were taken off the post (`d8b16a1`). Their names,
+`whatsapp-image-2026-11-03-at-21-57-03.webp` with `-1` and `-2`, say all three
+started with the same filename, as WhatsApp gives photos sent in the same
+minute.
+
+**What the history shows.** Every save made through the editor since
+September is listed in Git. Each successful one added exactly one new photo
+(`+1`). No editor save has ever committed two or more photos at once; the
+multi-photo posts from August were committed from a terminal. The only editor
+save that tried three lost all three.
+
+So the working theory is now **several new photos in one save**, perhaps made
+worse by matching filenames. It does not explain Kate's two failures below,
+which were one photo each. "It's phones" is ruled out twice over: phone saves
+have worked, and this failure was on a PC.
+
+**The test that settles it:** save one draft post with two new photos in one
+go and look at the commit. `+2` means the theory is wrong. One file and no
+`+1` means it is right. Until then, add one new photo per save.
+
+The editor is pinned to 0.205.1 and the current release is 0.252.0. One later
+release note concerns saving "an entry with many new files". Upgrading is a
+candidate fix, but test it first.
+
 ### Photo uploads from a phone: failed twice, then worked three times
 
 **They do work from a phone.** On 11 October 2026 Matthew posted three race

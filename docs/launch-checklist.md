@@ -334,6 +334,11 @@ source.
   trying again from her own phone, worth doing before launch.
 
   See **Photo uploads from a phone** in `docs/handover.md`.
+
+  **A third failure on 4 November 2026, from a PC:** three new photos in one
+  save, none committed. No editor save has ever committed more than one photo.
+  Before launch, run the test in **Photo uploads: three failures** in
+  `docs/handover.md`: one draft, two new photos, one save.
 - ~~**Redirects from the old Webador URLs.**~~ **Done, 30 October 2026 —
   `public/_redirects`, tested locally.** All eleven old addresses go somewhere;
   the five that needed a choice were decided by Matthew. Still to do on launch
