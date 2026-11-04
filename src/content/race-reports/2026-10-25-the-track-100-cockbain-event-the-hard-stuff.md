@@ -13,7 +13,7 @@ category: Race Report
 clubRace: false
 heroImage: ./images/whatsapp-image-2026-11-03-at-21-57-03.webp
 heroImageAlt: Image of Andy receiving his medal
-heroImageCrop: middle
+heroImageCrop: upper
 images:
   - src: ./images/whatsapp-image-2026-11-03-at-21-57-03-2.webp
     alt: Image of the track race
