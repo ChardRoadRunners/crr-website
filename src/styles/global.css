@@ -159,6 +159,44 @@
 	}
 
 	/*
+	  Lists in a Markdown body: race reports, club news and the legal pages.
+	  Tailwind's reset takes list markers and indents off every list on the
+	  site, and nothing put them back here, so a bulleted or numbered list in a
+	  post rendered as plain lines. Found by Steve on 4 November 2026, testing
+	  the editor. Same fix as .rich-text below, scoped to .prose so the site's
+	  own lists (menus, cards, the footer) keep the reset.
+	*/
+	.prose ul,
+	.prose ol {
+		padding-inline-start: 1.5rem;
+		margin-bottom: 2em;
+		list-style: disc;
+	}
+
+	.prose ol {
+		list-style: decimal;
+	}
+
+	.prose :is(ul, ol) ul {
+		list-style: circle;
+	}
+
+	.prose :is(ul, ol) :is(ul, ol) {
+		margin-top: 0.35em;
+		margin-bottom: 0;
+	}
+
+	.prose li + li {
+		margin-top: 0.35em;
+	}
+
+	/* A list with blank lines between items wraps each one in a <p>. Without
+	   this, every item would carry the 2em paragraph gap. */
+	.prose li > p {
+		margin-bottom: 0.5em;
+	}
+
+	/*
 	  Markdown rendered from a frontmatter field — see RichText.astro.
 
 	  Tailwind's reset strips list markers and paragraph margins, so anything
