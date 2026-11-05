@@ -10,7 +10,7 @@ images:
   - src: ./images/73073684_1411741338984033_9120044319237996544_o.webp
     alt: Einepyk in 1970, showing her Dutch sail number 486
   - src: ./images/axe-yacht-club-river-race-14-wed-7th-october-2026-18.webp
-    alt: 'The same boat, 50 years later: Einepyk on the River Axe in 2026. Swiss sail number SUI-4'
+    alt: 'The same boat, 56 years later: Einepyk on the River Axe in 2026. Swiss sail number SUI-4'
 excerpt: Photos of Einepyk
 draft: false
 ---
