@@ -17,6 +17,8 @@ heroImageCrop: upper
 images:
   - src: ./images/whatsapp-image-2026-11-03-at-21-57-03-1.webp
     alt: photo of race during storm
+  - src: ./images/whatsapp-image-2026-11-03-at-21-57-03-2.webp
+    alt: photo taken during the race
 excerpt: A unique 100 mile race around a 400 metre Athletics Track!  Yes you read that right!! That’s 403 times around - time limit 25 hours
 draft: false
 ---
