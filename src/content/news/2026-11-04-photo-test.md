@@ -27,7 +27,7 @@ Test of embedded photo:
 
 More text
 
-```plain
+```html
 <table>
 <tr>
 <td>cell 1</td>
