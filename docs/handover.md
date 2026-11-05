@@ -156,8 +156,14 @@ of photos is not the cause.
 downloads that all began with the same name, `WhatsApp Image 2026-11-03 at
 21.57.03`, with dots in the time. Steve's two had different names. It is a
 lead, not a finding, and it would not explain Kate's failures either.
-Shelley is putting her two gallery photos back one save at a time, with the
-same files, so whether that works is the next clue.
+
+**The same files, one per save, worked, 5 November 2026.** Shelley put her
+two gallery photos back one save at a time, `6c42b9a` and `93360fe`, each
+`+1`. So it is not the photos themselves, nor their names on their own, nor
+the number in one save. What is left is the combination (several photos with
+the same name in one save) or a one-off glitch on the night. Nobody has tried
+to reproduce the combination. The webmasters' guide asks for one new photo
+per save, which avoids it either way.
 
 The editor is pinned to 0.205.1 and the current release is 0.252.0. One later
 release note concerns saving "an entry with many new files". Upgrading is a
