@@ -36,6 +36,6 @@ More text
 <tr>
 <td>cell 3</td>
 <td>cell 4</td>
-</tr)
+</tr>
 </table>
 ```
