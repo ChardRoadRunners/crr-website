@@ -3,6 +3,8 @@ title: Testing HTML tables
 posted: 2026-11-05
 author: Steve
 category: Club News
+heroImage: ./images/illustration-wooden-dining-table-isolated_756535-8226.webp
+heroImageAlt: Not an HTML table!
 heroImageCrop: upper
 excerpt: Miscellaneous testing
 draft: false
@@ -11,7 +13,7 @@ draft: false
 **HTML** **table**
 
 <table style="border: 2px solid black;">
-<tr style="border: 1px solid black;">
+<tr>
 <td cellspan=2>cell 1</td>
 <td style="color:red">cell 2</td>
 </tr>
@@ -26,7 +28,7 @@ draft: false
 <td>cell 6</td>
 </tr>
 <tr>
-<td cellspan=2>cell 7</td>
+<td>cell 7</td>
 <td>cell 8</td>
 </tr>
 </table>
