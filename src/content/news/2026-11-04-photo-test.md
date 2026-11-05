@@ -26,3 +26,12 @@ Test of embedded photo:
 ![embedded photo](images/axe-yacht-club-river-race-14-wed-7th-october-2026-18.webp "This photo should appear in embedded in text")
 
 More text
+
+```plain
+<table>
+<tr>
+<td>cell 1</td><td>cell 2></td>
+</tr>
+<tr><td>cell 3</td><td>cell 4</td>/tr)
+</table>
+```
