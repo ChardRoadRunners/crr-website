@@ -34,7 +34,7 @@ draft: false
 
 <tr>
 <td>cell 9</td>
-<td colspan="2">![](images/santa.webp "Santa")
+<td colspan="2">cell 10
 
 </td>
 </tr>
