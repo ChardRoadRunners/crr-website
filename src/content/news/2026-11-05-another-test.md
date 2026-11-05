@@ -11,7 +11,7 @@ draft: false
 **HTML** **table**
 
 <table style="border: 2px solid black;">
-<tr>
+<tr style="border: 1px solid black;">
 <td cellspan=2>cell 1</td>
 <td style="color:red">cell 2</td>
 </tr>
@@ -26,7 +26,7 @@ draft: false
 <td>cell 6</td>
 </tr>
 <tr>
-<td>cell 7</td>
+<td cellspan=2>cell 7</td>
 <td>cell 8</td>
 </tr>
 </table>
