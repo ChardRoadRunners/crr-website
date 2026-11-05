@@ -9,10 +9,10 @@ draft: false
 
 **HTML** **table**
 
-<table border: 1px solid black;>
+<table style="border: 1px solid black;">
 <tr>
 <td>cell 1</td>
-<td>cell 2</td>
+<td style="color:red">cell 2</td>
 </tr>
 <tr>
 <td>cell 3</td>
