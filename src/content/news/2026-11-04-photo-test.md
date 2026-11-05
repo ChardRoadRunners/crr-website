@@ -20,3 +20,9 @@ Test of two photos loaded in one go
 Test of having same photo twice in post
 
 Test of re-ordering photos
+
+Test of embedded photo:
+
+![embedded photo](images/axe-yacht-club-river-race-14-wed-7th-october-2026-18.webp "This photo should appear in embedded in text")
+
+More text
