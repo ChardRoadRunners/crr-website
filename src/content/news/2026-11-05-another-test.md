@@ -9,7 +9,7 @@ draft: false
 
 **HTML** **table**
 
-<table>
+<table border: 1px solid black;>
 <tr>
 <td>cell 1</td>
 <td>cell 2</td>
