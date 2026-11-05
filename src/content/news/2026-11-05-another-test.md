@@ -28,8 +28,8 @@ draft: false
 <td>cell 6</td>
 </tr>
 <tr>
-<td style="border: 1px solid #ff0000;text-align: right;padding: 8px;">cell 7</td>
-<td colspan="2">cell 8</td>
+<td style="border: 1px solid #ff0000;text-align: right;padding: 8px;" colspan="2">cell 7</td>
+<td>cell 8</td>
 </tr>
 
 <tr>
