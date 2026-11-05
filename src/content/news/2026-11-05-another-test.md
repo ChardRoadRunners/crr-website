@@ -7,7 +7,7 @@ excerpt: Miscellaneous testing
 draft: false
 ---
 
-HTML table
+**HTML** **table**
 
 <table>
 <tr>
@@ -17,5 +17,13 @@ HTML table
 <tr>
 <td>cell 3</td>
 <td>cell 4</td>
+</tr>
+<tr>
+<td>cell 5</td>
+<td>cell 6</td>
+</tr>
+<tr>
+<td>cell 7</td>
+<td>cell 8</td>
 </tr>
 </table>
