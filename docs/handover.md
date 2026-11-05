@@ -144,14 +144,20 @@ September is listed in Git. Each successful one added exactly one new photo
 multi-photo posts from August were committed from a terminal. The only editor
 save that tried three lost all three.
 
-So the working theory is now **several new photos in one save**, perhaps made
-worse by matching filenames. It does not explain Kate's two failures below,
-which were one photo each. "It's phones" is ruled out twice over: phone saves
-have worked, and this failure was on a PC.
+The first working theory was **several new photos in one save**. "It's
+phones" was already ruled out twice over: phone saves have worked, and this
+failure was on a PC.
 
-**The test that settles it:** save one draft post with two new photos in one
-go and look at the commit. `+2` means the theory is wrong. One file and no
-`+1` means it is right. Until then, add one new photo per save.
+**Tested and ruled out, 4 November 2026.** Steve saved a draft with two new
+photos in one go, from a PC, and both arrived: `6d645a1`, `+2`. So the number
+of photos is not the cause.
+
+**What still sets Shelley's save apart:** her three photos were WhatsApp
+downloads that all began with the same name, `WhatsApp Image 2026-11-03 at
+21.57.03`, with dots in the time. Steve's two had different names. It is a
+lead, not a finding, and it would not explain Kate's failures either.
+Shelley is putting her two gallery photos back one save at a time, with the
+same files, so whether that works is the next clue.
 
 The editor is pinned to 0.205.1 and the current release is 0.252.0. One later
 release note concerns saving "an entry with many new files". Upgrading is a
