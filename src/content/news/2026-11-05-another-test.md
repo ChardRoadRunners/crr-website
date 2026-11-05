@@ -34,7 +34,7 @@ draft: false
 
 <tr>
 <td>cell 9</td>
-<td colspan="2">cell 10
+<td colspan="2"><img src="images/santa.webp">
 
 </td>
 </tr>
