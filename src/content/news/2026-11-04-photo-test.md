@@ -27,6 +27,8 @@ Test of embedded photo:
 
 More text
 
+HTML:
+
 ```html
 <table>
 <tr>
