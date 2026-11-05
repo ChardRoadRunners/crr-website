@@ -7,4 +7,15 @@ excerpt: Miscellaneous testing
 draft: false
 ---
 
-<b>bold</b>
+HTML table
+
+<table>
+<tr>
+<td>cell 1</td>
+<td>cell 2</td>
+</tr>
+<tr>
+<td>cell 3</td>
+<td>cell 4</td>
+</tr>
+</table>
