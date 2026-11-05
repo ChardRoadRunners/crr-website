@@ -30,8 +30,12 @@ More text
 ```plain
 <table>
 <tr>
-<td>cell 1</td><td>cell 2></td>
+<td>cell 1</td>
+<td>cell 2</td>
 </tr>
-<tr><td>cell 3</td><td>cell 4</td>/tr)
+<tr>
+<td>cell 3</td>
+<td>cell 4</td>
+</tr)
 </table>
 ```
