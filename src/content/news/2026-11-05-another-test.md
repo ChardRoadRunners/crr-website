@@ -29,6 +29,6 @@ draft: false
 </tr>
 <tr>
 <td>cell 7</td>
-<td>cell 8</td>
+<td cellspan=2>cell 8</td>
 </tr>
 </table>
