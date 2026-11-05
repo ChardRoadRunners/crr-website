@@ -14,21 +14,21 @@ draft: false
 
 <table style="border: 2px solid black;">
 <tr>
-<td colspan=2>cell 1</td>
+<td colspan="2">cell 1</td>
 <td style="color:red">cell 2</td>
 </tr>
 <tr>
-<td colspan=2>cell 3</td>
+<td colspan="2">cell 3</td>
 <td>cell 4a</td>
 
 <td>cell 4b</td>
 </tr>
 <tr>
-<td colspan=2>cell 5</td>
+<td colspan="2">cell 5</td>
 <td>cell 6</td>
 </tr>
 <tr>
 <td>cell 7</td>
-<td colspan=2>cell 8</td>
+<td colspan="2">cell 8</td>
 </tr>
 </table>
