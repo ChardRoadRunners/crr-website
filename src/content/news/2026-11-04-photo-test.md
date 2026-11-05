@@ -10,7 +10,7 @@ images:
   - src: ./images/axe-yacht-club-river-race-14-wed-7th-october-2026-18.webp
     alt: Einepyk on the River Axe in 2026. Swiss sail number 4
 excerpt: Photos of Einepyk
-draft: true
+draft: false
 ---
 
 Test of two photos loaded in one go
