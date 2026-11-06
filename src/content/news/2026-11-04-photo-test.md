@@ -12,7 +12,7 @@ images:
   - src: ./images/axe-yacht-club-river-race-14-wed-7th-october-2026-18.webp
     alt: 'The same boat, 56 years later: Einepyk on the River Axe in 2026. Swiss sail number SUI-4'
 excerpt: Photos of Einepyk
-draft: false
+draft: true
 ---
 
 Test of two photos loaded in one go
@@ -25,9 +25,7 @@ Test of embedded photo:
 
 ![embedded photo](images/axe-yacht-club-river-race-14-wed-7th-october-2026-18.webp "This photo should appear in embedded in text")
 
-More text
-
-HTML:
+More te
 
 ```html
 <table>
