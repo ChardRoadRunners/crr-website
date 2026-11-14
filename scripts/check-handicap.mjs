@@ -11,6 +11,10 @@
 //   - a run time is clock time minus go-at time.
 //   - the suggested start time follows Simon's practice: last run rounded to
 //     15 s, an off night ignored, a missed month carried forward.
+//   - what went wrong on 27 Oct 2026 stays fixed: a runner with no start time
+//     (null OR undefined) moves nobody; nothing in History does not bar a win,
+//     the timer's tick does; a guest is not racing; a tap taken back is not a
+//     finish.
 //
 // Plain node, no framework. `npm run check:handicap`.
 
@@ -19,7 +23,7 @@ import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../sheets/handicap/scoring.gs', import.meta.url), 'utf8');
 const S = new Function(
-  `${source}\nreturn { secondsToClock, clockToSeconds, roundToStep, suggestStartTime, goAtTimes, startGroups, raceResult };`,
+  `${source}\nreturn { secondsToClock, clockToSeconds, roundToStep, suggestStartTime, goAtTimes, startGroups, slowestStartSeconds, raceResult };`,
 )();
 
 const red = (s) => `\u001b[31m${s}\u001b[0m`;
@@ -141,6 +145,84 @@ check('an impossible run time (token against the wrong runner) is flagged', () =
 check('nobody eligible finished: no winner, no crash', () => {
 	const r = S.raceResult([{ name: 'New', startSeconds: t(25), goAtSeconds: 0, token: 1, firstHandicap: true }], [{ clockSeconds: 1500 }]);
 	assert.equal(r.rows.filter((x) => x.winner).length, 0);
+});
+
+console.log('\nVersion 1.2: what 27 October 2026 taught');
+check('a start time that arrives as undefined, not null, still moves nobody (Lisa Palmer)', () => {
+	const go = S.goAtTimes([{ name: 'Sean', startSeconds: t(26, 30) }, { name: 'Tom', startSeconds: t(20) }, { name: 'Lisa' }]);
+	assert.deepEqual(go, { Sean: 0, Tom: t(6, 30), Lisa: null });
+	const g = S.startGroups([{ name: 'Sean', startSeconds: t(26, 30) }, { name: 'Tom', startSeconds: t(20) }, { name: 'Lisa' }]);
+	assert.deepEqual(g, [{ goAtSeconds: 0, names: ['Sean'] }, { goAtSeconds: t(6, 30), names: ['Tom'] }]);
+});
+check('a runner with no start time and a token: placed, no run time, no "undefined" anywhere', () => {
+	const r = S.raceResult(
+		[{ name: 'Sean', startSeconds: t(26, 30), goAtSeconds: 0, token: 1 }, { name: 'Lisa', token: 2 }],
+		[{ clockSeconds: t(26, 40) }, { clockSeconds: t(31) }],
+	);
+	const lisa = r.rows.find((x) => x.name === 'Lisa');
+	assert.deepEqual([lisa.position, lisa.runSeconds, lisa.startSeconds, lisa.goAtSeconds, lisa.vsStartSeconds], [2, null, null, null, null]);
+	assert.equal(lisa.note, 'No start time, so no run time');
+	assert.ok(!JSON.stringify(r).includes('undefined') && !JSON.stringify(r).includes('NaN'));
+	for (const row of r.rows) for (const [k, v] of Object.entries(row)) assert.notEqual(v, undefined, `${row.name}.${k}`);
+});
+check('nothing in History does not bar a win; it asks for one look', () => {
+	const r = S.raceResult(
+		[
+			{ name: 'Old hand', startSeconds: t(24), goAtSeconds: 0, token: 1, firstHandicap: false, noData: true },
+			{ name: 'Tom', startSeconds: t(20), goAtSeconds: t(4), token: 2, firstHandicap: false, noData: false },
+		],
+		[{ clockSeconds: t(24, 5) }, { clockSeconds: t(24, 9) }],
+	);
+	assert.deepEqual(r.rows.filter((x) => x.winner).map((x) => x.name), ['Old hand']);
+	assert.ok(r.problems.some((p) => /Old hand is first across the line and has no handicap in History/.test(p)));
+});
+check('the same runner ticked "first time" cannot win, and there is nothing to ask', () => {
+	const r = S.raceResult(
+		[
+			{ name: 'Joe', startSeconds: t(24), goAtSeconds: 0, token: 1, firstHandicap: true, noData: true },
+			{ name: 'Tom', startSeconds: t(20), goAtSeconds: t(4), token: 2, firstHandicap: false, noData: false },
+		],
+		[{ clockSeconds: t(24, 5) }, { clockSeconds: t(24, 9) }],
+	);
+	assert.deepEqual(r.rows.filter((x) => x.winner).map((x) => x.name), ['Tom']);
+	assert.deepEqual(r.problems, []);
+});
+check('a guest takes a token but is not racing: no run time, cannot win', () => {
+	const r = S.raceResult(
+		[
+			{ name: 'Lydia', startSeconds: t(30), goAtSeconds: 0, token: 1, guest: true },
+			{ name: 'Tom', startSeconds: t(20), goAtSeconds: 0, token: 2 },
+		],
+		[{ clockSeconds: t(19) }, { clockSeconds: t(20, 5) }],
+	);
+	const lydia = r.rows.find((x) => x.name === 'Lydia');
+	assert.deepEqual([lydia.position, lydia.runSeconds, lydia.startSeconds, lydia.winner, lydia.note], [1, null, null, false, 'Guest, not racing']);
+	assert.deepEqual(r.rows.filter((x) => x.winner).map((x) => x.name), ['Tom']);
+	assert.deepEqual(r.problems, []);
+});
+check('a finish taken back is not a finish: later taps close up', () => {
+	const r = S.raceResult(
+		[{ name: 'A', startSeconds: t(20), goAtSeconds: 0, token: 1 }, { name: 'B', startSeconds: t(20), goAtSeconds: 0, token: 2 }],
+		[{ clockSeconds: 1200 }, { clockSeconds: 1205, removed: true }, { clockSeconds: 1210 }],
+	);
+	assert.deepEqual(r.rows.map((x) => [x.name, x.clockSeconds]), [['A', 1200], ['B', 1210]]);
+	assert.deepEqual(r.problems, []);
+});
+check('the first group changing after the clock started is reported, with by how much', () => {
+	const starters = [
+		{ name: 'Late and slow', startSeconds: t(41), goAtSeconds: 0, token: null },
+		{ name: 'Sean', startSeconds: t(38), goAtSeconds: t(3), token: 1 },
+	];
+	const moved = S.raceResult(starters, [{ clockSeconds: t(38, 10) }], { firstGroupStartSeconds: t(38) });
+	assert.ok(moved.problems.some((p) => /first group was on 38:00; it is now 41:00, so every run time has moved by 3:00/.test(p)));
+	const same = S.raceResult(starters, [{ clockSeconds: t(38, 10) }], { firstGroupStartSeconds: t(41) });
+	assert.ok(!same.problems.some((p) => /first group/.test(p)));
+	const unknown = S.raceResult(starters, [{ clockSeconds: t(38, 10) }]);
+	assert.ok(!unknown.problems.some((p) => /first group/.test(p)));
+});
+check('slowest start time ignores blanks of every kind', () => {
+	assert.equal(S.slowestStartSeconds([{ startSeconds: t(20) }, { startSeconds: null }, {}, { startSeconds: '' }, { startSeconds: t(31) }]), t(31));
+	assert.equal(S.slowestStartSeconds([{}, { startSeconds: null }]), null);
 });
 
 console.log('\nSuggested start time');
