@@ -21,8 +21,16 @@
  *     clock time of each finish comes from the timing page.
  *   - A runner's RUN TIME is their clock time minus their go-at time. It is
  *     what sets their next start time. Nobody needs their own watch.
- *   - A FIRST-TIMER (no handicap run before this one) races but cannot win.
- *     The first eligible runner across the line wins.
+ *   - A FIRST-TIMER races but cannot win. The first eligible runner across
+ *     the line wins. "First time" is a tick the timer makes on the night, and
+ *     is only offered for runners with no handicap in History: History starts
+ *     in Feb 2026, so "nothing in History" alone is not proof (27 Oct 2026).
+ *   - A GUEST runs along and takes a token, but is not racing: no run time,
+ *     cannot win, and their start time moves nobody else's go-at time.
+ *
+ * BLANKS. "No start time", "no token" and so on are null in here. By the time
+ * they reach the phone they may be undefined instead (see timing.html), so
+ * every test in this file treats null and undefined alike, through blank().
  */
 
 var SECONDS_PER_DAY = 86400;
@@ -35,6 +43,11 @@ var OFF_NIGHT_SECONDS = 60;
 
 /** Nobody runs this 5k in under 12 minutes: a run time below it is a mix-up. */
 var MIN_PLAUSIBLE_RUN_SECONDS = 12 * 60;
+
+/** True for "nothing here": null, undefined or an empty cell. */
+function blank(v) {
+  return v === null || v === undefined || v === '';
+}
 
 /** Seconds to m:ss (or h:mm:ss), with a minus sign when negative. */
 function secondsToClock(seconds) {
@@ -167,28 +180,48 @@ function startGroups(starters, step) {
 }
 
 /**
+ * The start time of the first group: the slowest among those starting who
+ * have one. Everybody's go-at time, and so everybody's run time, hangs off
+ * this number. null when nobody has a start time.
+ */
+function slowestStartSeconds(starters) {
+  var timed = starters.filter(function (s) { return !blank(s.startSeconds); });
+  if (!timed.length) return null;
+  return Math.max.apply(null, timed.map(function (s) { return s.startSeconds; }));
+}
+
+/**
  * The result of one handicap night.
  *
- * `starters`: [{ name, startSeconds, goAtSeconds, token, firstHandicap }]
+ * `starters`: [{ name, startSeconds, goAtSeconds, token, firstHandicap, noData, guest }]
  *   token is the finishing position on the token they were handed, or null.
- * `finishes`: [{ clockSeconds }] — one per tap on the timing page. Sorted by
- *   clock time, the first is position 1: the tokens are handed out in that
- *   same order, which is what ties a token number to a clock time.
+ *   firstHandicap: the timer ticked "first time". noData: nothing in History.
+ *   guest: not racing (give them startSeconds and goAtSeconds of null).
+ * `finishes`: [{ clockSeconds, removed }] — one per tap on the timing page.
+ *   Sorted by clock time, the first is position 1: the tokens are handed out
+ *   in that same order, which is what ties a token number to a clock time.
+ *   A tap the timer took back (removed) is kept for the record but is not a
+ *   finish.
+ * `opts.firstGroupStartSeconds`: the first group's start time at the moment
+ *   the clock started, if known. If it has changed since, every run time has
+ *   moved, and that is reported.
  *
  * Returns { rows, problems }. Every starter appears in rows, finished or not,
  * so nobody is silently missing. problems lists anything a person must sort
  * out before the race is saved.
  */
-function raceResult(starters, finishes) {
+function raceResult(starters, finishes, opts) {
+  opts = opts || {};
   var clock = finishes
+    .filter(function (f) { return f && !f.removed; })
     .map(function (f) { return f.clockSeconds; })
-    .filter(function (c) { return c !== null && c !== undefined && isFinite(c); })
+    .filter(function (c) { return !blank(c) && isFinite(c); })
     .sort(function (a, b) { return a - b; });
 
   var problems = [];
   var tokenOwners = {};
   starters.forEach(function (s) {
-    if (s.token === null || s.token === undefined || s.token === '') return;
+    if (blank(s.token)) return;
     (tokenOwners[s.token] = tokenOwners[s.token] || []).push(s.name);
   });
   Object.keys(tokenOwners).forEach(function (t) {
@@ -199,17 +232,22 @@ function raceResult(starters, finishes) {
   }
 
   var rows = starters.map(function (s) {
-    var position = s.token === null || s.token === undefined || s.token === '' ? null : Number(s.token);
+    var guest = !!s.guest;
+    var startSeconds = guest || blank(s.startSeconds) ? null : s.startSeconds;
+    var goAtSeconds = guest || blank(s.goAtSeconds) ? null : s.goAtSeconds;
+    var position = blank(s.token) ? null : Number(s.token);
     var clockSeconds = position !== null && position >= 1 && position <= clock.length ? clock[position - 1] : null;
-    var runSeconds = clockSeconds !== null && s.goAtSeconds !== null && s.goAtSeconds !== undefined
-      ? Math.round(clockSeconds - s.goAtSeconds)
+    var runSeconds = clockSeconds !== null && goAtSeconds !== null
+      ? Math.round(clockSeconds - goAtSeconds)
       : null;
     var note = '';
     if (position === null) note = 'No finish recorded';
     else if (clockSeconds === null) {
       note = 'Token ' + position + ' has no clock time';
       problems.push(s.name + ' has token ' + position + ', but only ' + clock.length + ' finishes were timed');
-    } else if (s.goAtSeconds === null || s.goAtSeconds === undefined) {
+    } else if (guest) {
+      note = 'Guest, not racing';
+    } else if (goAtSeconds === null) {
       note = 'No start time, so no run time';
     } else if (runSeconds < MIN_PLAUSIBLE_RUN_SECONDS) {
       problems.push(s.name + "'s run time works out at " + secondsToClock(runSeconds)
@@ -218,31 +256,50 @@ function raceResult(starters, finishes) {
     return {
       position: position,
       name: s.name,
-      startSeconds: s.startSeconds === undefined ? null : s.startSeconds,
-      goAtSeconds: s.goAtSeconds === undefined ? null : s.goAtSeconds,
+      startSeconds: startSeconds,
+      goAtSeconds: goAtSeconds,
       clockSeconds: clockSeconds,
       runSeconds: runSeconds,
-      vsStartSeconds: runSeconds !== null && s.startSeconds !== null && s.startSeconds !== undefined
-        ? runSeconds - s.startSeconds
-        : null,
+      vsStartSeconds: runSeconds !== null && startSeconds !== null ? runSeconds - startSeconds : null,
       firstHandicap: !!s.firstHandicap,
+      noData: !!s.noData,
+      guest: guest,
       winner: false,
       note: note,
     };
   });
 
   var eligible = rows.filter(function (r) {
-    return r.position !== null && r.clockSeconds !== null && !r.firstHandicap;
+    return r.position !== null && r.clockSeconds !== null && !r.firstHandicap && !r.guest;
   });
   if (eligible.length) {
     var best = Math.min.apply(null, eligible.map(function (r) { return r.position; }));
     rows.forEach(function (r) {
-      if (r.position === best && !r.firstHandicap) { r.winner = true; r.note = 'Winner'; }
+      if (r.position === best && !r.firstHandicap && !r.guest) {
+        r.winner = true;
+        r.note = 'Winner';
+        // Nothing in History is not proof of a first handicap, so nobody is
+        // barred on it. But it is worth one look before the trophy goes.
+        if (r.noData) {
+          problems.push(r.name + ' is first across the line and has no handicap in History. If this is their '
+            + 'first handicap, tick "first time" against them on Runners: a first-timer can\'t win');
+        }
+      }
     });
   }
   rows.forEach(function (r) {
-    if (r.firstHandicap && r.position !== null && r.clockSeconds !== null) r.note = "First handicap, so can't win";
+    if (r.firstHandicap && !r.guest && r.position !== null && r.clockSeconds !== null) r.note = "First handicap, so can't win";
   });
+
+  // 0:00 on the clock is the first group. If who that is has changed since
+  // the clock started, every go-at time, and so every run time, has moved.
+  var was = opts.firstGroupStartSeconds;
+  var now = slowestStartSeconds(rows);
+  if (!blank(was) && now !== null && now !== was) {
+    problems.push('When the clock started the first group was on ' + secondsToClock(was) + '; it is now '
+      + secondsToClock(now) + ', so every run time has moved by ' + secondsToClock(Math.abs(now - was))
+      + '. Check who was ticked or had their start time changed after the start');
+  }
 
   rows.sort(function (a, b) {
     if (a.position === null && b.position === null) return a.name.localeCompare(b.name, 'en-GB');
