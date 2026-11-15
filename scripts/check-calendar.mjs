@@ -21,6 +21,7 @@ const {
 	normalise,
 	formatEventWhen,
 	machineDate,
+	comparableFeed,
 	isSameRace,
 	isPubRun,
 	retryDelayMs,
@@ -228,6 +229,32 @@ check('a timed event reads the same wherever the site is built', () => {
 			assert.match(formatEventWhen(event, new Date('2026-01-01T00:00:00Z')), /Sun 18th Oct 2026, 10:00 am$/, `built in ${zone}`);
 		});
 	}
+});
+
+// The nightly download only commits a calendar that has changed. These pin
+// down what "changed" means.
+const stamped = (uid, summary, stamp) => [`UID:${uid}`, `DTSTAMP:${stamp}`, 'DTSTART:20261018T090000Z', `SUMMARY:${summary}`];
+
+check('the same events in a different order are not a change to the calendar', () => {
+	const monday = feed(stamped('a@test', 'Club run', '20261114T085933Z'), stamped('b@test', 'Handicap', '20261114T085933Z'));
+	const tuesday = feed(stamped('b@test', 'Handicap', '20261115T092906Z'), stamped('a@test', 'Club run', '20261115T092906Z'));
+	assert.notEqual(monday, tuesday);
+	assert.equal(comparableFeed(monday), comparableFeed(tuesday));
+	assert.equal(comparableFeed(monday.replace(/\r\n/g, '\n')), comparableFeed(tuesday), 'line endings do not count either');
+});
+
+check('an edited, added or removed event is a change', () => {
+	const before = feed(stamped('a@test', 'Club run', '20261114T085933Z'), stamped('b@test', 'Handicap', '20261114T085933Z'));
+	const renamed = feed(stamped('a@test', 'Club run', '20261114T085933Z'), stamped('b@test', 'Handicap 5k', '20261114T085933Z'));
+	const added = feed(stamped('a@test', 'Club run', '20261114T085933Z'), stamped('b@test', 'Handicap', '20261114T085933Z'), stamped('c@test', 'Social', '20261114T085933Z'));
+	const removed = feed(stamped('a@test', 'Club run', '20261114T085933Z'));
+	for (const after of [renamed, added, removed]) assert.notEqual(comparableFeed(before), comparableFeed(after));
+});
+
+check('a download cut off part-way through is a change, not a match', () => {
+	const whole = feed(stamped('a@test', 'Club run', '20261114T085933Z'), stamped('b@test', 'Handicap', '20261114T085933Z'));
+	const cut = whole.slice(0, whole.indexOf('SUMMARY:Handicap'));
+	assert.notEqual(comparableFeed(whole), comparableFeed(cut));
 });
 
 check('the year is always shown, so a January race is not read as this one', () => {

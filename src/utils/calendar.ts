@@ -281,6 +281,52 @@ function splitDescription(raw?: string): Pick<ClubEvent, 'description' | 'entryL
 	return { description, entryLink };
 }
 
+/**
+ * A saved calendar file reduced to what would count as a change to it.
+ *
+ * scripts/fetch-calendars.mjs downloads each calendar nightly and only writes
+ * the file, and so only makes a commit and a build, when this differs from
+ * the copy already saved. Three things differ between two downloads of a
+ * calendar nobody has touched, and all three are ignored here:
+ *
+ *   - DTSTAMP, which Google sets to the moment of the download.
+ *   - Line endings, which vary with how a file was checked out.
+ *   - THE ORDER OF THE EVENTS. Google does not return them in a fixed order.
+ *     Until 15 November 2026 this was not allowed for, and the Club nights
+ *     calendar was committed every single night with the same events
+ *     shuffled: a commit, a build and a line in the editor's History panel
+ *     for nothing.
+ */
+export function comparableFeed(ics: string): string {
+	const lines = ics
+		.replace(/\r\n/g, '\n')
+		.split('\n')
+		.filter((line) => !line.startsWith('DTSTAMP:'));
+
+	const outside: string[] = [];
+	const events: string[] = [];
+	let current: string[] | null = null;
+
+	for (const line of lines) {
+		if (line === 'BEGIN:VEVENT') {
+			current = [line];
+		} else if (current) {
+			current.push(line);
+			if (line === 'END:VEVENT') {
+				events.push(current.join('\n'));
+				current = null;
+			}
+		} else {
+			outside.push(line);
+		}
+	}
+	// An event cut off before its END line is kept, so a truncated download
+	// never compares equal to a whole one.
+	if (current) events.push(current.join('\n'));
+
+	return [...outside, ...events.sort()].join('\n').trim();
+}
+
 /** node-ical hands back `VEvent`s mixed in with timezone components. */
 const isEvent = (value: ical.CalendarComponent): value is ical.VEvent =>
 	value.type === 'VEVENT';
