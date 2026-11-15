@@ -327,6 +327,13 @@ runs a check to see whether the site still builds. If the build breaks, GitHub
 opens an issue called **"Website build failing"**, assigns it to the web admin,
 and emails them.
 
+- **It also runs every morning, with nothing saved.** The nightly rebuild
+  reads the results sheets afresh, so a correction typed into a sheet can
+  break the build without anybody touching the website. Nothing is pushed
+  when that happens, so until 15 November 2026 the check never ran and the
+  email the sheets' instructions promise could not be sent. The morning run
+  (04:45 UTC, often later) builds `main` against the sheets as they are and
+  raises the same issue, worded to say that nobody's save caused it.
 - **One email per problem, not one per save.** While that issue is open,
   further failures send nothing.
 - **It clears itself.** When a later save builds successfully, the issue closes
@@ -458,6 +465,10 @@ alert exists.
 
 - Editors whose save breaks the build may also get GitHub's own failure email,
   depending on their notification settings. Harmless, and theirs to turn off.
+- The morning run is a scheduled job, and GitHub switches scheduled jobs off
+  in a public repository after 60 days with no commits. Any save counts. If
+  it stops appearing in the Actions tab, re-enable it there. The same goes
+  for the nightly calendar download.
 - The check runs the same build Cloudflare runs, but it is not Cloudflare's
   build. A problem that only affects Cloudflare's deploy step will not trigger
   it. Those are rare, and show as a red cross against the commit in GitHub.
