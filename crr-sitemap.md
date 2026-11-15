@@ -1,6 +1,10 @@
 # Chard Road Runners — Sitemap & Page Structure
 
-Draft v1. Built from the existing Webador site content. Dates and details carried over as-is and flagged where they need checking.
+The plan the site was built from, started from the old Webador site's content.
+**It is a plan, not a description, and parts of it trail the site**: the
+homepage sections below predate "What's on!" and the News page (28 October
+2026). For what exists now, the README's Pages table and `src/pages/` are the
+record. Read this for the reasoning behind the structure.
 
 ---
 
