@@ -63,6 +63,14 @@
   #toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line);
     padding: 10px 16px; border-radius: 10px; display: none; z-index: 10; max-width: 90vw; }
   #pinGate { max-width: 360px; margin: 18vh auto 0; padding: 0 16px; }
+  .chip { flex: none; font: inherit; font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 999px;
+    background: none; color: var(--muted); border: 1px dashed var(--muted); }
+  .chip.on { background: var(--accent); color: #0b0f13; border: 1px solid var(--accent); }
+  .late { background: var(--panel); border: 1px solid var(--accent); border-radius: 12px; padding: 12px; margin: 8px 0 12px; }
+  .late p { margin: 0 0 10px; }
+  .late .btn { margin-top: 8px; }
+  .btn.small { width: auto; padding: 8px 12px; font-size: 14px; }
+  optgroup { color: var(--muted); font-style: normal; }
 </style>
 </head>
 <body>
@@ -111,7 +119,12 @@
     <div id="groups"></div>
     <p class="hint" id="noStart"></p>
     <div style="height:20px"></div>
-    <button class="btn ghost" id="restartBtn" style="display:none">Restart the clock</button>
+    <div id="clockTools" style="display:none">
+      <button class="btn ghost" id="restartBtn">Restart the clock</button>
+      <p class="hint">Restart: back to 0:00 and running again straight away, finishes cleared.</p>
+      <button class="btn ghost" id="resetBtn">Reset the clock</button>
+      <p class="hint">Reset: stops the clock and clears its finishes, ready to start properly. For a practice or a false start. Ticks stay.</p>
+    </div>
   </section>
 
   <section id="tab-finish">
@@ -124,10 +137,13 @@
   </section>
 
   <section id="tab-tokens">
-    <p class="hint">Hand out tokens in finishing order. Afterwards, put each runner against the token they hold.</p>
+    <p class="hint">Hand out tokens in finishing order. Afterwards, put each runner against the token they hold. Someone who ran without being ticked is under "Everyone else".</p>
     <div id="tokenList"></div>
     <h2 id="noTokenHead" style="display:none">Running, no token yet</h2>
     <p class="hint" id="noTokenList"></p>
+    <h2 id="removedHead" style="display:none">Finishes taken back</h2>
+    <p class="hint" id="removedHint" style="display:none">Removed with Undo. Kept in case one was real: Put back makes it a finish again, in clock order.</p>
+    <div id="removedList"></div>
   </section>
 
   <section id="tab-result">
@@ -135,7 +151,7 @@
     <div id="resultBox"></div>
     <div style="height:16px"></div>
     <button class="btn" id="saveBtn" style="display:none">Save to History</button>
-    <p class="hint">Saving writes the result to the History tab, then clears the ticks, tokens and clock ready for next month.</p>
+    <p class="hint">Saving writes the result to the History tab, then clears the ticks, tokens and clock ready for next month. Every finish tapped tonight is copied to the Timing archive tab first.</p>
   </section>
 </main>
 </div>
@@ -158,10 +174,38 @@
     });
   }
   function toast(msg) { var t = $('toast'); t.textContent = msg; t.style.display = 'block';
-    clearTimeout(toast.h); toast.h = setTimeout(function () { t.style.display = 'none'; }, 3500); }
+    clearTimeout(toast.h); toast.h = setTimeout(function () { t.style.display = 'none'; }, 4500); }
   function errText(e) { return (e && e.message) ? e.message : String(e); }
+
+  // ---- blanks
+  // "Nothing here" reaches this page in more than one shape. The sheet sends
+  // null for no start time or no token, but a null can go missing on the way
+  // and arrive as undefined. On 27 Oct 2026 the page only tested for null:
+  // one runner with no start time turned every go-at sum into nonsense and
+  // put the whole field in one group. So: NEVER write `=== null` here. Ask
+  // none(), and tidy everything from the sheet as it arrives.
+  function none(v) { return v === null || v === undefined || v === '' || (typeof v === 'number' && !isFinite(v)); }
+  function orNull(v) { return none(v) ? null : v; }
+  function tidyRunner(r) {
+    return {
+      name: String(r.name), running: r.running === true, token: none(r.token) ? null : Number(r.token),
+      startSeconds: none(r.startSeconds) ? null : Number(r.startSeconds),
+      firstHandicap: r.firstHandicap === true, noData: r.noData === true, guest: r.guest === true,
+    };
+  }
+  function tidyFinish(f) { return { id: String(f.id), clockSeconds: Number(f.clockSeconds), removed: f.removed === true }; }
+  function tidyState(s) {
+    return {
+      race: { iso: (s.race && s.race.iso) || '', label: (s.race && s.race.label) || '' },
+      step: Number(s.step) || 15,
+      clockStartMs: none(s.clockStartMs) ? null : Number(s.clockStartMs),
+      finishes: (s.finishes || []).map(tidyFinish).filter(function (f) { return isFinite(f.clockSeconds); }),
+      runners: (s.runners || []).map(tidyRunner),
+    };
+  }
+
   function clock(sec, tenths) {
-    if (sec === null || sec === undefined || !isFinite(sec)) return '';
+    if (none(sec)) return '';
     var neg = sec < 0; sec = Math.abs(sec);
     var m = Math.floor(sec / 60), s = sec - m * 60;
     var ss = tenths ? s.toFixed(1) : String(Math.floor(s));
@@ -174,37 +218,50 @@
     (kids || []).forEach(function (c) { if (c) n.appendChild(c); });
     return n;
   }
+  function byName(a, b) { return a.name.localeCompare(b.name, 'en-GB'); }
 
   var pin = store.get('crr-pin') || '';
-  var state = null;       // from the sheet
-  var local = null;       // this race on this phone: { clockStartMs, finishes: [{id, clockSeconds}], dirty }
+  var state = null;       // from the sheet, tidied
+  var local = null;       // this race on this phone: { clockStartMs, finishes: [{id, clockSeconds, removed}], dirty, resetPending }
   var syncing = false;
+  var rev = 0;            // goes up with every change to the finishes, so a save knows if it is already out of date
+  var late = null;        // { pos, name, text }: somebody unticked picked for a token, waiting for their start time
 
   // ---------------------------------------------------------------- loading
   function gate(msg) { $('app').style.display = 'none'; $('pinGate').style.display = 'block'; $('pinMsg').textContent = msg || ''; }
   $('pinGo').onclick = function () { pin = $('pinInput').value.trim(); load(); };
 
   function load() {
-    call('api_state').then(function (s) {
+    call('api_state').then(function (raw) {
+      var s = tidyState(raw);
       store.set('crr-pin', pin);
       $('pinGate').style.display = 'none'; $('app').style.display = 'block';
       state = s;
       var key = 'crr-race-' + (s.race.iso || 'none');
-      local = store.get(key) || { clockStartMs: null, finishes: [], dirty: false };
-      local.key = key;
-      // Whichever side has a clock, both should.
-      if (!local.clockStartMs && s.clockStartMs) local.clockStartMs = s.clockStartMs;
-      else if (local.clockStartMs && !s.clockStartMs) call('api_startClock', local.clockStartMs, false).catch(function () {});
-      // This phone is the record of finishes; adopt the sheet's only if this phone has none.
-      if (!local.finishes.length && s.finishes.length) local.finishes = s.finishes;
-      else if (local.finishes.length) local.dirty = true;
+      var kept = store.get(key) || {};
+      local = {
+        key: key, clockStartMs: orNull(kept.clockStartMs),
+        finishes: (kept.finishes || []).map(tidyFinish), dirty: kept.dirty === true, resetPending: kept.resetPending === true,
+      };
+      if (local.resetPending) {
+        // This phone reset the clock and the sheet hasn't heard yet: the sheet's clock is the stale one.
+        pushReset();
+      } else {
+        // Whichever side has a clock, both should.
+        if (!local.clockStartMs && s.clockStartMs) local.clockStartMs = s.clockStartMs;
+        else if (local.clockStartMs && !s.clockStartMs) call('api_startClock', local.clockStartMs, false).catch(function () {});
+        // This phone is the record of finishes; adopt the sheet's only if this phone has none.
+        if (!local.finishes.length && s.finishes.length) local.finishes = s.finishes;
+        else if (local.finishes.length) local.dirty = true;
+      }
       save(); render(); syncFinishes();
     }).catch(function (e) {
       var m = errText(e);
       if (/PIN/.test(m)) gate(m); else { gate(); $('pinMsg').textContent = 'Could not reach the sheet: ' + m; }
     });
   }
-  function save() { store.set(local.key, { clockStartMs: local.clockStartMs, finishes: local.finishes, dirty: local.dirty }); }
+  function save() { store.set(local.key, { clockStartMs: local.clockStartMs, finishes: local.finishes, dirty: local.dirty, resetPending: local.resetPending }); }
+  function touch() { rev += 1; local.dirty = true; save(); }
 
   // -------------------------------------------------------------- tabs
   Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) {
@@ -218,8 +275,11 @@
 
   // ------------------------------------------------------------- the rules
   function running() { return state.runners.filter(function (r) { return r.running; }); }
+  function findRunner(name) { return state.runners.filter(function (r) { return r.name === name; })[0] || null; }
+  // Who goes when. A runner with no start time, or a guest, is in no group
+  // and must not move anybody else's.
   function groups() {
-    var rs = running().filter(function (r) { return r.startSeconds !== null; });
+    var rs = running().filter(function (r) { return !r.guest && !none(r.startSeconds); });
     if (!rs.length) return [];
     var slowest = Math.max.apply(null, rs.map(function (r) { return r.startSeconds; }));
     var by = {};
@@ -230,19 +290,26 @@
     return Object.keys(by).map(Number).sort(function (a, b) { return a - b; })
       .map(function (g) { return { at: g, names: by[g].sort() }; });
   }
-  function elapsed() { return local && local.clockStartMs ? (Date.now() - local.clockStartMs) / 1000 : null; }
-  function sortedFinishes() { return local.finishes.slice().sort(function (a, b) { return a.clockSeconds - b.clockSeconds; }); }
+  function elapsed() { return local && !none(local.clockStartMs) ? (Date.now() - local.clockStartMs) / 1000 : null; }
+  // The finishes that count, in clock order. A finish taken back with Undo
+  // stays on the phone and in the sheet, marked removed, and is not in here.
+  function sortedFinishes() {
+    return local.finishes.filter(function (f) { return !f.removed; }).sort(function (a, b) { return a.clockSeconds - b.clockSeconds; });
+  }
+  function removedFinishes() {
+    return local.finishes.filter(function (f) { return f.removed; }).sort(function (a, b) { return a.clockSeconds - b.clockSeconds; });
+  }
 
   // ------------------------------------------------------------- rendering
   function render() {
-    if (!state) return;
+    if (!state || !local) return;
     $('raceLabel').textContent = state.race.label || 'No race on the Events tab';
     renderRunners(); renderGroups(); renderFinish(); renderTokens(); renderSync();
   }
   function renderSync() {
     var s = $('syncState');
     if (syncing) s.textContent = 'saving…';
-    else if (local && local.dirty) { s.textContent = 'not saved yet — kept on this phone'; }
+    else if (local && (local.dirty || local.resetPending)) { s.textContent = 'not saved yet — kept on this phone'; }
     else s.textContent = 'saved';
   }
 
@@ -257,10 +324,20 @@
     }).forEach(function (r) {
       var check = el('div', { cls: 'check' + (r.running ? ' on' : ''), text: r.running ? '✓' : '' });
       var label = el('div', { cls: 'name', text: r.name });
-      if (r.firstHandicap) label.appendChild(el('span', { cls: 'badge', text: 'first handicap' }));
-      var startTxt = r.startSeconds === null ? 'no start time' : clock(r.startSeconds);
-      var start = el('span', { cls: 't' + (r.startSeconds === null && r.running ? ' badge warn' : ''), text: startTxt });
-      var row = el('div', { cls: 'row' }, [check, label, start]);
+      // "First time" is the timer's call, and only for somebody with no
+      // handicap in History. History starts in Feb 2026, so having nothing in
+      // it does not prove a first handicap; the tick does.
+      var chip = null;
+      if (r.running && r.noData) {
+        chip = el('button', { cls: 'chip' + (r.firstHandicap ? ' on' : ''), type: 'button', text: r.firstHandicap ? '✓ first time' : 'first time?' });
+        chip.onclick = function () { toggleFirstTime(r); };
+      } else if (r.firstHandicap) {
+        label.appendChild(el('span', { cls: 'badge', text: 'first time' }));
+      }
+      var noStart = !r.guest && none(r.startSeconds);
+      var startTxt = r.guest ? 'guest' : noStart ? 'no start time' : clock(r.startSeconds);
+      var start = el('span', { cls: 't' + (noStart && r.running ? ' badge warn' : ''), text: startTxt });
+      var row = el('div', { cls: 'row' }, [check, label, chip, start]);
       check.onclick = label.onclick = function () { toggleRunning(r); };
       start.onclick = function () { editStart(r, row); };
       list.appendChild(row);
@@ -270,16 +347,23 @@
     r.running = !r.running; if (!r.running) r.token = null; render();
     call('api_setRunning', r.name, r.running).catch(function (e) { r.running = !r.running; render(); toast(errText(e)); });
   }
+  function toggleFirstTime(r) {
+    r.firstHandicap = !r.firstHandicap; render();
+    call('api_setFirstTime', r.name, r.firstHandicap).catch(function (e) { r.firstHandicap = !r.firstHandicap; render(); toast(errText(e)); });
+  }
   function editStart(r, row) {
     if (row.querySelector('input')) return;
-    var input = el('input', { type: 'text', inputmode: 'decimal', cls: 'small', placeholder: 'e.g. 24:30' });
-    input.value = r.startSeconds === null ? '' : clock(r.startSeconds);
-    var ok = el('button', { cls: 'btn ghost', text: 'Set', style: 'width:auto;padding:8px 12px' });
-    ok.onclick = function () {
-      call('api_setStartTime', r.name, input.value.trim()).then(refreshState).then(function () { toast('Start time set for ' + r.name); })
+    var input = el('input', { type: 'text', cls: 'small', placeholder: '24:30' });
+    input.value = r.guest ? 'Guest' : none(r.startSeconds) ? '' : clock(r.startSeconds);
+    var set = function (value) {
+      call('api_setStartTime', r.name, value).then(refreshState).then(function () { toast(value.toLowerCase() === 'guest' ? r.name + ' is a guest tonight' : 'Start time set for ' + r.name); })
         .catch(function (e) { toast(errText(e)); });
     };
-    row.appendChild(input); row.appendChild(ok); input.focus();
+    var ok = el('button', { cls: 'btn ghost small', type: 'button', text: 'Set' });
+    ok.onclick = function () { set(input.value.trim()); };
+    var guest = el('button', { cls: 'btn ghost small', type: 'button', text: 'Guest' });
+    guest.onclick = function () { set('Guest'); };
+    row.appendChild(input); row.appendChild(ok); row.appendChild(guest); input.focus();
   }
   $('search').oninput = renderRunners; $('onlyRunning').onchange = renderRunners;
   $('addRunner').onclick = function () {
@@ -290,7 +374,8 @@
     }).catch(function (e) { toast(errText(e)); });
   };
   function refreshState() {
-    return call('api_state').then(function (s) {
+    return call('api_state').then(function (raw) {
+      var s = tidyState(raw);
       state.runners = s.runners; state.race = s.race; state.step = s.step; render();
     });
   }
@@ -300,15 +385,18 @@
     var gs = groups(), t = elapsed();
     var box = $('groups'); box.innerHTML = '';
     gs.forEach(function (g) {
-      box.appendChild(el('div', { cls: 'group' + (t !== null && t > g.at + 5 ? ' done' : '') }, [
+      box.appendChild(el('div', { cls: 'group' + (!none(t) && t > g.at + 5 ? ' done' : '') }, [
         el('div', { cls: 'at', text: clock(g.at) }), el('div', { text: g.names.join(', ') })]));
     });
-    var missing = running().filter(function (r) { return r.startSeconds === null; }).map(function (r) { return r.name; });
-    $('noStart').textContent = missing.length ? 'No start time yet (set one on Runners): ' + missing.join(', ') : '';
-    $('startIdle').style.display = local.clockStartMs ? 'none' : 'block';
-    $('restartBtn').style.display = local.clockStartMs ? 'block' : 'none';
+    var missing = running().filter(function (r) { return !r.guest && none(r.startSeconds); }).map(function (r) { return r.name; });
+    var guests = running().filter(function (r) { return r.guest; }).map(function (r) { return r.name; });
+    $('noStart').textContent = (missing.length ? 'No start time yet, so in no group (set one on Runners): ' + missing.join(', ') + '. ' : '')
+      + (guests.length ? 'Guests, not racing: ' + guests.join(', ') + '.' : '');
+    var started = !none(local.clockStartMs);
+    $('startIdle').style.display = started ? 'none' : 'block';
+    $('clockTools').style.display = started ? 'block' : 'none';
     var nb = $('nextBox');
-    if (t === null || !gs.length) { nb.style.display = 'none'; return; }
+    if (none(t) || !gs.length) { nb.style.display = 'none'; return; }
     var now = gs.filter(function (g) { return t >= g.at && t < g.at + 5; })[0];
     var next = gs.filter(function (g) { return g.at > t; })[0];
     nb.style.display = 'block';
@@ -328,92 +416,166 @@
   }
 
   function renderFinish() {
-    var fs = sortedFinishes();
-    $('finishBtn').disabled = !local.clockStartMs;
+    var fs = sortedFinishes(), started = !none(local.clockStartMs);
+    $('finishBtn').disabled = !started;
     $('undoBtn').disabled = !fs.length;
-    $('finishCount').textContent = local.clockStartMs ? (fs.length ? fs.length + ' finished' : 'Tap as each runner crosses the line') : 'Start the clock on the Start tab first';
+    $('finishCount').textContent = started ? (fs.length ? fs.length + ' finished' : 'Tap as each runner crosses the line') : 'Start the clock on the Start tab first';
     var box = $('lastFinishes'); box.innerHTML = '';
     fs.slice(-5).reverse().forEach(function (f) {
       box.appendChild(el('div', { cls: 'row' }, [el('div', { cls: 'name', text: 'Position ' + (fs.indexOf(f) + 1) }), el('div', { cls: 't', text: clock(f.clockSeconds, true) })]));
     });
   }
 
+  // The pick list for one token, top to bottom:
+  //   No one              clears the token
+  //   Running tonight     everybody ticked, A–Z. Somebody already holding a
+  //                       different token shows it, "Chris Cobb (6)", so a
+  //                       double pick is obvious; picking them moves them.
+  //   Everyone else       the rest of Runners, A–Z, for whoever ran without
+  //                       being ticked. Picking one asks for their start time.
+  function tokenSelect(pos) {
+    var sel = el('select', { 'aria-label': 'Who has token ' + pos });
+    sel.appendChild(el('option', { value: '', text: 'No one' }));
+    var ticked = el('optgroup', { label: 'Running tonight' });
+    running().slice().sort(byName).forEach(function (r) {
+      var extra = (!none(r.token) && r.token !== pos ? ' (' + r.token + ')' : '') + (r.guest ? ' · guest' : '') + (r.firstHandicap ? ' · first time' : '');
+      var o = el('option', { value: r.name, text: r.name + extra });
+      if (r.token === pos) o.selected = true;
+      ticked.appendChild(o);
+    });
+    var others = el('optgroup', { label: 'Everyone else' });
+    state.runners.filter(function (r) { return !r.running; }).sort(byName).forEach(function (r) {
+      others.appendChild(el('option', { value: r.name, text: r.name }));
+    });
+    if (ticked.childNodes.length) sel.appendChild(ticked);
+    if (others.childNodes.length) sel.appendChild(others);
+    sel.onchange = function () {
+      var r = sel.value ? findRunner(sel.value) : null;
+      if (r && !r.running) { late = { pos: pos, name: r.name, text: none(r.startSeconds) ? '' : clock(r.startSeconds) }; renderTokens(); return; }
+      late = null; setToken(pos, sel.value);
+    };
+    return sel;
+  }
+  function latePanel() {
+    var input = el('input', { type: 'text', placeholder: 'e.g. 24:30', 'aria-label': 'Start time for ' + late.name });
+    input.value = late.text;
+    input.oninput = function () { late.text = input.value; };
+    var add = el('button', { cls: 'btn', type: 'button', text: 'Add to the race, with token ' + late.pos });
+    var guest = el('button', { cls: 'btn ghost', type: 'button', text: 'Guest: not racing, no run time' });
+    var cancel = el('button', { cls: 'btn ghost', type: 'button', text: 'Cancel' });
+    var send = function (startText) {
+      var who = late.name, pos = late.pos;
+      add.disabled = guest.disabled = cancel.disabled = true;
+      call('api_addLate', who, startText, pos).then(function () { late = null; return refreshState(); })
+        .then(function () { toast(who + ' ticked, with token ' + pos); })
+        .catch(function (e) { add.disabled = guest.disabled = cancel.disabled = false; toast(errText(e)); });
+    };
+    add.onclick = function () { if (!input.value.trim()) return toast('Type the start time they went off on, or choose Guest'); send(input.value.trim()); };
+    guest.onclick = function () { send('Guest'); };
+    cancel.onclick = function () { late = null; renderTokens(); };
+    return el('div', { cls: 'late' }, [
+      el('p', {}, [el('strong', { text: late.name }), document.createTextNode(' wasn’t ticked as running. What start time did they go off on? It is needed to work out their run time.')]),
+      input, add, guest, cancel]);
+  }
   function renderTokens() {
     var fs = sortedFinishes(), box = $('tokenList'); box.innerHTML = '';
-    var holders = {};
-    running().forEach(function (r) { if (r.token) holders[r.token] = r.name; });
+    if (late && late.pos > fs.length) late = null;
     fs.forEach(function (f, i) {
       var pos = i + 1;
-      var sel = el('select', {});
-      sel.appendChild(el('option', { value: '', text: '— who has token ' + pos + '?' }));
-      running().filter(function (r) { return !r.token || r.token === pos; }).forEach(function (r) {
-        var o = el('option', { value: r.name, text: r.name + (r.firstHandicap ? ' (first handicap)' : '') });
-        if (r.token === pos) o.selected = true;
-        sel.appendChild(o);
-      });
-      sel.onchange = function () { setToken(pos, sel.value); };
       box.appendChild(el('div', { cls: 'row' }, [el('div', { text: String(pos), style: 'width:28px;font-weight:800' }),
-        el('div', { cls: 't', text: clock(f.clockSeconds), style: 'width:56px' }), el('div', { cls: 'name' }, [sel])]));
+        el('div', { cls: 't', text: clock(f.clockSeconds), style: 'width:56px' }), el('div', { cls: 'name' }, [tokenSelect(pos)])]));
+      if (late && late.pos === pos) box.appendChild(latePanel());
     });
     if (!fs.length) box.appendChild(el('p', { cls: 'hint', text: 'Finishes appear here once they are timed.' }));
-    var none = running().filter(function (r) { return !r.token; }).map(function (r) { return r.name; });
-    $('noTokenHead').style.display = none.length && fs.length ? 'block' : 'none';
-    $('noTokenList').textContent = fs.length ? none.join(', ') : '';
+    var noToken = running().filter(function (r) { return none(r.token); }).map(function (r) { return r.name; });
+    $('noTokenHead').style.display = noToken.length && fs.length ? 'block' : 'none';
+    $('noTokenList').textContent = fs.length ? noToken.join(', ') : '';
+    var gone = removedFinishes(), rbox = $('removedList'); rbox.innerHTML = '';
+    $('removedHead').style.display = $('removedHint').style.display = gone.length ? 'block' : 'none';
+    gone.forEach(function (f) {
+      var back = el('button', { cls: 'btn ghost small', type: 'button', text: 'Put back' });
+      back.onclick = function () { f.removed = false; touch(); render(); syncSoon(); toast('Put back. Check the tokens still line up.'); };
+      rbox.appendChild(el('div', { cls: 'row' }, [el('div', { cls: 'name t', text: clock(f.clockSeconds, true) + ' on the clock' }), back]));
+    });
   }
   function setToken(pos, name) {
     var jobs = [];
     running().forEach(function (r) {
       if (r.token === pos && r.name !== name) { r.token = null; jobs.push(call('api_setToken', r.name, '')); }
     });
-    if (name) {
-      var r = running().filter(function (x) { return x.name === name; })[0];
-      r.token = pos; jobs.push(call('api_setToken', name, pos));
-    }
+    var r = name ? findRunner(name) : null;
+    if (r) { r.token = pos; jobs.push(call('api_setToken', name, pos)); }
     render();
     Promise.all(jobs).catch(function (e) { toast('Not saved: ' + errText(e)); });
   }
 
   // --------------------------------------------------------- clock & taps
+  // A two-tap button: the first tap arms it and changes the wording, the
+  // second within a few seconds does the thing.
+  function twoTap(btn, idle, armedText, action) {
+    var armed = false, timer = null;
+    btn.textContent = idle;
+    btn.onclick = function () {
+      if (!armed) { armed = true; btn.textContent = typeof armedText === 'function' ? armedText() : armedText;
+        timer = setTimeout(function () { armed = false; btn.textContent = idle; }, 4000); return; }
+      clearTimeout(timer); armed = false; btn.textContent = idle; action();
+    };
+  }
   $('startBtn').onclick = function () {
     unlockAudio();
-    local.clockStartMs = Date.now(); save(); render();
-    call('api_startClock', local.clockStartMs, false).then(function (ms) {
-      if (ms && ms !== local.clockStartMs) { local.clockStartMs = ms; save(); toast('The clock was already started on another phone; using that one'); }
+    // After a reset the sheet hasn't heard about yet, this start replaces whatever the sheet still holds.
+    var force = local.resetPending;
+    local.resetPending = false;
+    local.clockStartMs = Date.now(); if (force) touch(); else save(); render();
+    call('api_startClock', local.clockStartMs, force).then(function (ms) {
+      if (!none(ms) && ms !== local.clockStartMs) { local.clockStartMs = Number(ms); save(); toast('The clock was already started on another phone; using that one'); }
     }).catch(function () { toast('Clock started on this phone. It will reach the sheet when there is signal.'); });
+    if (force) syncFinishes();
   };
-  var restartArmed = false;
-  $('restartBtn').onclick = function () {
-    if (!restartArmed) { restartArmed = true; $('restartBtn').textContent = 'Tap again to restart from 0:00'; setTimeout(function () { restartArmed = false; $('restartBtn').textContent = 'Restart the clock'; }, 4000); return; }
-    restartArmed = false; $('restartBtn').textContent = 'Restart the clock';
-    local.clockStartMs = Date.now(); local.finishes = []; local.dirty = true; save(); render();
+  twoTap($('restartBtn'), 'Restart the clock', 'Tap again to restart from 0:00', function () {
+    local.resetPending = false;
+    local.clockStartMs = Date.now(); local.finishes = []; touch(); render();
     call('api_startClock', local.clockStartMs, true).catch(function () {}); syncFinishes();
-  };
+  });
+  twoTap($('resetBtn'), 'Reset the clock', 'Tap again to stop the clock and clear its finishes', function () {
+    local.clockStartMs = null; local.finishes = []; local.dirty = false; local.resetPending = true; rev += 1; late = null;
+    save(); render(); pushReset(); toast('Clock reset. Start it when the first group goes.');
+  });
+  function pushReset() {
+    if (!local || !local.resetPending) return;
+    call('api_resetClock').then(function () {
+      if (!local || !local.resetPending) return;
+      // Send this phone's (empty) list after the reset, in case an earlier send landed late and put finishes back.
+      local.resetPending = false; touch(); renderSync(); syncSoon();
+    }).catch(function () {});
+  }
   $('finishBtn').onclick = function () {
-    var t = elapsed(); if (t === null) return;
-    local.finishes.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), clockSeconds: Math.round(t * 10) / 10 });
-    local.dirty = true; save(); render();
+    var t = elapsed(); if (none(t)) return;
+    local.finishes.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), clockSeconds: Math.round(t * 10) / 10, removed: false });
+    touch(); render();
     if (navigator.vibrate) navigator.vibrate(40);
     syncSoon();
   };
-  var undoArmed = false;
-  $('undoBtn').onclick = function () {
+  twoTap($('undoBtn'), 'Undo last finish', function () { return 'Tap again to remove position ' + sortedFinishes().length; }, function () {
     var fs = sortedFinishes(); if (!fs.length) return;
-    if (!undoArmed) { undoArmed = true; $('undoBtn').textContent = 'Tap again to remove position ' + fs.length; setTimeout(function () { undoArmed = false; $('undoBtn').textContent = 'Undo last finish'; }, 4000); return; }
-    undoArmed = false; $('undoBtn').textContent = 'Undo last finish';
-    var last = fs[fs.length - 1];
-    local.finishes = local.finishes.filter(function (f) { return f.id !== last.id; });
-    local.dirty = true; save(); render(); syncSoon();
-  };
+    // Taken back, not thrown away: it stays in the list as removed, goes to
+    // the sheet that way, and can be put back from the Tokens tab.
+    fs[fs.length - 1].removed = true;
+    touch(); render(); syncSoon();
+  });
 
   var syncTimer = null;
   function syncSoon() { clearTimeout(syncTimer); syncTimer = setTimeout(syncFinishes, 400); }
   function syncFinishes() {
-    if (!local || !local.dirty || syncing) return;
+    if (!local) return;
+    if (local.resetPending) return pushReset();
+    if (!local.dirty || syncing) return;
     syncing = true; renderSync();
-    var sent = local.finishes.length;
+    var sent = rev;
     call('api_syncFinishes', local.finishes).then(function () {
       syncing = false;
-      if (local.finishes.length === sent) local.dirty = false; else syncSoon();
+      if (!local) return;
+      if (rev === sent) local.dirty = false; else syncSoon();
       save(); renderSync();
     }).catch(function () { syncing = false; renderSync(); });
   }
@@ -421,38 +583,62 @@
   window.addEventListener('online', syncFinishes);
 
   // ------------------------------------------------------------- result
+  var problemCount = 0;
   function loadResult() {
     var box = $('resultBox'); box.innerHTML = ''; box.appendChild(el('p', { cls: 'hint', text: 'Working it out…' }));
     var go = local.dirty ? new Promise(function (res) { syncFinishes(); setTimeout(res, 1500); }) : Promise.resolve();
     go.then(function () { return call('api_result'); }).then(function (r) {
       box.innerHTML = '';
-      if (r.problems.length) {
-        var ul = el('ul', {}); r.problems.forEach(function (p) { ul.appendChild(el('li', { text: p })); });
+      var problems = r.problems || [], rows = r.rows || [];
+      problemCount = problems.length;
+      if (problems.length) {
+        var ul = el('ul', {}); problems.forEach(function (p) { ul.appendChild(el('li', { text: p })); });
         box.appendChild(el('div', { cls: 'problems' }, [el('strong', { text: 'Sort these out before saving' }), ul]));
       }
       var table = el('table', {}, [el('tr', {}, ['', 'Runner', 'Run', 'vs start'].map(function (h) { return el('th', { text: h }); }))]);
-      r.rows.forEach(function (x) {
-        table.appendChild(el('tr', { cls: x.winner ? 'win' : '' }, [
-          el('td', { text: x.position === null ? '–' : String(x.position) }),
-          el('td', { text: x.name + (x.note ? '  · ' + x.note : '') }),
-          el('td', { text: x.run }), el('td', { text: x.vsStart })]));
+      rows.forEach(function (x) {
+        table.appendChild(el('tr', { cls: x.winner === true ? 'win' : '' }, [
+          el('td', { text: none(x.position) ? '–' : String(x.position) }),
+          el('td', { text: x.name + (none(x.note) ? '' : '  · ' + x.note) }),
+          el('td', { text: none(x.run) ? '' : x.run }), el('td', { text: none(x.vsStart) ? '' : x.vsStart })]));
       });
       box.appendChild(table);
-      $('saveBtn').style.display = r.rows.length ? 'block' : 'none';
+      $('saveBtn').style.display = rows.length ? 'block' : 'none';
+      resetSave();
     }).catch(function (e) { box.innerHTML = ''; box.appendChild(el('p', { cls: 'status bad', text: errText(e) })); });
   }
   $('refreshResult').onclick = loadResult;
-  var saveArmed = false;
+  // Saving clears the night from the phone and the Timing tab, so it is never
+  // one stray tap. With nothing to sort out: two taps. With problems listed:
+  // three, and the middle one says how many are being saved as they stand.
+  var saveStage = 0, saveTimer = null;
+  function things(n) { return n === 1 ? '1 thing' : n + ' things'; }
+  function resetSave() {
+    clearTimeout(saveTimer); saveStage = 0;
+    var b = $('saveBtn'); b.disabled = false; b.className = 'btn';
+    b.textContent = problemCount ? 'Save to History anyway' : 'Save to History';
+  }
   $('saveBtn').onclick = function () {
-    if (local.dirty) return toast('Finish times are still saving. Try again in a moment.');
-    if (!saveArmed) { saveArmed = true; $('saveBtn').textContent = 'Tap again to save ' + (state.race.label || 'this race'); setTimeout(function () { saveArmed = false; $('saveBtn').textContent = 'Save to History'; }, 5000); return; }
-    saveArmed = false; $('saveBtn').disabled = true;
-    call('api_saveRace').then(function (d) {
+    if (local.dirty || local.resetPending) return toast('Finish times are still saving. Try again in a moment.');
+    var b = $('saveBtn'), label = state.race.label || 'this race';
+    clearTimeout(saveTimer); saveTimer = setTimeout(resetSave, 6000);
+    if (saveStage === 0 && problemCount) {
+      saveStage = 1; b.className = 'btn stop';
+      b.textContent = things(problemCount) + ' still to sort out. Tap again to save anyway';
+      return;
+    }
+    if (saveStage < 2) {
+      saveStage = 2;
+      b.textContent = 'Tap again to save ' + label + (problemCount ? ' as it stands' : '');
+      return;
+    }
+    clearTimeout(saveTimer); b.disabled = true;
+    call('api_saveRace', problemCount > 0).then(function (d) {
       toast('Saved ' + d.saved + ' runners' + (d.winner ? '. Winner: ' + d.winner : ''));
       try { localStorage.removeItem(local.key); } catch (e) {}
-      local = null;
-      $('saveBtn').disabled = false; $('saveBtn').textContent = 'Save to History'; load();
-    }).catch(function (e) { $('saveBtn').disabled = false; $('saveBtn').textContent = 'Save to History'; toast(errText(e)); });
+      local = null; late = null; problemCount = 0;
+      resetSave(); load();
+    }).catch(function (e) { toast(errText(e)); loadResult(); });
   };
 
   // ------------------------------------------------------------- sound
@@ -473,8 +659,8 @@
   setInterval(function () {
     if (!local) return;
     var t = elapsed();
-    var txt = t === null ? '0:00' : clock(Math.max(0, t));
-    $('startClock').textContent = txt; $('finishClock').textContent = t === null ? '0:00' : clock(Math.max(0, t), true);
+    var txt = none(t) ? '0:00' : clock(Math.max(0, t));
+    $('startClock').textContent = txt; $('finishClock').textContent = none(t) ? '0:00' : clock(Math.max(0, t), true);
     if ($('tab-start').classList.contains('on')) renderGroups();
   }, 100);
 

@@ -14,7 +14,7 @@
     "check:diary": "node scripts/check-diary-freshness.mjs",
     "check:calendar": "node --experimental-strip-types --no-warnings scripts/check-calendar.mjs",
     "check:championship": "node --experimental-strip-types --no-warnings scripts/check-championship.mjs",
-    "check:handicap": "node scripts/check-handicap.mjs",
+    "check:handicap": "node scripts/check-handicap.mjs && node scripts/check-handicap-night.mjs",
     "check:handicap-results": "node --experimental-strip-types --no-warnings scripts/check-handicap-results.mjs"
   },
   "dependencies": {
