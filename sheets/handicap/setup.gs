@@ -26,6 +26,11 @@
  *   OLD code until the deployment is moved on: Deploy > Manage deployments >
  *   the pencil > Version: New version > Deploy. The link itself stays the same.
  *
+ * VERSION 1.3 (November 2026) adds the races that are not handicaps (the mile,
+ * 1500m and 3k: everyone starts together) and timing with a phone at each end.
+ * See "THE RACE BEING TIMED" and "TWO PHONES" below, and upgradeLayout13_ for
+ * what it adds to the sheet.
+ *
  * VERSION 1.2 (November 2026) needs three things the sheet did not have: a
  * "first time" tick column on Runners, a Timing archive tab, and one more row
  * on Settings. upgradeLayout_ adds them, once, the first time the timing page
@@ -41,6 +46,8 @@ var TAB = {
   settings: 'Settings',
   startList: 'Start list',
   archive: 'Timing archive',
+  events: 'Events',
+  raceHistory: 'Race history',
 };
 
 /** Runners columns, 1-based. Inputs first, worked-out columns after. */
@@ -52,7 +59,11 @@ var RUNNERS_LAST_ROW = 300;
 var RUNNERS_WIDTH = 17;
 
 /** Settings, column B. */
-var SET = { raceDate: 2, raceLabel: 3, step: 4, offNight: 5, pin: 6, clockStart: 7, link: 8, firstGroup: 9 };
+var SET = {
+  raceDate: 2, raceLabel: 3, step: 4, offNight: 5, pin: 6, clockStart: 7, link: 8, firstGroup: 9,
+  raceType: 10, raceTypeDate: 11, finishPhone: 12,
+};
+var SETTINGS_ROWS = 12;
 
 /** What goes in Simon's start time for somebody who is not racing tonight. */
 var GUEST = 'Guest';
@@ -66,6 +77,8 @@ var ARCHIVE_HEADER = ['Date', 'Race', 'Position', 'Clock time', 'Clock (seconds)
   'Tap ID', 'Recorded at'];
 
 var TIMING_HEADER = ['Position', 'Clock time', 'Clock (seconds)', 'Tap ID', 'Recorded at'];
+var RACE_HISTORY_HEADER = ['Date', 'Race', 'Distance', 'Runner', 'M or F', 'Time', 'Position', 'Age grade %',
+  'Winner', 'Clock time', 'Note'];
 var HISTORY_HEADER = ['Date', 'Race', 'Runner', 'Start time', 'Run time', 'Position', 'Winner',
   'First handicap', 'Go at', 'Clock time', 'Note'];
 
@@ -127,21 +140,73 @@ function sheet_(name) {
   return sh;
 }
 
+/**
+ * THE RACE BEING TIMED
+ *
+ * Two ways the sheet knows what tonight is, and the second wins:
+ *
+ *   1. The Events tab. "This race" on Settings is worked out by a formula: the
+ *      next date on Events that is not in History yet. Its Distance column
+ *      says which race it is (blank or 5k is the handicap).
+ *   2. The timing page. "Tonight's race" on its Runners tab writes the kind of
+ *      race and TODAY'S date to Settings rows 10 and 11. That is for the night
+ *      nobody added to Events, or the one where Events says the wrong thing.
+ *      It only counts on the day it was chosen and the day after, so a choice
+ *      made for a practice cannot quietly become next month's race.
+ *
+ * Whichever it is, raceType is a key of RACE_TYPES in scoring.gs and raceKind
+ * is 'handicap' or 'mass'.
+ */
 function settings_() {
   var sh = sheet_(TAB.settings);
-  var values = sh.getRange(1, 2, 10, 1).getValues().map(function (r) { return r[0]; });
-  var display = sh.getRange(1, 2, 10, 1).getDisplayValues().map(function (r) { return r[0]; });
-  var date = values[SET.raceDate - 1];
+  var rows = Math.min(SETTINGS_ROWS, sh.getMaxRows());
+  var values = sh.getRange(1, 2, rows, 1).getValues().map(function (r) { return r[0]; });
+  var display = sh.getRange(1, 2, rows, 1).getDisplayValues().map(function (r) { return r[0]; });
   var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+  var iso = function (d) { return Utilities.formatDate(d, tz, 'yyyy-MM-dd'); };
+
+  var date = values[SET.raceDate - 1] instanceof Date ? values[SET.raceDate - 1] : null;
+  var label = display[SET.raceLabel - 1];
+  var type = date ? eventType_(iso(date), tz) : 'handicap';
+
+  // The timing page's own choice, if it was made today or yesterday.
+  var chosen = String(display[SET.raceType - 1] || '').trim();
+  var chosenDate = values[SET.raceTypeDate - 1];
+  if (RACE_TYPES[chosen] && chosenDate instanceof Date) {
+    var age = Math.round((new Date(iso(new Date()) + 'T00:00:00Z') - new Date(iso(chosenDate) + 'T00:00:00Z')) / 86400000);
+    if (age >= 0 && age <= 1) {
+      date = chosenDate;
+      type = chosen;
+      label = Utilities.formatDate(chosenDate, tz, 'd MMM yyyy') + (chosen === 'handicap' ? '' : ' \u2014 ' + RACE_TYPES[chosen].label);
+    }
+  }
+
   return {
-    raceDate: date instanceof Date ? date : null,
-    raceIso: date instanceof Date ? Utilities.formatDate(date, tz, 'yyyy-MM-dd') : '',
-    raceLabel: display[SET.raceLabel - 1],
+    raceDate: date,
+    raceIso: date ? iso(date) : '',
+    raceLabel: label,
+    raceType: type,
+    raceKind: RACE_TYPES[type].kind,
     step: Number(values[SET.step - 1]) || START_STEP_SECONDS,
     pin: String(display[SET.pin - 1] || '').trim(),
     clockStartMs: Number(values[SET.clockStart - 1]) || null,
     firstGroupStartSeconds: clockToSeconds(display[SET.firstGroup - 1]),
+    finishPhone: String(display[SET.finishPhone - 1] || '').trim(),
   };
+}
+
+/** Which race the Events tab says a date is, from its Distance column. */
+function eventType_(raceIso, tz) {
+  var sh = sheet_(TAB.events);
+  var last = sh.getLastRow();
+  if (last < 2) return 'handicap';
+  var rows = sh.getRange(2, 1, last - 1, 2).getValues();
+  for (var i = 0; i < rows.length; i += 1) {
+    if (rows[i][0] instanceof Date && Utilities.formatDate(rows[i][0], tz, 'yyyy-MM-dd') === raceIso) {
+      return raceTypeFromText(rows[i][1]);
+    }
+  }
+  return 'handicap';
 }
 
 function checkPin_(pin) {
@@ -165,6 +230,7 @@ function runners_() {
     out.push({
       row: i + 2,
       name: name,
+      mf: String(values[i][COL.mf - 1] || '').trim(),
       running: values[i][COL.running - 1] === true,
       token: token === '' || token === null ? null : Number(token),
       // A guest has no start time as far as the race is concerned.
@@ -221,6 +287,7 @@ function clearTiming_() {
   var set = sheet_(TAB.settings);
   set.getRange(SET.clockStart, 2).clearContent();
   set.getRange(SET.firstGroup, 2).clearContent();
+  set.getRange(SET.finishPhone, 2).clearContent();
 }
 
 function starters_(runners, step) {
@@ -235,7 +302,19 @@ function starters_(runners, step) {
 }
 
 function result_(s, runners) {
+  if (s.raceKind === 'mass') {
+    var starters = runners.filter(function (r) { return r.running; })
+      .map(function (r) { return { name: r.name, mf: r.mf, token: r.token }; });
+    return massResult(starters, finishes_(), s.raceType);
+  }
   return raceResult(starters_(runners, s.step), finishes_(), { firstGroupStartSeconds: s.firstGroupStartSeconds });
+}
+
+function raceForPage_(s) {
+  return {
+    iso: s.raceIso, label: s.raceLabel, type: s.raceType, kind: s.raceKind,
+    typeLabel: RACE_TYPES[s.raceType].label,
+  };
 }
 
 function withLock_(fn) {
@@ -262,9 +341,13 @@ function api_state(pin) {
   var s = settings_();
   var runners = runners_();
   return {
-    race: { iso: s.raceIso, label: s.raceLabel },
+    race: raceForPage_(s),
+    raceTypes: Object.keys(RACE_TYPES).map(function (key) {
+      return { key: key, label: RACE_TYPES[key].label, kind: RACE_TYPES[key].kind };
+    }),
     step: s.step,
     clockStartMs: s.clockStartMs,
+    finishPhone: s.finishPhone,
     finishes: taps_().map(function (f) { return { id: f.id, clockSeconds: f.clockSeconds, removed: f.removed }; }),
     runners: runners.map(function (r) {
       return {
@@ -273,6 +356,66 @@ function api_state(pin) {
       };
     }),
   };
+}
+
+/**
+ * "Tonight's race" on the timing page: sets the kind of race, dated today.
+ * An empty type goes back to whatever the Events tab says. Refused while a
+ * clock is running or finishes are held, because changing what the race is
+ * half-way through would re-read every time already taken.
+ */
+function api_setRace(pin, type) {
+  checkPin_(pin);
+  type = String(type || '').trim();
+  if (type && !RACE_TYPES[type]) throw new Error('No such race: ' + type);
+  return withLock_(function () {
+    var s = settings_();
+    if (s.clockStartMs || taps_().length) {
+      throw new Error('The clock is running or finishes have been timed. Reset the clock on the Start tab first.');
+    }
+    var set = sheet_(TAB.settings);
+    if (!type) {
+      set.getRange(SET.raceType, 2).clearContent();
+      set.getRange(SET.raceTypeDate, 2).clearContent();
+    } else {
+      var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+      var today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd').split('-').map(Number);
+      set.getRange(SET.raceType, 2).setNumberFormat('@').setValue(type);
+      set.getRange(SET.raceTypeDate, 2).setValue(new Date(today[0], today[1] - 1, today[2])).setNumberFormat('d mmm yyyy');
+    }
+    SpreadsheetApp.flush();
+    return raceForPage_(settings_());
+  });
+}
+
+/**
+ * TWO PHONES
+ *
+ * The mile and the 1500m start in one place and finish in another, so one
+ * phone presses Start and a different one taps the finishes. Three things
+ * make that work, and all three are here rather than in the page alone:
+ *
+ *   - api_time. Two phones' clocks never quite agree. Each asks this for the
+ *     time, several times, and works out how far its own clock is out. It
+ *     reads no sheet and checks no PIN on purpose: anything it did first
+ *     would be delay, and delay is error. All it gives away is the time.
+ *   - api_clock. The finish phone asks this every few seconds while it waits,
+ *     so the start reaches it without anybody reloading the page. It also
+ *     says if the race or the finish phone has changed.
+ *   - The finish phone (Settings row 12). Each phone holds its own list of
+ *     finishes and sends the whole list, which is what makes a lost signal
+ *     harmless with one phone and would let two phones overwrite each other.
+ *     So the first phone to send a finish becomes THE finish phone, and
+ *     another phone's list is refused until it takes over deliberately.
+ */
+function api_time() {
+  return Date.now();
+}
+
+function api_clock(pin) {
+  checkPin_(pin);
+  var s = settings_();
+  return { clockStartMs: s.clockStartMs, raceKey: s.raceIso + '|' + s.raceType, finishPhone: s.finishPhone };
 }
 
 function api_setRunning(pin, name, running) {
@@ -303,9 +446,11 @@ function api_setFirstTime(pin, name, firstTime) {
  */
 function api_addLate(pin, name, startText, position) {
   checkPin_(pin);
+  var mass = settings_().raceKind === 'mass';
   var start = String(startText || '').trim();
   var guest = isGuest_(start);
-  if (!guest && clockToSeconds(start) === null) {
+  // Everyone starts together in a mass-start race, so there is no start time to ask for.
+  if (!mass && !guest && clockToSeconds(start) === null) {
     throw new Error('Type the start time they went off on, like 24:30, or choose Guest');
   }
   var p = Number(position);
@@ -316,7 +461,7 @@ function api_addLate(pin, name, startText, position) {
     runners_().forEach(function (other) {
       if (other.token === p && other.row !== r.row) sh.getRange(other.row, COL.token).clearContent();
     });
-    sh.getRange(r.row, COL.simonStart).setNumberFormat('@').setValue(guest ? GUEST : start);
+    if (!mass) sh.getRange(r.row, COL.simonStart).setNumberFormat('@').setValue(guest ? GUEST : start);
     sh.getRange(r.row, COL.running).setValue(true);
     sh.getRange(r.row, COL.token).setValue(p);
     SpreadsheetApp.flush();
@@ -341,8 +486,9 @@ function api_addRunner(pin, name, startText) {
     if (!row) throw new Error('The Runners tab is full');
     sh.getRange(row, COL.name).setValue(name);
     sh.getRange(row, COL.running).setValue(true);
-    // Added on the night as somebody new, so the "first time" tick starts on.
-    sh.getRange(row, COL.firstTime).setValue(true);
+    // Added on a handicap night as somebody new, so the "first time" tick starts on.
+    // Not at a mile or a 3k: running one of those says nothing about a first handicap.
+    if (settings_().raceKind === 'handicap') sh.getRange(row, COL.firstTime).setValue(true);
     if (start) sh.getRange(row, COL.simonStart).setNumberFormat('@').setValue(start);
     SpreadsheetApp.flush();
     return true;
@@ -376,7 +522,9 @@ function api_startClock(pin, epochMs, force) {
     var current = Number(cell.getValue()) || null;
     if (current && !force) return current;
     cell.setValue(epochMs || '');
-    var first = epochMs ? slowestStartSeconds(runners_().filter(function (r) { return r.running; })) : null;
+    // Only a handicap has a first group. In a mass-start race everybody is it.
+    var first = epochMs && settings_().raceKind === 'handicap'
+      ? slowestStartSeconds(runners_().filter(function (r) { return r.running; })) : null;
     set.getRange(SET.firstGroup, 2).setNumberFormat('@').setValue(first === null ? '' : secondsToClock(first));
     return epochMs || null;
   });
@@ -395,10 +543,20 @@ function api_resetClock(pin) {
  * The phone holds the full list of finishes and sends all of it every time,
  * so a lost signal or a repeated send can never double-count or drop one.
  */
-function api_syncFinishes(pin, finishes) {
+function api_syncFinishes(pin, finishes, phoneId, takeOver) {
   checkPin_(pin);
   return withLock_(function () {
     var sh = sheet_(TAB.timing);
+    // One phone is the record of the finishes (see TWO PHONES above).
+    phoneId = String(phoneId || '').trim();
+    if (phoneId) {
+      var set = sheet_(TAB.settings);
+      var holder = String(set.getRange(SET.finishPhone, 2).getDisplayValue() || '').trim();
+      if (holder && holder !== phoneId && takeOver !== true && taps_().length) {
+        throw new Error('ANOTHER_PHONE: another phone is timing the finish.');
+      }
+      if (holder !== phoneId && (finishes || []).length) set.getRange(SET.finishPhone, 2).setNumberFormat('@').setValue(phoneId);
+    }
     var all = (finishes || [])
       .filter(function (f) { return f && isFinite(f.clockSeconds); })
       .sort(function (a, b) { return a.clockSeconds - b.clockSeconds; });
@@ -438,11 +596,12 @@ function api_result(pin) {
   var s = settings_();
   var result = result_(s, runners_());
   return {
-    race: { iso: s.raceIso, label: s.raceLabel },
+    race: raceForPage_(s),
     problems: result.problems,
     rows: result.rows.map(function (r) {
       return {
         position: r.position, name: r.name, winner: r.winner, firstHandicap: r.firstHandicap, note: r.note,
+        ageGrade: r.ageGrade === undefined ? null : r.ageGrade,
         run: secondsToClock(r.runSeconds), start: secondsToClock(r.startSeconds),
         vsStart: r.vsStartSeconds === null ? '' : (r.vsStartSeconds > 0 ? '+' : '') + secondsToClock(r.vsStartSeconds),
       };
@@ -468,7 +627,8 @@ function api_saveRace(pin, acceptProblems) {
  */
 function saveRace_(acceptProblems) {
   var s = settings_();
-  if (!s.raceDate) throw new Error('No race to save: add tonight to the Events tab first');
+  if (!s.raceDate) throw new Error('No race to save: choose tonight\'s race on the Runners tab, or add it to the Events tab');
+  if (s.raceKind === 'mass') return saveMassRace_(s, acceptProblems);
   var runners = runners_();
   var starters = starters_(runners, s.step);
   if (!starters.length) throw new Error('Nobody is ticked as running');
@@ -512,6 +672,7 @@ function saveRace_(acceptProblems) {
     if (ran[r.name] || (r.running && r.guest)) sh.getRange(r.row, COL.simonStart).clearContent();
   });
   clearTiming_();
+  clearChosenRace_();
   SpreadsheetApp.flush();
 
   var winner = result.rows.filter(function (r) { return r.winner; })[0];
@@ -521,6 +682,66 @@ function saveRace_(acceptProblems) {
     winner: winner ? winner.name : '',
     problems: result.problems,
   };
+}
+
+function clearChosenRace_() {
+  var set = sheet_(TAB.settings);
+  set.getRange(SET.raceType, 2).clearContent();
+  set.getRange(SET.raceTypeDate, 2).clearContent();
+}
+
+/**
+ * Saving a race where everyone started together. It goes to the Race history
+ * tab and NEVER to History: History is the handicap's, and a mile saved there
+ * would feed straight into everyone's next suggested 5k start time.
+ *
+ * Simon's start times are left alone, for the same reason: nothing about a
+ * mile says anything about a handicap start.
+ */
+function saveMassRace_(s, acceptProblems) {
+  var runners = runners_();
+  if (!runners.some(function (r) { return r.running; })) throw new Error('Nobody is ticked as running');
+
+  var history = sheet_(TAB.raceHistory);
+  var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+  var lastRow = history.getLastRow();
+  if (lastRow >= 2) {
+    var saved = history.getRange(2, 1, lastRow - 1, 2).getValues();
+    var already = saved.some(function (r) {
+      return r[0] instanceof Date && Utilities.formatDate(r[0], tz, 'yyyy-MM-dd') === s.raceIso && String(r[1]) === s.raceLabel;
+    });
+    if (already) throw new Error(s.raceLabel + ' is already in Race history');
+  }
+
+  var result = result_(s, runners);
+  if (result.problems.length && !acceptProblems) {
+    throw new Error('There ' + (result.problems.length === 1 ? 'is 1 thing' : 'are ' + result.problems.length + ' things')
+      + ' to sort out first. Refresh the result to see ' + (result.problems.length === 1 ? 'it' : 'them') + '.');
+  }
+  var asDay = function (sec) { return sec === null ? '' : sec / SECONDS_PER_DAY; };
+  var rows = result.rows.map(function (r) {
+    return [s.raceDate, s.raceLabel, RACE_TYPES[s.raceType].label, r.name, r.mf, asDay(r.runSeconds),
+      r.position === null ? '' : r.position, r.ageGrade === null ? '' : r.ageGrade, r.winner ? true : '',
+      asDay(r.clockSeconds), r.note];
+  });
+  var start = Math.max(lastRow, 1) + 1;
+  history.getRange(start, 1, rows.length, RACE_HISTORY_HEADER.length).setValues(rows);
+  history.getRange(start, 1, rows.length, 1).setNumberFormat('d mmm yyyy');
+  history.getRange(start, 6, rows.length, 1).setNumberFormat('[m]:ss');
+  history.getRange(start, 10, rows.length, 1).setNumberFormat('[m]:ss.0');
+
+  archiveTaps_(s, result);
+
+  var sh = sheet_(TAB.runners);
+  runners.forEach(function (r) {
+    if (r.running) sh.getRange(r.row, COL.running).setValue(false);
+    if (r.token !== null) sh.getRange(r.row, COL.token).clearContent();
+  });
+  clearTiming_();
+  clearChosenRace_();
+  SpreadsheetApp.flush();
+
+  return { saved: rows.length, label: s.raceLabel, winner: '', problems: result.problems };
 }
 
 /**
@@ -587,10 +808,60 @@ function layoutIsCurrent_() {
     && !!ss.getSheetByName(TAB.archive);
 }
 
+/** True once it also has what version 1.3 needs. */
+function layout13IsCurrent_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var set = sheet_(TAB.settings);
+  return !!ss.getSheetByName(TAB.raceHistory)
+    && set.getMaxRows() >= SETTINGS_ROWS
+    && set.getRange(SET.finishPhone, 1).getValue() === SETTINGS_13_LABELS[2][0];
+}
+
 function ensureLayout_() {
-  if (layoutIsCurrent_()) return false;
-  withLock_(function () { if (!layoutIsCurrent_()) upgradeLayout_(); });
+  if (layoutIsCurrent_() && layout13IsCurrent_()) return false;
+  withLock_(function () {
+    if (!layoutIsCurrent_()) upgradeLayout_();
+    if (!layout13IsCurrent_()) upgradeLayout13_();
+  });
   return true;
+}
+
+var SETTINGS_13_LABELS = [
+  ["Tonight's race, if chosen on the timing page", 'Written by the timing page (Runners > Tonight\'s race). Overrides '
+    + 'the Events tab for that day and the day after. Clear this cell and the next to go back to Events.'],
+  ['...and the day it was chosen', 'Written by the timing page.'],
+  ['Finish phone', 'Written by the timing page: which phone is timing the finish, so a second phone cannot '
+    + 'overwrite its list. Not a phone number; a random code the page makes up. Cleared when a race is saved or the clock reset.'],
+];
+
+/**
+ * Brings a version 1.2 sheet up to 1.3. Safe to run twice. Adds, and changes
+ * nothing that was there:
+ *
+ *   1. Settings rows 10 to 12: tonight's race when chosen on the timing page,
+ *      the day it was chosen, and which phone is timing the finish.
+ *   2. A Race history tab, for the races that are not handicaps.
+ *
+ * No formulas are touched. The handicap's History, Results and suggestions
+ * read nothing that this adds.
+ */
+function upgradeLayout13_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var set = sheet_(TAB.settings);
+  if (set.getMaxRows() < SETTINGS_ROWS) set.insertRowsAfter(set.getMaxRows(), SETTINGS_ROWS - set.getMaxRows());
+  SETTINGS_13_LABELS.forEach(function (row, i) {
+    set.getRange(SET.raceType + i, 1).setValue(row[0]);
+    set.getRange(SET.raceType + i, 3).setValue(row[1]);
+  });
+  set.getRange(SET.raceType, 2).setNumberFormat('@');
+  set.getRange(SET.finishPhone, 2).setNumberFormat('@');
+
+  if (!ss.getSheetByName(TAB.raceHistory)) {
+    var history = ss.insertSheet(TAB.raceHistory, ss.getSheetByName(TAB.history).getIndex());
+    history.getRange(1, 1, 1, RACE_HISTORY_HEADER.length).setValues([RACE_HISTORY_HEADER]).setFontWeight('bold');
+    history.setFrozenRows(1);
+  }
+  SpreadsheetApp.flush();
 }
 
 /**

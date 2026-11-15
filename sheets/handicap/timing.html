@@ -71,6 +71,12 @@
   .late .btn { margin-top: 8px; }
   .btn.small { width: auto; padding: 8px 12px; font-size: 14px; }
   optgroup { color: var(--muted); font-style: normal; }
+  .racebox { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--panel);
+    border-radius: 12px; padding: 10px 12px; margin: 0 0 12px; }
+  .racebox small { display: block; color: var(--muted); font-size: 13px; }
+  #racePick { background: var(--panel); border: 1px solid var(--accent); border-radius: 12px; padding: 12px; margin: 0 0 12px; }
+  #racePick .btn { margin-top: 8px; }
+  #otherPhone { background: var(--panel); border: 1px solid var(--accent); border-radius: 12px; padding: 12px; margin: 12px 0; }
 </style>
 </head>
 <body>
@@ -96,13 +102,21 @@
 </header>
 <main>
   <section id="tab-runners" class="on">
+    <div class="racebox">
+      <div><small>Tonight's race</small><strong id="raceType"></strong></div>
+      <button class="btn ghost small" id="raceChange" type="button">Change</button>
+    </div>
+    <div id="racePick" style="display:none">
+      <p class="hint" id="racePickHint">What is tonight's race?</p>
+      <div id="racePickList"></div>
+    </div>
     <p class="hint">Tick everyone running tonight. <span id="runCount"></span></p>
     <input id="search" type="text" placeholder="Find a runner">
     <label style="display:flex;gap:8px;align-items:center;margin:10px 0;color:var(--muted)">
       <input type="checkbox" id="onlyRunning"> Show only who's running</label>
     <div id="runnerList"></div>
     <h2>Someone new?</h2>
-    <p class="hint">Their first handicap: they race, but can't win. Guess a 5k time for their start.</p>
+    <p class="hint" id="newHint">Their first handicap: they race, but can't win. Guess a 5k time for their start.</p>
     <div class="split"><input id="newName" type="text" placeholder="Full name"><input id="newStart" type="text" inputmode="decimal" placeholder="Start e.g. 27:00"></div>
     <div style="height:10px"></div>
     <button class="btn ghost" id="addRunner">Add and tick</button>
@@ -111,11 +125,12 @@
   <section id="tab-start">
     <div class="clock" id="startClock">0:00</div>
     <div id="startIdle">
-      <p class="hint">The slowest go first, on 0:00. Press when the first group sets off.</p>
+      <p class="hint" id="startHint">The slowest go first, on 0:00. Press when the first group sets off.</p>
       <button class="btn go" id="startBtn">Start the clock</button>
     </div>
+    <p class="hint" id="clockCheck"></p>
     <div id="nextBox" class="next" style="display:none"><div class="when" id="nextWhen"></div><div class="who" id="nextWho"></div></div>
-    <h2>Start order</h2>
+    <h2 id="orderHead">Start order</h2>
     <div id="groups"></div>
     <p class="hint" id="noStart"></p>
     <div style="height:20px"></div>
@@ -130,6 +145,11 @@
   <section id="tab-finish">
     <div class="clock small" id="finishClock">0:00</div>
     <button class="btn go finish" id="finishBtn" disabled>FINISH</button>
+    <div id="otherPhone" style="display:none">
+      <p style="margin:0 0 4px"><strong>Another phone is timing the finish.</strong></p>
+      <p class="hint" style="margin:0 0 10px">Only one phone can, or their lists would overwrite each other. If that phone has died or been put away, take over here: this phone picks up every finish the sheet already has.</p>
+      <button class="btn ghost" id="takeOverBtn" type="button">Take over the finish on this phone</button>
+    </div>
     <div class="status" id="finishCount"></div>
     <div id="lastFinishes"></div>
     <div style="height:12px"></div>
@@ -151,7 +171,7 @@
     <div id="resultBox"></div>
     <div style="height:16px"></div>
     <button class="btn" id="saveBtn" style="display:none">Save to History</button>
-    <p class="hint">Saving writes the result to the History tab, then clears the ticks, tokens and clock ready for next month. Every finish tapped tonight is copied to the Timing archive tab first.</p>
+    <p class="hint" id="saveHint"></p>
   </section>
 </main>
 </div>
@@ -185,7 +205,7 @@
   // put the whole field in one group. So: NEVER write `=== null` here. Ask
   // none(), and tidy everything from the sheet as it arrives.
   function none(v) { return v === null || v === undefined || v === '' || (typeof v === 'number' && !isFinite(v)); }
-  function orNull(v) { return none(v) ? null : v; }
+  function orNull(v) { return none(v) ? null : Number(v); }
   function tidyRunner(r) {
     return {
       name: String(r.name), running: r.running === true, token: none(r.token) ? null : Number(r.token),
@@ -193,13 +213,23 @@
       firstHandicap: r.firstHandicap === true, noData: r.noData === true, guest: r.guest === true,
     };
   }
-  function tidyFinish(f) { return { id: String(f.id), clockSeconds: Number(f.clockSeconds), removed: f.removed === true }; }
+  // A finish is a moment (atMs, on the sheet's clock) and, once this phone
+  // knows when the race started, a time on the race clock (clockSeconds).
+  // One taken from the sheet has only the second; one tapped before the start
+  // has reached this phone has only the first. settle() fills in the other.
+  function tidyFinish(f) { return { id: String(f.id), atMs: orNull(f.atMs), clockSeconds: orNull(f.clockSeconds), removed: f.removed === true }; }
+  function tidyRace(r) {
+    r = r || {};
+    return { iso: r.iso || '', label: r.label || '', type: r.type || 'handicap', kind: r.kind === 'mass' ? 'mass' : 'handicap', typeLabel: r.typeLabel || 'Handicap 5k' };
+  }
   function tidyState(s) {
     return {
-      race: { iso: (s.race && s.race.iso) || '', label: (s.race && s.race.label) || '' },
+      race: tidyRace(s.race),
+      raceTypes: (s.raceTypes || []).map(function (t) { return { key: String(t.key), label: String(t.label) }; }),
       step: Number(s.step) || 15,
-      clockStartMs: none(s.clockStartMs) ? null : Number(s.clockStartMs),
-      finishes: (s.finishes || []).map(tidyFinish).filter(function (f) { return isFinite(f.clockSeconds); }),
+      clockStartMs: orNull(s.clockStartMs),
+      finishPhone: none(s.finishPhone) ? '' : String(s.finishPhone),
+      finishes: (s.finishes || []).map(tidyFinish).filter(function (f) { return !none(f.clockSeconds); }),
       runners: (s.runners || []).map(tidyRunner),
     };
   }
@@ -222,45 +252,110 @@
 
   var pin = store.get('crr-pin') || '';
   var state = null;       // from the sheet, tidied
-  var local = null;       // this race on this phone: { clockStartMs, finishes: [{id, clockSeconds, removed}], dirty, resetPending }
+  var local = null;       // this race on this phone: { clockStartMs, clockOnSheet, finishes, dirty, resetPending }
   var syncing = false;
   var rev = 0;            // goes up with every change to the finishes, so a save knows if it is already out of date
-  var late = null;        // { pos, name, text }: somebody unticked picked for a token, waiting for their start time
+  var late = null;        // { pos, name, text }: somebody unticked picked for a token, waiting to be added
+  var otherPhone = false; // a different phone is timing the finish
+  var takingOver = false;
+
+  // This phone, as far as the sheet is concerned: a made-up code, kept on the
+  // phone, so the sheet can tell the finish phone from any other. Not a number
+  // and nothing to do with whose phone it is.
+  var phoneId = store.get('crr-phone');
+  if (!phoneId) { phoneId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); store.set('crr-phone', phoneId); }
+
+  // ------------------------------------------------------------ one clock
+  // With a phone at the start and another at the finish, a run time is one
+  // phone's moment taken from the other's, and two phones' clocks are never
+  // quite together: a second or two apart is ordinary. So no moment in here
+  // comes straight off this phone's clock. nowMs() is this phone's clock
+  // corrected to the sheet's, and every start and every finish is taken with
+  // it.
+  //
+  // The correction: ask the sheet the time, and assume the answer was read
+  // half-way between asking and hearing back. Do that five times and believe
+  // the quickest round trip, since the slow ones are the ones the signal
+  // held up on one leg. Both phones are out by much the same small amount
+  // in the same direction, and that cancels when one is taken from the other.
+  //
+  // It is measured once, when the page opens, and never changed while a
+  // clock is running: a correction that moved mid-race would move the race.
+  var offsetMs = 0, clockChecked = false, clockRough = false;
+  function nowMs() { return Date.now() + offsetMs; }
+  function askTime() {
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      try {
+        google.script.run.withSuccessHandler(function (server) {
+          var t1 = Date.now();
+          resolve(none(server) ? null : { trip: t1 - t0, offset: Number(server) - (t0 + t1) / 2 });
+        }).withFailureHandler(function () { resolve(null); }).api_time();
+      } catch (e) { resolve(null); }
+    });
+  }
+  function checkClock() {
+    var samples = [];
+    var again = function (n) {
+      return askTime().then(function (s) { if (s) samples.push(s); return n > 1 ? again(n - 1) : null; });
+    };
+    return again(5).then(function () {
+      // Never move the correction under a running race.
+      if (local && (!none(local.clockStartMs) || local.finishes.length)) return;
+      samples.sort(function (a, b) { return a.trip - b.trip; });
+      if (!samples.length) { clockChecked = false; return; }
+      offsetMs = Math.round(samples[0].offset);
+      clockChecked = true;
+      // Rough if even the best answer took over two seconds, or the two best disagree by over half a second.
+      clockRough = samples[0].trip > 2000 || (samples.length > 1 && Math.abs(samples[0].offset - samples[1].offset) > 500);
+    });
+  }
 
   // ---------------------------------------------------------------- loading
   function gate(msg) { $('app').style.display = 'none'; $('pinGate').style.display = 'block'; $('pinMsg').textContent = msg || ''; }
   $('pinGo').onclick = function () { pin = $('pinInput').value.trim(); load(); };
 
+  function activeFinishes(list) { return list.filter(function (f) { return !f.removed; }); }
   function load() {
-    call('api_state').then(function (raw) {
-      var s = tidyState(raw);
+    Promise.all([call('api_state'), checkClock()]).then(function (got) {
+      var s = tidyState(got[0]);
       store.set('crr-pin', pin);
       $('pinGate').style.display = 'none'; $('app').style.display = 'block';
       state = s;
-      var key = 'crr-race-' + (s.race.iso || 'none');
-      var kept = store.get(key) || {};
+      var raceKey = s.race.iso + '|' + s.race.type;
+      var key = 'crr-race-' + (s.race.iso || 'none') + '-' + s.race.type;
+      // Before 1.3 a night was kept under its date alone. Pick that up, so a page updated mid-evening loses nothing.
+      var kept = store.get(key) || (s.race.type === 'handicap' ? store.get('crr-race-' + (s.race.iso || 'none')) : null) || {};
       local = {
-        key: key, clockStartMs: orNull(kept.clockStartMs),
+        key: key, raceKey: raceKey, clockStartMs: orNull(kept.clockStartMs), clockOnSheet: kept.clockOnSheet === true,
         finishes: (kept.finishes || []).map(tidyFinish), dirty: kept.dirty === true, resetPending: kept.resetPending === true,
       };
+      otherPhone = !!s.finishPhone && s.finishPhone !== phoneId;
+      late = null; picking = false;
       if (local.resetPending) {
         // This phone reset the clock and the sheet hasn't heard yet: the sheet's clock is the stale one.
         pushReset();
       } else {
-        // Whichever side has a clock, both should.
-        if (!local.clockStartMs && s.clockStartMs) local.clockStartMs = s.clockStartMs;
-        else if (local.clockStartMs && !s.clockStartMs) call('api_startClock', local.clockStartMs, false).catch(function () {});
+        if (none(local.clockStartMs) && !none(s.clockStartMs)) { local.clockStartMs = s.clockStartMs; local.clockOnSheet = true; }
+        else if (!none(local.clockStartMs) && none(s.clockStartMs)) {
+          // The sheet had this clock and has lost it: it was reset on another phone while this page was shut.
+          if (local.clockOnSheet && !activeFinishes(local.finishes).length) { local.clockStartMs = null; local.clockOnSheet = false; local.finishes = []; local.dirty = false; }
+          else pushStart(false);
+        } else if (!none(local.clockStartMs) && local.clockStartMs !== s.clockStartMs) { local.clockStartMs = s.clockStartMs; local.clockOnSheet = true; }
+        else if (!none(local.clockStartMs)) local.clockOnSheet = true;
         // This phone is the record of finishes; adopt the sheet's only if this phone has none.
         if (!local.finishes.length && s.finishes.length) local.finishes = s.finishes;
-        else if (local.finishes.length) local.dirty = true;
+        else if (local.finishes.length && !otherPhone) local.dirty = true;
       }
-      save(); render(); syncFinishes();
+      settle(); save(); render(); syncFinishes();
     }).catch(function (e) {
       var m = errText(e);
       if (/PIN/.test(m)) gate(m); else { gate(); $('pinMsg').textContent = 'Could not reach the sheet: ' + m; }
     });
   }
-  function save() { store.set(local.key, { clockStartMs: local.clockStartMs, finishes: local.finishes, dirty: local.dirty, resetPending: local.resetPending }); }
+  function save() {
+    store.set(local.key, { clockStartMs: local.clockStartMs, clockOnSheet: local.clockOnSheet, finishes: local.finishes, dirty: local.dirty, resetPending: local.resetPending });
+  }
   function touch() { rev += 1; local.dirty = true; save(); }
 
   // -------------------------------------------------------------- tabs
@@ -274,11 +369,13 @@
   });
 
   // ------------------------------------------------------------- the rules
+  function isMass() { return state.race.kind === 'mass'; }
   function running() { return state.runners.filter(function (r) { return r.running; }); }
   function findRunner(name) { return state.runners.filter(function (r) { return r.name === name; })[0] || null; }
   // Who goes when. A runner with no start time, or a guest, is in no group
-  // and must not move anybody else's.
+  // and must not move anybody else's. A mass-start race has no groups at all.
   function groups() {
+    if (isMass()) return [];
     var rs = running().filter(function (r) { return !r.guest && !none(r.startSeconds); });
     if (!rs.length) return [];
     var slowest = Math.max.apply(null, rs.map(function (r) { return r.startSeconds; }));
@@ -290,56 +387,111 @@
     return Object.keys(by).map(Number).sort(function (a, b) { return a - b; })
       .map(function (g) { return { at: g, names: by[g].sort() }; });
   }
-  function elapsed() { return local && !none(local.clockStartMs) ? (Date.now() - local.clockStartMs) / 1000 : null; }
-  // The finishes that count, in clock order. A finish taken back with Undo
-  // stays on the phone and in the sheet, marked removed, and is not in here.
+  function started() { return !!local && !none(local.clockStartMs); }
+  function elapsed() { return started() ? (nowMs() - local.clockStartMs) / 1000 : null; }
+  // Gives every finish both its moment and its clock time, once the start is
+  // known. Called whenever the start arrives or changes. A tap from before
+  // the start cannot be a finish, so it is taken back (kept, like any other).
+  function settle() {
+    if (!started()) return;
+    local.finishes.forEach(function (f) {
+      if (!none(f.atMs)) f.clockSeconds = Math.round((f.atMs - local.clockStartMs) / 100) / 10;
+      else if (!none(f.clockSeconds)) f.atMs = local.clockStartMs + f.clockSeconds * 1000;
+      if (!none(f.clockSeconds) && f.clockSeconds < 0) f.removed = true;
+    });
+  }
+  function when(f) { return none(f.atMs) ? f.clockSeconds * 1000 : f.atMs; }
+  // The finishes that count, in order. A finish taken back with Undo stays on
+  // the phone and in the sheet, marked removed, and is not in here.
   function sortedFinishes() {
-    return local.finishes.filter(function (f) { return !f.removed; }).sort(function (a, b) { return a.clockSeconds - b.clockSeconds; });
+    return local.finishes.filter(function (f) { return !f.removed; }).sort(function (a, b) { return when(a) - when(b); });
   }
   function removedFinishes() {
-    return local.finishes.filter(function (f) { return f.removed; }).sort(function (a, b) { return a.clockSeconds - b.clockSeconds; });
+    return local.finishes.filter(function (f) { return f.removed; }).sort(function (a, b) { return when(a) - when(b); });
   }
 
   // ------------------------------------------------------------- rendering
   function render() {
     if (!state || !local) return;
-    $('raceLabel').textContent = state.race.label || 'No race on the Events tab';
-    renderRunners(); renderGroups(); renderFinish(); renderTokens(); renderSync();
+    $('raceLabel').textContent = state.race.label || 'Choose tonight’s race';
+    renderRace(); renderRunners(); renderGroups(); renderFinish(); renderTokens(); renderSync();
   }
   function renderSync() {
     var s = $('syncState');
     if (syncing) s.textContent = 'saving…';
-    else if (local && (local.dirty || local.resetPending)) { s.textContent = 'not saved yet — kept on this phone'; }
+    else if (local && otherPhone && local.dirty) s.textContent = 'another phone is timing the finish';
+    else if (local && local.dirty && !started()) s.textContent = 'waiting for the start — kept on this phone';
+    else if (local && (local.dirty || local.resetPending || (started() && !local.clockOnSheet))) s.textContent = 'not saved yet — kept on this phone';
     else s.textContent = 'saved';
+  }
+
+  // "Tonight's race". Normally the Events tab says what tonight is and there
+  // is nothing to do. This is for the night nobody added to Events, or when
+  // Events says the wrong thing: it sets the kind of race, dated today.
+  var picking = false;
+  function renderRace() {
+    var none_ = !state.race.iso;
+    $('raceType').textContent = none_ ? 'Not chosen yet' : state.race.typeLabel;
+    var open = picking || none_;
+    $('racePick').style.display = open ? 'block' : 'none';
+    $('raceChange').textContent = picking ? 'Cancel' : 'Change';
+    $('raceChange').style.display = none_ ? 'none' : '';
+    if (!open) return;
+    $('racePickHint').textContent = none_ ? 'What is tonight’s race? Nothing on the Events tab is due.' : 'What is tonight’s race? Choosing here dates it today.';
+    var list = $('racePickList'); list.innerHTML = '';
+    state.raceTypes.forEach(function (t) {
+      var b = el('button', { cls: 'btn' + (t.key === state.race.type && !none_ ? '' : ' ghost'), type: 'button', text: t.label });
+      b.onclick = function () { setRace(t.key, t.label); };
+      list.appendChild(b);
+    });
+    if (!none_) {
+      var back = el('button', { cls: 'btn ghost', type: 'button', text: 'Go by the Events tab' });
+      back.onclick = function () { setRace('', 'the Events tab'); };
+      list.appendChild(back);
+    }
+  }
+  $('raceChange').onclick = function () { picking = !picking; renderRace(); };
+  function setRace(type, label) {
+    if (started() || local.finishes.length) return toast('The clock is running or finishes have been timed. Reset the clock on the Start tab first.');
+    call('api_setRace', type).then(function () { toast('Tonight: ' + label); local = null; load(); })
+      .catch(function (e) { toast(errText(e)); });
   }
 
   function renderRunners() {
     var q = $('search').value.trim().toLowerCase();
     var only = $('onlyRunning').checked;
+    var mass = isMass();
     var list = $('runnerList'); list.innerHTML = '';
     var n = running().length;
     $('runCount').textContent = n ? n + ' ticked.' : '';
+    $('newStart').style.display = mass ? 'none' : '';
+    $('newHint').textContent = mass ? 'Add them to the list and tick them. Everyone starts together, so there is no start time to guess.'
+      : 'Their first handicap: they race, but can’t win. Guess a 5k time for their start.';
     state.runners.filter(function (r) {
       return (!q || r.name.toLowerCase().indexOf(q) >= 0) && (!only || r.running);
     }).forEach(function (r) {
       var check = el('div', { cls: 'check' + (r.running ? ' on' : ''), text: r.running ? '✓' : '' });
       var label = el('div', { cls: 'name', text: r.name });
-      // "First time" is the timer's call, and only for somebody with no
-      // handicap in History. History starts in Feb 2026, so having nothing in
-      // it does not prove a first handicap; the tick does.
-      var chip = null;
-      if (r.running && r.noData) {
-        chip = el('button', { cls: 'chip' + (r.firstHandicap ? ' on' : ''), type: 'button', text: r.firstHandicap ? '✓ first time' : 'first time?' });
-        chip.onclick = function () { toggleFirstTime(r); };
-      } else if (r.firstHandicap) {
-        label.appendChild(el('span', { cls: 'badge', text: 'first time' }));
+      var chip = null, start = null;
+      // Start times, guests and first-timers are the handicap's. In a race
+      // where everyone goes together there is nothing to show against a name.
+      if (!mass) {
+        // "First time" is the timer's call, and only for somebody with no
+        // handicap in History. History starts in Feb 2026, so having nothing in
+        // it does not prove a first handicap; the tick does.
+        if (r.running && r.noData) {
+          chip = el('button', { cls: 'chip' + (r.firstHandicap ? ' on' : ''), type: 'button', text: r.firstHandicap ? '✓ first time' : 'first time?' });
+          chip.onclick = function () { toggleFirstTime(r); };
+        } else if (r.firstHandicap) {
+          label.appendChild(el('span', { cls: 'badge', text: 'first time' }));
+        }
+        var noStart = !r.guest && none(r.startSeconds);
+        var startTxt = r.guest ? 'guest' : noStart ? 'no start time' : clock(r.startSeconds);
+        start = el('span', { cls: 't' + (noStart && r.running ? ' badge warn' : ''), text: startTxt });
       }
-      var noStart = !r.guest && none(r.startSeconds);
-      var startTxt = r.guest ? 'guest' : noStart ? 'no start time' : clock(r.startSeconds);
-      var start = el('span', { cls: 't' + (noStart && r.running ? ' badge warn' : ''), text: startTxt });
       var row = el('div', { cls: 'row' }, [check, label, chip, start]);
       check.onclick = label.onclick = function () { toggleRunning(r); };
-      start.onclick = function () { editStart(r, row); };
+      if (start) start.onclick = function () { editStart(r, row); };
       list.appendChild(row);
     });
   }
@@ -367,7 +519,7 @@
   }
   $('search').oninput = renderRunners; $('onlyRunning').onchange = renderRunners;
   $('addRunner').onclick = function () {
-    var name = $('newName').value.trim(), start = $('newStart').value.trim();
+    var name = $('newName').value.trim(), start = isMass() ? '' : $('newStart').value.trim();
     if (!name) return toast('Type a name');
     call('api_addRunner', name, start).then(refreshState).then(function () {
       $('newName').value = ''; $('newStart').value = ''; toast(name + ' added and ticked');
@@ -376,25 +528,34 @@
   function refreshState() {
     return call('api_state').then(function (raw) {
       var s = tidyState(raw);
-      state.runners = s.runners; state.race = s.race; state.step = s.step; render();
+      state.runners = s.runners; state.step = s.step; render();
     });
   }
 
   var lastBeep = null;
   function renderGroups() {
-    var gs = groups(), t = elapsed();
+    var mass = isMass(), gs = groups(), t = elapsed();
     var box = $('groups'); box.innerHTML = '';
+    $('orderHead').style.display = mass ? 'none' : '';
+    $('startHint').textContent = mass ? 'Everyone starts together. Press this on "go". A phone at the finish picks the start up by itself within a few seconds.'
+      : 'The slowest go first, on 0:00. Press when the first group sets off.';
     gs.forEach(function (g) {
       box.appendChild(el('div', { cls: 'group' + (!none(t) && t > g.at + 5 ? ' done' : '') }, [
         el('div', { cls: 'at', text: clock(g.at) }), el('div', { text: g.names.join(', ') })]));
     });
-    var missing = running().filter(function (r) { return !r.guest && none(r.startSeconds); }).map(function (r) { return r.name; });
-    var guests = running().filter(function (r) { return r.guest; }).map(function (r) { return r.name; });
-    $('noStart').textContent = (missing.length ? 'No start time yet, so in no group (set one on Runners): ' + missing.join(', ') + '. ' : '')
-      + (guests.length ? 'Guests, not racing: ' + guests.join(', ') + '.' : '');
-    var started = !none(local.clockStartMs);
-    $('startIdle').style.display = started ? 'none' : 'block';
-    $('clockTools').style.display = started ? 'block' : 'none';
+    if (mass) {
+      $('noStart').textContent = running().length + ' ticked to run.';
+    } else {
+      var missing = running().filter(function (r) { return !r.guest && none(r.startSeconds); }).map(function (r) { return r.name; });
+      var guests = running().filter(function (r) { return r.guest; }).map(function (r) { return r.name; });
+      $('noStart').textContent = (missing.length ? 'No start time yet, so in no group (set one on Runners): ' + missing.join(', ') + '. ' : '')
+        + (guests.length ? 'Guests, not racing: ' + guests.join(', ') + '.' : '');
+    }
+    $('clockCheck').textContent = !clockChecked ? 'This phone’s clock could not be checked against the sheet (no signal?). That is fine with one phone. With a phone at each end, times could be out by a second or two.'
+      : clockRough ? 'The signal was slow when this phone checked its clock. With a phone at each end, times could be out by up to a second.' : '';
+    var on = started();
+    $('startIdle').style.display = on ? 'none' : 'block';
+    $('clockTools').style.display = on ? 'block' : 'none';
     var nb = $('nextBox');
     if (none(t) || !gs.length) { nb.style.display = 'none'; return; }
     var now = gs.filter(function (g) { return t >= g.at && t < g.at + 5; })[0];
@@ -416,13 +577,22 @@
   }
 
   function renderFinish() {
-    var fs = sortedFinishes(), started = !none(local.clockStartMs);
-    $('finishBtn').disabled = !started;
-    $('undoBtn').disabled = !fs.length;
-    $('finishCount').textContent = started ? (fs.length ? fs.length + ' finished' : 'Tap as each runner crosses the line') : 'Start the clock on the Start tab first';
+    var fs = sortedFinishes(), on = started(), mass = isMass();
+    // In a mass-start race the finish phone may be waiting for a start made
+    // on another phone. It must still be able to take a finish: the moment is
+    // what matters, and the time is worked out when the start arrives.
+    $('finishBtn').disabled = otherPhone || !(on || mass);
+    $('finishBtn').style.display = otherPhone ? 'none' : '';
+    $('otherPhone').style.display = otherPhone ? 'block' : 'none';
+    $('undoBtn').disabled = otherPhone || !fs.length;
+    $('finishCount').textContent = otherPhone ? ''
+      : on ? (fs.length ? fs.length + ' finished' : 'Tap as each runner crosses the line')
+      : mass ? 'Waiting for the start…' + (fs.length ? ' ' + fs.length + ' finished' : '')
+      : 'Start the clock on the Start tab first';
     var box = $('lastFinishes'); box.innerHTML = '';
     fs.slice(-5).reverse().forEach(function (f) {
-      box.appendChild(el('div', { cls: 'row' }, [el('div', { cls: 'name', text: 'Position ' + (fs.indexOf(f) + 1) }), el('div', { cls: 't', text: clock(f.clockSeconds, true) })]));
+      box.appendChild(el('div', { cls: 'row' }, [el('div', { cls: 'name', text: 'Position ' + (fs.indexOf(f) + 1) }),
+        el('div', { cls: 't', text: none(f.clockSeconds) ? 'waiting for the start' : clock(f.clockSeconds, true) })]));
     });
   }
 
@@ -432,13 +602,14 @@
   //                       different token shows it, "Chris Cobb (6)", so a
   //                       double pick is obvious; picking them moves them.
   //   Everyone else       the rest of Runners, A–Z, for whoever ran without
-  //                       being ticked. Picking one asks for their start time.
+  //                       being ticked. Picking one asks for their start time
+  //                       (a handicap) or just adds them (everyone together).
   function tokenSelect(pos) {
     var sel = el('select', { 'aria-label': 'Who has token ' + pos });
     sel.appendChild(el('option', { value: '', text: 'No one' }));
     var ticked = el('optgroup', { label: 'Running tonight' });
     running().slice().sort(byName).forEach(function (r) {
-      var extra = (!none(r.token) && r.token !== pos ? ' (' + r.token + ')' : '') + (r.guest ? ' · guest' : '') + (r.firstHandicap ? ' · first time' : '');
+      var extra = (!none(r.token) && r.token !== pos ? ' (' + r.token + ')' : '') + (!isMass() && r.guest ? ' · guest' : '') + (!isMass() && r.firstHandicap ? ' · first time' : '');
       var o = el('option', { value: r.name, text: r.name + extra });
       if (r.token === pos) o.selected = true;
       ticked.appendChild(o);
@@ -457,24 +628,30 @@
     return sel;
   }
   function latePanel() {
-    var input = el('input', { type: 'text', placeholder: 'e.g. 24:30', 'aria-label': 'Start time for ' + late.name });
-    input.value = late.text;
-    input.oninput = function () { late.text = input.value; };
+    var mass = isMass();
+    var input = mass ? null : el('input', { type: 'text', placeholder: 'e.g. 24:30', 'aria-label': 'Start time for ' + late.name });
+    if (input) { input.value = late.text; input.oninput = function () { late.text = input.value; }; }
     var add = el('button', { cls: 'btn', type: 'button', text: 'Add to the race, with token ' + late.pos });
-    var guest = el('button', { cls: 'btn ghost', type: 'button', text: 'Guest: not racing, no run time' });
+    var guest = mass ? null : el('button', { cls: 'btn ghost', type: 'button', text: 'Guest: not racing, no run time' });
     var cancel = el('button', { cls: 'btn ghost', type: 'button', text: 'Cancel' });
+    var buttons = [add, guest, cancel].filter(Boolean);
     var send = function (startText) {
       var who = late.name, pos = late.pos;
-      add.disabled = guest.disabled = cancel.disabled = true;
+      buttons.forEach(function (b) { b.disabled = true; });
       call('api_addLate', who, startText, pos).then(function () { late = null; return refreshState(); })
         .then(function () { toast(who + ' ticked, with token ' + pos); })
-        .catch(function (e) { add.disabled = guest.disabled = cancel.disabled = false; toast(errText(e)); });
+        .catch(function (e) { buttons.forEach(function (b) { b.disabled = false; }); toast(errText(e)); });
     };
-    add.onclick = function () { if (!input.value.trim()) return toast('Type the start time they went off on, or choose Guest'); send(input.value.trim()); };
-    guest.onclick = function () { send('Guest'); };
+    add.onclick = function () {
+      if (mass) return send('');
+      if (!input.value.trim()) return toast('Type the start time they went off on, or choose Guest');
+      send(input.value.trim());
+    };
+    if (guest) guest.onclick = function () { send('Guest'); };
     cancel.onclick = function () { late = null; renderTokens(); };
     return el('div', { cls: 'late' }, [
-      el('p', {}, [el('strong', { text: late.name }), document.createTextNode(' wasn’t ticked as running. What start time did they go off on? It is needed to work out their run time.')]),
+      el('p', {}, [el('strong', { text: late.name }), document.createTextNode(mass ? ' wasn’t ticked as running. Add them?'
+        : ' wasn’t ticked as running. What start time did they go off on? It is needed to work out their run time.')]),
       input, add, guest, cancel]);
   }
   function renderTokens() {
@@ -483,7 +660,7 @@
     fs.forEach(function (f, i) {
       var pos = i + 1;
       box.appendChild(el('div', { cls: 'row' }, [el('div', { text: String(pos), style: 'width:28px;font-weight:800' }),
-        el('div', { cls: 't', text: clock(f.clockSeconds), style: 'width:56px' }), el('div', { cls: 'name' }, [tokenSelect(pos)])]));
+        el('div', { cls: 't', text: none(f.clockSeconds) ? '…' : clock(f.clockSeconds), style: 'width:56px' }), el('div', { cls: 'name' }, [tokenSelect(pos)])]));
       if (late && late.pos === pos) box.appendChild(latePanel());
     });
     if (!fs.length) box.appendChild(el('p', { cls: 'hint', text: 'Finishes appear here once they are timed.' }));
@@ -493,9 +670,10 @@
     var gone = removedFinishes(), rbox = $('removedList'); rbox.innerHTML = '';
     $('removedHead').style.display = $('removedHint').style.display = gone.length ? 'block' : 'none';
     gone.forEach(function (f) {
-      var back = el('button', { cls: 'btn ghost small', type: 'button', text: 'Put back' });
-      back.onclick = function () { f.removed = false; touch(); render(); syncSoon(); toast('Put back. Check the tokens still line up.'); };
-      rbox.appendChild(el('div', { cls: 'row' }, [el('div', { cls: 'name t', text: clock(f.clockSeconds, true) + ' on the clock' }), back]));
+      var early = !none(f.clockSeconds) && f.clockSeconds < 0;
+      var back = early ? null : el('button', { cls: 'btn ghost small', type: 'button', text: 'Put back' });
+      if (back) back.onclick = function () { f.removed = false; touch(); render(); syncSoon(); toast('Put back. Check the tokens still line up.'); };
+      rbox.appendChild(el('div', { cls: 'row' }, [el('div', { cls: 'name t', text: early ? 'Tapped before the start' : none(f.clockSeconds) ? 'Before the start was known' : clock(f.clockSeconds, true) + ' on the clock' }), back]));
     });
   }
   function setToken(pos, name) {
@@ -521,37 +699,51 @@
       clearTimeout(timer); armed = false; btn.textContent = idle; action();
     };
   }
+  // Tells the sheet when this phone started the clock, and keeps telling it
+  // until it has heard (watch() retries). If another phone got there first
+  // and this was not a restart, the sheet's start wins and this phone follows.
+  function pushStart(force) {
+    var mine = local.clockStartMs;
+    call('api_startClock', mine, force).then(function (ms) {
+      if (!local || local.clockStartMs !== mine) return;
+      if (!none(ms) && Number(ms) !== mine) {
+        local.clockStartMs = Number(ms); settle(); touch();
+        toast('The clock was already started on another phone; using that one');
+      }
+      local.clockOnSheet = true; save(); render(); syncFinishes();
+    }).catch(function () { renderSync(); });
+  }
   $('startBtn').onclick = function () {
     unlockAudio();
     // After a reset the sheet hasn't heard about yet, this start replaces whatever the sheet still holds.
     var force = local.resetPending;
     local.resetPending = false;
-    local.clockStartMs = Date.now(); if (force) touch(); else save(); render();
-    call('api_startClock', local.clockStartMs, force).then(function (ms) {
-      if (!none(ms) && ms !== local.clockStartMs) { local.clockStartMs = Number(ms); save(); toast('The clock was already started on another phone; using that one'); }
-    }).catch(function () { toast('Clock started on this phone. It will reach the sheet when there is signal.'); });
-    if (force) syncFinishes();
+    local.clockStartMs = nowMs(); local.clockOnSheet = false;
+    settle(); if (force || local.finishes.length) touch(); else save();
+    render(); pushStart(force);
   };
   twoTap($('restartBtn'), 'Restart the clock', 'Tap again to restart from 0:00', function () {
     local.resetPending = false;
-    local.clockStartMs = Date.now(); local.finishes = []; touch(); render();
-    call('api_startClock', local.clockStartMs, true).catch(function () {}); syncFinishes();
+    local.clockStartMs = nowMs(); local.clockOnSheet = false; local.finishes = []; touch(); render();
+    pushStart(true);
   });
   twoTap($('resetBtn'), 'Reset the clock', 'Tap again to stop the clock and clear its finishes', function () {
-    local.clockStartMs = null; local.finishes = []; local.dirty = false; local.resetPending = true; rev += 1; late = null;
-    save(); render(); pushReset(); toast('Clock reset. Start it when the first group goes.');
+    local.clockStartMs = null; local.clockOnSheet = false; local.finishes = []; local.dirty = false; local.resetPending = true; rev += 1; late = null;
+    save(); render(); pushReset(); toast('Clock reset. Start it when the race goes.');
   });
   function pushReset() {
     if (!local || !local.resetPending) return;
     call('api_resetClock').then(function () {
       if (!local || !local.resetPending) return;
       // Send this phone's (empty) list after the reset, in case an earlier send landed late and put finishes back.
-      local.resetPending = false; touch(); renderSync(); syncSoon();
+      local.resetPending = false; otherPhone = false; touch(); renderSync(); syncSoon();
     }).catch(function () {});
   }
   $('finishBtn').onclick = function () {
-    var t = elapsed(); if (none(t)) return;
-    local.finishes.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), clockSeconds: Math.round(t * 10) / 10, removed: false });
+    if (otherPhone || !(started() || isMass())) return;
+    var at = nowMs();
+    local.finishes.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), atMs: at,
+      clockSeconds: started() ? Math.round((at - local.clockStartMs) / 100) / 10 : null, removed: false });
     touch(); render();
     if (navigator.vibrate) navigator.vibrate(40);
     syncSoon();
@@ -569,23 +761,97 @@
   function syncFinishes() {
     if (!local) return;
     if (local.resetPending) return pushReset();
-    if (!local.dirty || syncing) return;
+    // Nothing goes while another phone has the finish. And a finish cannot go
+    // to the sheet until the start is known, because there it is a time on the
+    // race clock. (An empty list can always go: that is how a reset is made to stick.)
+    if (!local.dirty || syncing || (otherPhone && !takingOver)) return;
+    if (!started() && local.finishes.length) return;
     syncing = true; renderSync();
-    var sent = rev;
-    call('api_syncFinishes', local.finishes).then(function () {
+    var sent = rev, claim = takingOver;
+    var list = local.finishes.filter(function (f) { return !none(f.clockSeconds); })
+      .map(function (f) { return { id: f.id, clockSeconds: f.clockSeconds, removed: f.removed }; });
+    call('api_syncFinishes', list, phoneId, claim).then(function () {
       syncing = false;
       if (!local) return;
+      if (claim) { takingOver = false; otherPhone = false; }
       if (rev === sent) local.dirty = false; else syncSoon();
-      save(); renderSync();
-    }).catch(function () { syncing = false; renderSync(); });
+      save(); render();
+    }).catch(function (e) {
+      syncing = false;
+      if (/ANOTHER_PHONE/.test(errText(e))) { otherPhone = true; render(); } else renderSync();
+    });
   }
   setInterval(syncFinishes, 5000);
   window.addEventListener('online', syncFinishes);
+
+  // Taking the finish over from another phone. First fetch every finish the
+  // sheet has that this phone does not, so nothing the other phone timed is
+  // lost when this phone's list replaces the sheet's.
+  twoTap($('takeOverBtn'), 'Take over the finish on this phone', 'Tap again to take over', function () {
+    call('api_state').then(function (raw) {
+      var s = tidyState(raw), have = {};
+      local.finishes.forEach(function (f) { have[f.id] = true; });
+      s.finishes.forEach(function (f) { if (!have[f.id]) local.finishes.push(f); });
+      if (none(local.clockStartMs) && !none(s.clockStartMs)) { local.clockStartMs = s.clockStartMs; local.clockOnSheet = true; }
+      settle(); takingOver = true; touch(); render(); syncFinishes();
+      toast('This phone is timing the finish now');
+    }).catch(function (e) { toast(errText(e)); });
+  });
+
+  // ------------------------------------------------------- the other phone
+  // Asks the sheet, every few seconds, whether anything has changed that
+  // this phone did not do: the clock started, restarted or reset on another
+  // phone, the finish taken by another phone, or a different race chosen.
+  // This is what lets a phone at the finish just wait for the start.
+  var watching = false, warnedReset = false, beat = 0;
+  function watch() {
+    beat += 1;
+    if (!local || watching || document.hidden) return;
+    // Every 3 seconds while waiting for something; every 12 once the clock is running and the sheet has it.
+    if (started() && local.clockOnSheet && beat % 4) return;
+    if (local.resetPending) return pushReset();
+    if (started() && !local.clockOnSheet) return pushStart(false);
+    watching = true;
+    call('api_clock').then(function (c) { watching = false; if (local) follow(c || {}); }).catch(function () { watching = false; });
+  }
+  function follow(c) {
+    if (!none(c.raceKey) && c.raceKey !== local.raceKey) { local = null; load(); return; }
+    var sheetStart = orNull(c.clockStartMs);
+    var wasOther = otherPhone;
+    otherPhone = !none(c.finishPhone) && String(c.finishPhone) !== phoneId && !takingOver;
+    if (local.resetPending || (started() && !local.clockOnSheet)) { if (wasOther !== otherPhone) render(); return; }
+    if (!started()) {
+      if (sheetStart !== null) {
+        local.clockStartMs = sheetStart; local.clockOnSheet = true; settle();
+        if (local.finishes.length) touch(); else save();
+        render(); syncSoon(); toast('The clock has started');
+        return;
+      }
+    } else if (sheetStart === null) {
+      // The sheet had this clock and has lost it: reset on another phone.
+      if (!activeFinishes(local.finishes).length) {
+        local.clockStartMs = null; local.clockOnSheet = false; local.finishes = []; local.dirty = false; save(); render();
+        toast('The clock was reset on another phone');
+        return;
+      }
+      if (!warnedReset) { warnedReset = true; toast('The clock was reset on another phone, but this phone holds finishes. Reset here too if that was meant.'); }
+    } else if (sheetStart !== local.clockStartMs) {
+      local.clockStartMs = sheetStart; settle(); touch(); render(); syncSoon();
+      toast('The clock was restarted on another phone');
+      return;
+    }
+    if (wasOther !== otherPhone) render();
+  }
+  setInterval(watch, 3000);
 
   // ------------------------------------------------------------- result
   var problemCount = 0;
   function loadResult() {
     var box = $('resultBox'); box.innerHTML = ''; box.appendChild(el('p', { cls: 'hint', text: 'Working it out…' }));
+    var mass = isMass();
+    $('saveHint').textContent = mass
+      ? 'Saving writes the result to the Race history tab (not the handicap’s History), then clears the ticks, tokens and clock. Every finish tapped is copied to the Timing archive tab first.'
+      : 'Saving writes the result to the History tab, then clears the ticks, tokens and clock ready for next month. Every finish tapped tonight is copied to the Timing archive tab first.';
     var go = local.dirty ? new Promise(function (res) { syncFinishes(); setTimeout(res, 1500); }) : Promise.resolve();
     go.then(function () { return call('api_result'); }).then(function (r) {
       box.innerHTML = '';
@@ -595,12 +861,16 @@
         var ul = el('ul', {}); problems.forEach(function (p) { ul.appendChild(el('li', { text: p })); });
         box.appendChild(el('div', { cls: 'problems' }, [el('strong', { text: 'Sort these out before saving' }), ul]));
       }
-      var table = el('table', {}, [el('tr', {}, ['', 'Runner', 'Run', 'vs start'].map(function (h) { return el('th', { text: h }); }))]);
+      if (mass && rows.some(function (x) { return none(x.ageGrade); })) {
+        box.appendChild(el('p', { cls: 'hint', text: 'This race is decided on age grade, which this page does not work out yet. The order below is the order across the line.' }));
+      }
+      var table = el('table', {}, [el('tr', {}, (mass ? ['', 'Runner', 'Time', 'Age grade'] : ['', 'Runner', 'Run', 'vs start']).map(function (h) { return el('th', { text: h }); }))]);
       rows.forEach(function (x) {
         table.appendChild(el('tr', { cls: x.winner === true ? 'win' : '' }, [
           el('td', { text: none(x.position) ? '–' : String(x.position) }),
           el('td', { text: x.name + (none(x.note) ? '' : '  · ' + x.note) }),
-          el('td', { text: none(x.run) ? '' : x.run }), el('td', { text: none(x.vsStart) ? '' : x.vsStart })]));
+          el('td', { text: none(x.run) ? '' : x.run }),
+          el('td', { text: mass ? (none(x.ageGrade) ? '' : Number(x.ageGrade).toFixed(1) + '%') : (none(x.vsStart) ? '' : x.vsStart) })]));
       });
       box.appendChild(table);
       $('saveBtn').style.display = rows.length ? 'block' : 'none';
@@ -613,10 +883,11 @@
   // three, and the middle one says how many are being saved as they stand.
   var saveStage = 0, saveTimer = null;
   function things(n) { return n === 1 ? '1 thing' : n + ' things'; }
+  function saveWord() { return isMass() ? 'Save the result' : 'Save to History'; }
   function resetSave() {
     clearTimeout(saveTimer); saveStage = 0;
     var b = $('saveBtn'); b.disabled = false; b.className = 'btn';
-    b.textContent = problemCount ? 'Save to History anyway' : 'Save to History';
+    b.textContent = saveWord() + (problemCount ? ' anyway' : '');
   }
   $('saveBtn').onclick = function () {
     if (local.dirty || local.resetPending) return toast('Finish times are still saving. Try again in a moment.');

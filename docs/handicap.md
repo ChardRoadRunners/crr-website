@@ -110,6 +110,56 @@ slower, or unticking the slowest, after the clock has started moves every go-at 
 run time. The page allows it (sometimes that is the correction needed) but the sheet notes who the
 first group was when the clock started, and the result says so if it has changed.
 
+## Version 1.3 — the other races, and a phone at each end
+
+**Built 15 November 2026. Not on the sheet until someone pastes it in** (steps below).
+
+The club's mile, 1500m and 3k are not handicaps: everyone starts together and the result is
+decided on age grade. The mile and 1500m also start in one place and finish in another.
+
+### What it adds
+
+- **Tonight's race.** The page follows the Events tab: a row whose Distance is `Mile`, `1500m`
+  or `3k` makes that night a mass-start race; blank or `5k` is the handicap, as every row was
+  before. If nothing on Events is due, or it says the wrong thing, **Tonight's race** at the
+  top of the Runners tab chooses the race, dated today. That choice counts for that day and the
+  next only, and saving clears it.
+- **Mass-start races.** No start times, go-at groups, guests or first-timers. A runner's time is
+  the clock when they finish, in whole seconds rounded up. Someone who ran unticked is added
+  from the Tokens tab without being asked for a start time. The result is saved to the **Race
+  history** tab and **never to History**, so a mile cannot change anyone's 5k start time.
+- **Two phones.** Any phone with the page open can press Start. A phone on the Finish tab shows
+  "Waiting for the start…", checks every three seconds, and picks the start up by itself.
+  It can take finishes before the start reaches it; they are held on the phone and timed from
+  the gun when it does. That also covers a starter with no signal.
+- **One clock.** Each phone works out how far its own clock is from the sheet's when the page
+  opens and corrects every start and finish by it. Measured with two phones' clocks set seconds
+  apart: within about 0.05 s on a good signal, and about a quarter of a second on a slow,
+  uneven one. The Start tab says so if a phone could not check its clock.
+- **The finish phone.** The first phone to send a finish becomes the finish phone (Settings row
+  12). Another phone's FINISH button is replaced by a note and a two-tap **Take over the finish
+  on this phone**, which first fetches every finish the sheet has. This also applies on a
+  handicap night if the timing phone dies and another takes over.
+- **Resets and restarts travel.** A reset or restart on one phone reaches the other within
+  about twelve seconds.
+
+### Not in 1.3
+
+**Age grading.** The result lists finishing order and times, says plainly that the race is
+decided on age grade, and names no winner. Agreed on 15 November 2026, still to build: ages in
+whole years pushed from the membership list to this sheet (dates of birth stay where they are);
+a men's and a women's winner; grades shown on the night. Waiting on which tables Simon uses.
+
+### Putting 1.3 on the sheet
+
+As for 1.2: replace `scoring.gs`, `setup.gs` and `timing` in Extensions > Apps Script with the
+files in `sheets/handicap/`, then **Deploy > Manage deployments > the pencil > Version: New
+version > Deploy**. On first use the script adds the Race history tab and Settings rows 10 to
+12 (`upgradeLayout13_`). It changes no formula and nothing the handicap reads.
+
+Then practise with two phones before the first real race: one in the garden, one in the house.
+Start on one, watch the other pick it up, tap some finishes, try Take over, and Reset.
+
 ## Version 1.2 — what 27 October 2026 changed
 
 | What happened on the night | What changed |
@@ -167,11 +217,14 @@ before October 2026 have a winner but no position.
 - `scripts/check-handicap-night.mjs` drives `setup.gs` itself — the functions the timing page
   calls — through a whole night against a pretend sheet (`scripts/lib/fake-handicap-sheet.mjs`),
   replaying 27 October: the runner with no start time, the unticked runner, the token taken off
-  again, saving with problems, the archive, the reset.
+  again, saving with problems, the archive, the reset. It also runs a mile with a phone at each
+  end: the start reaching the finish phone, the finish-phone rule, taking over, and saving to
+  Race history.
 
-Neither can run the page in a browser or the formulas in Google Sheets. Version 1.2's page was
-run in a phone-sized browser against the same pretend sheet before it was pasted in, but that
-test is not in the repository (it needs a browser installed). A practice run on the real sheet
+Neither can run the page in a browser or the formulas in Google Sheets. The 1.2 and 1.3 pages
+were run in a phone-sized browser against the same pretend sheet before being pasted in — 1.3
+with two browser windows as two phones, their clocks set seconds apart — but those tests are
+not in the repository (they need a browser installed). A practice run on the real sheet
 is still the last check.
 
 ## Open questions

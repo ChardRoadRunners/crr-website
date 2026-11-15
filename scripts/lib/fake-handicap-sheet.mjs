@@ -45,7 +45,9 @@ class Sheet {
 		return 0;
 	}
 	getMaxColumns() { return this.columns; }
+	getMaxRows() { return this.maxRows ?? 1000; }
 	insertColumnsAfter(_after, howMany) { this.columns += howMany; }
+	insertRowsAfter(_after, howMany) { this.maxRows = this.getMaxRows() + howMany; }
 	getIndex() { return this.book.order.indexOf(this.name) + 1; }
 	setFrozenRows() {}
 	getRange(row, col, numRows = 1, numCols = 1) {
@@ -78,7 +80,7 @@ class Sheet {
  * `runners`: [{ name, simonStart, suggested }] — suggested in seconds, or
  * omitted for nobody-knows. `history`: [{ dateIso, name, runSeconds }].
  */
-export function makeSheet({ runners, history = [], raceDateIso, raceLabel, pin = '4321', version = '1.1' }) {
+export function makeSheet({ runners, history = [], raceDateIso, raceLabel, distance = '5k', events = true, pin = '4321', version = '1.1' }) {
 	const book = { sheets: {}, order: [], formulas: {} };
 	const add = (name, rows, columns) => { book.sheets[name] = new Sheet(book, name, rows, columns); book.order.push(name); };
 
@@ -97,7 +99,11 @@ export function makeSheet({ runners, history = [], raceDateIso, raceLabel, pin =
 	add('History', [['Date', 'Race', 'Runner', 'Start time', 'Run time', 'Position', 'Winner', 'First handicap', 'Go at', 'Clock time', 'Note'],
 		...history.map((h) => [new Date(`${h.dateIso}T12:00:00Z`), h.dateIso, h.name, '', h.runSeconds / DAY, '', '', '', '', '', ''])], 11);
 	add('Timing', [['Position', 'Clock time', 'Clock (seconds)', 'Tap ID', 'Recorded at']], 5);
-	add('Settings', [['Setting', 'Value', 'Notes'], ['This race (date)', new Date(`${raceDateIso}T12:00:00Z`), ''], ['This race', raceLabel, ''],
+	// Events as the real tab has it. With `events: false` the night was never
+	// added, so the sheet's own "This race" formula has nothing to offer.
+	add('Events', [['Date', 'Distance', 'How it is decided', 'Label'],
+		...(events ? [[new Date(`${raceDateIso}T12:00:00Z`), distance, distance === '5k' ? 'Handicap' : 'Age grade', raceLabel]] : [])], 4);
+	add('Settings', [['Setting', 'Value', 'Notes'], ['This race (date)', events ? new Date(`${raceDateIso}T12:00:00Z`) : '', ''], ['This race', events ? raceLabel : '', ''],
 		['Step', 15, ''], ['Off night', 60, ''], ['Timing page PIN', pin, ''], ['Clock started at', '', ''], ['Timing page link', '', '']], 3);
 
 	// What the three Runners formulas work out, in both their 1.1 and 1.2 forms.
@@ -134,14 +140,20 @@ export function makeSheet({ runners, history = [], raceDateIso, raceLabel, pin =
 		getUi: () => { throw new Error('No menus in the pretend sheet'); },
 	};
 	const LockService = { getDocumentLock: () => ({ tryLock: () => true, releaseLock: () => {} }) };
-	const Utilities = { formatDate: (d) => d.toISOString().slice(0, 10) };
+	const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	const Utilities = {
+		formatDate: (d, _tz, format) => (format === 'd MMM yyyy'
+			? `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`
+			: d.toISOString().slice(0, 10)),
+	};
 
 	const source = `${readFileSync(here('scoring.gs'), 'utf8')}\n${readFileSync(here('setup.gs'), 'utf8')}`;
-	const names = ['api_state', 'api_setRunning', 'api_setFirstTime', 'api_addLate', 'api_addRunner', 'api_setStartTime',
+	const names = ['api_setRace', 'api_time', 'api_clock', 'upgradeLayout13_', 'api_state', 'api_setRunning', 'api_setFirstTime', 'api_addLate', 'api_addRunner', 'api_setStartTime',
 		'api_startClock', 'api_resetClock', 'api_syncFinishes', 'api_setToken', 'api_result', 'api_saveRace', 'upgradeLayout_'];
 	const api = new Function('SpreadsheetApp', 'LockService', 'Utilities', `${source}\nreturn { ${names.join(', ')} };`)(
 		SpreadsheetApp, LockService, Utilities);
-	if (version === '1.2') api.upgradeLayout_();
+	if (version === '1.2' || version === '1.3') api.upgradeLayout_();
+	if (version === '1.3') api.upgradeLayout13_();
 
 	return { api, book, pin, rows: (tab) => { book.recalc(); return book.sheets[tab].cells.map((r) => r.map(show)); } };
 }

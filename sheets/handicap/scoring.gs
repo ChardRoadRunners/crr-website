@@ -28,6 +28,13 @@
  *   - A GUEST runs along and takes a token, but is not racing: no run time,
  *     cannot win, and their start time moves nobody else's go-at time.
  *
+ * THE OTHER RACES (version 1.3, November 2026). The mile, the 1500m and the
+ * 3k are not handicaps: everybody starts together on the gun, a runner's time
+ * is simply the clock when they finish, and none of the rules above about
+ * start times, go-at times, first-timers or guests apply. RACE_TYPES says
+ * which is which, and massResult() is their result. They are decided on age
+ * grade, which is not worked out here yet.
+ *
  * BLANKS. "No start time", "no token" and so on are null in here. By the time
  * they reach the phone they may be undefined instead (see timing.html), so
  * every test in this file treats null and undefined alike, through blank().
@@ -43,6 +50,43 @@ var OFF_NIGHT_SECONDS = 60;
 
 /** Nobody runs this 5k in under 12 minutes: a run time below it is a mix-up. */
 var MIN_PLAUSIBLE_RUN_SECONDS = 12 * 60;
+
+/**
+ * The races the timing page can run.
+ *
+ * kind 'handicap': staggered starts, first eligible runner across the line.
+ * kind 'mass': everyone goes on the gun, and the clock time is the run time.
+ * The key is what is stored on Settings; the label is what people see.
+ */
+var RACE_TYPES = {
+  handicap: { label: 'Handicap 5k', kind: 'handicap', metres: 5000 },
+  mile: { label: 'Mile', kind: 'mass', metres: 1609.344 },
+  m1500: { label: '1500m', kind: 'mass', metres: 1500 },
+  k3: { label: '3k', kind: 'mass', metres: 3000 },
+};
+
+/**
+ * Nobody covers a kilometre in under 2:15 in these races (the world records
+ * are slower than that at every one of these distances), so a time quicker
+ * than that is a mix-up: a token against the wrong runner, or a clock that
+ * was started late.
+ */
+var FASTEST_PLAUSIBLE_SECONDS_PER_KM = 135;
+
+/**
+ * Which race the Distance column on the Events tab means. People type it, so
+ * this is forgiving: "Mile", "1 mile", "1500", "1500m", "3k", "3 km", "3000m".
+ * Blank, "5k" and anything unrecognised is the handicap, which is what every
+ * row on Events was before the other races were added.
+ */
+function raceTypeFromText(text) {
+  var t = String(blank(text) ? '' : text).toLowerCase().replace(/\s+/g, '');
+  if (RACE_TYPES[t]) return t;
+  if (/mile/.test(t)) return 'mile';
+  if (/^1500m?$|^1\.5km?$/.test(t)) return 'm1500';
+  if (/^3km?$|^3000m?$/.test(t)) return 'k3';
+  return 'handicap';
+}
 
 /** True for "nothing here": null, undefined or an empty cell. */
 function blank(v) {
@@ -300,6 +344,82 @@ function raceResult(starters, finishes, opts) {
       + secondsToClock(now) + ', so every run time has moved by ' + secondsToClock(Math.abs(now - was))
       + '. Check who was ticked or had their start time changed after the start');
   }
+
+  rows.sort(function (a, b) {
+    if (a.position === null && b.position === null) return a.name.localeCompare(b.name, 'en-GB');
+    if (a.position === null) return 1;
+    if (b.position === null) return -1;
+    return a.position - b.position;
+  });
+  return { rows: rows, problems: problems };
+}
+
+/**
+ * The result of a race where everybody starts together: the mile, 1500m, 3k.
+ *
+ * `starters`: [{ name, mf, token }] — everybody ticked as running.
+ * `finishes`: as for raceResult. The clock starts on the gun, so a finisher's
+ *   clock time IS their time; there is nothing to take off.
+ * `type`: a key of RACE_TYPES, for the distance.
+ *
+ * Returns { rows, problems }, shaped like raceResult's so the timing page and
+ * the saving code can treat the two alike. Positions are finishing order.
+ * ageGrade is null on every row and nobody is marked the winner: these races
+ * are decided on age grade, men and women separately, and that is not worked
+ * out here yet. Until it is, this is honest about not knowing who won.
+ */
+function massResult(starters, finishes, type) {
+  var race = RACE_TYPES[type] || RACE_TYPES.mile;
+  var tooQuick = race.metres / 1000 * FASTEST_PLAUSIBLE_SECONDS_PER_KM;
+  var clock = finishes
+    .filter(function (f) { return f && !f.removed; })
+    .map(function (f) { return f.clockSeconds; })
+    .filter(function (c) { return !blank(c) && isFinite(c); })
+    .sort(function (a, b) { return a - b; });
+
+  var problems = [];
+  var tokenOwners = {};
+  starters.forEach(function (s) {
+    if (blank(s.token)) return;
+    (tokenOwners[s.token] = tokenOwners[s.token] || []).push(s.name);
+  });
+  Object.keys(tokenOwners).forEach(function (t) {
+    if (tokenOwners[t].length > 1) problems.push('Token ' + t + ' is against ' + tokenOwners[t].join(' and '));
+  });
+  for (var p = 1; p <= clock.length; p += 1) {
+    if (!tokenOwners[p]) problems.push('Position ' + p + ' (' + secondsToClock(clock[p - 1]) + ' on the clock) has no runner against it');
+  }
+
+  var rows = starters.map(function (s) {
+    var position = blank(s.token) ? null : Number(s.token);
+    var clockSeconds = position !== null && position >= 1 && position <= clock.length ? clock[position - 1] : null;
+    var note = '';
+    if (position === null) note = 'No finish recorded';
+    else if (clockSeconds === null) {
+      note = 'Token ' + position + ' has no clock time';
+      problems.push(s.name + ' has token ' + position + ', but only ' + clock.length + ' finishes were timed');
+    } else if (clockSeconds < tooQuick) {
+      problems.push(s.name + "'s time works out at " + secondsToClock(clockSeconds) + ' for the ' + race.label
+        + ': check their token, or that the clock started on the gun');
+    }
+    return {
+      position: position,
+      name: s.name,
+      mf: blank(s.mf) ? '' : String(s.mf),
+      startSeconds: null,
+      goAtSeconds: null,
+      clockSeconds: clockSeconds,
+      // Whole seconds, rounded UP, as a hand-timed race is: 5:12.1 is 5:13.
+      runSeconds: clockSeconds === null ? null : Math.ceil(clockSeconds - 1e-9),
+      vsStartSeconds: null,
+      ageGrade: null,
+      firstHandicap: false,
+      noData: false,
+      guest: false,
+      winner: false,
+      note: note,
+    };
+  });
 
   rows.sort(function (a, b) {
     if (a.position === null && b.position === null) return a.name.localeCompare(b.name, 'en-GB');

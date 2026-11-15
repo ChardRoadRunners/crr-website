@@ -23,7 +23,7 @@ import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../sheets/handicap/scoring.gs', import.meta.url), 'utf8');
 const S = new Function(
-  `${source}\nreturn { secondsToClock, clockToSeconds, roundToStep, suggestStartTime, goAtTimes, startGroups, slowestStartSeconds, raceResult };`,
+  `${source}\nreturn { secondsToClock, clockToSeconds, roundToStep, suggestStartTime, goAtTimes, startGroups, slowestStartSeconds, raceResult, massResult, raceTypeFromText, RACE_TYPES };`,
 )();
 
 const red = (s) => `\u001b[31m${s}\u001b[0m`;
@@ -223,6 +223,53 @@ check('the first group changing after the clock started is reported, with by how
 check('slowest start time ignores blanks of every kind', () => {
 	assert.equal(S.slowestStartSeconds([{ startSeconds: t(20) }, { startSeconds: null }, {}, { startSeconds: '' }, { startSeconds: t(31) }]), t(31));
 	assert.equal(S.slowestStartSeconds([{}, { startSeconds: null }]), null);
+});
+
+console.log('\nVersion 1.3: the races where everyone starts together');
+check('the Events tab\'s Distance column says which race it is, however it is typed', () => {
+	const cases = { '5k': 'handicap', '': 'handicap', '5 km': 'handicap', Mile: 'mile', '1 mile': 'mile', mile: 'mile',
+		'1500m': 'm1500', 1500: 'm1500', '1500 m': 'm1500', '3k': 'k3', '3 km': 'k3', '3000m': 'k3', '3K': 'k3', '10k': 'handicap' };
+	for (const [text, type] of Object.entries(cases)) assert.equal(S.raceTypeFromText(text), type, JSON.stringify(text));
+	assert.equal(S.raceTypeFromText(undefined), 'handicap');
+	assert.equal(S.raceTypeFromText(1500), 'm1500');
+});
+check('only the handicap is a handicap', () => {
+	assert.deepEqual(Object.entries(S.RACE_TYPES).map(([k, v]) => [k, v.kind]), [['handicap', 'handicap'], ['mile', 'mass'], ['m1500', 'mass'], ['k3', 'mass']]);
+});
+check('a mass-start time is the clock time, in whole seconds rounded up, and start times play no part', () => {
+	const r = S.massResult(
+		[{ name: 'A', mf: 'F', token: 2 }, { name: 'B', mf: 'M', token: 1 }, { name: 'C', mf: 'M', token: null }],
+		[{ clockSeconds: 372.1 }, { clockSeconds: 312 }, { clockSeconds: 340, removed: true }],
+		'mile',
+	);
+	assert.deepEqual(r.rows.map((x) => [x.name, x.position, x.runSeconds, x.mf]), [['B', 1, 312, 'M'], ['A', 2, 373, 'F'], ['C', null, null, 'M']]);
+	assert.equal(r.rows[2].note, 'No finish recorded');
+	assert.deepEqual(r.problems, []);
+});
+check('nobody is called the winner, and no age grade is made up, until age grading is built', () => {
+	const r = S.massResult([{ name: 'A', mf: 'F', token: 1 }], [{ clockSeconds: 400 }], 'mile');
+	assert.deepEqual([r.rows[0].winner, r.rows[0].ageGrade], [false, null]);
+});
+check('the same mix-ups are caught as on a handicap night', () => {
+	const r = S.massResult(
+		[{ name: 'A', token: 1 }, { name: 'B', token: 1 }, { name: 'C', token: 5 }],
+		[{ clockSeconds: 300 }, { clockSeconds: 310 }],
+		'm1500',
+	);
+	assert.deepEqual(r.problems, [
+		'Token 1 is against A and B',
+		'Position 2 (5:10 on the clock) has no runner against it',
+		'C has token 5, but only 2 finishes were timed',
+	]);
+});
+check('a time no one could run is flagged, at each distance', () => {
+	const quick = (type, secs) => S.massResult([{ name: 'A', token: 1 }], [{ clockSeconds: secs }], type).problems;
+	assert.match(quick('mile', 200)[0], /A's time works out at 3:20 for the Mile/);
+	assert.deepEqual(quick('mile', 240), []);
+	assert.match(quick('m1500', 190)[0], /for the 1500m/);
+	assert.deepEqual(quick('m1500', 215), []);
+	assert.match(quick('k3', 400)[0], /for the 3k/);
+	assert.deepEqual(quick('k3', 450), []);
 });
 
 console.log('\nSuggested start time');

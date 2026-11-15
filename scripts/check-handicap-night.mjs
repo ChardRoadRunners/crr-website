@@ -36,7 +36,7 @@ const t = (mins, secs = 0) => mins * 60 + secs;
 
 // A small field with the 27 October cast in it. Start times are made up
 // except where the night's own record gives them (Wayne's 17:30).
-const field = () => makeSheet({
+const FIELD = {
 	raceDateIso: '2026-10-27',
 	raceLabel: '27 Oct 2026',
 	runners: [
@@ -58,7 +58,8 @@ const field = () => makeSheet({
 		{ dateIso: '2026-09-29', name: 'Matt Sheahan', runSeconds: t(22, 3) },
 		{ dateIso: '2026-09-29', name: 'Wayne Loveridge', runSeconds: t(17, 29) },
 	],
-});
+};
+const field = () => makeSheet(FIELD);
 
 console.log('\nBringing a version 1.1 sheet up to 1.2');
 check('the first call from the page adds the tick column, the archive tab and the Settings row', () => {
@@ -293,6 +294,165 @@ check('a second phone pressing Start does not replace a running clock; a restart
 	assert.equal(s.api.api_startClock(s.pin, 1000, false), 1000);
 	assert.equal(s.api.api_startClock(s.pin, 2000, false), 1000);
 	assert.equal(s.api.api_startClock(s.pin, 3000, true), 3000);
+});
+
+console.log('\nVersion 1.3: bringing a 1.2 sheet up to date');
+check('the first call adds Race history and three Settings rows, and touches no formula', () => {
+	const s = makeSheet({ ...FIELD, version: '1.2' });
+	const formulas = JSON.stringify(s.book.formulas);
+	s.api.api_state(s.pin);
+	assert.ok(s.book.sheets['Race history']);
+	assert.deepEqual(s.rows('Race history')[0].slice(0, 8), ['Date', 'Race', 'Distance', 'Runner', 'M or F', 'Time', 'Position', 'Age grade %']);
+	assert.equal(s.rows('Settings')[11][0], 'Finish phone');
+	assert.equal(JSON.stringify(s.book.formulas), formulas);
+});
+check('a handicap night on a 1.3 sheet is a handicap, and says so', () => {
+	const s = night();
+	const state = s.api.api_state(s.pin);
+	assert.deepEqual([state.race.type, state.race.kind, state.race.typeLabel, state.race.label], ['handicap', 'handicap', 'Handicap 5k', '27 Oct 2026']);
+	assert.deepEqual(state.raceTypes.map((t) => t.label), ['Handicap 5k', 'Mile', '1500m', '3k']);
+});
+
+console.log('\nA mile, with a phone at each end');
+const mileNight = (extra = {}) => {
+	const s = makeSheet({ ...FIELD, raceDateIso: '2026-12-08', raceLabel: '8 Dec 2026 \u2014 Mile', distance: 'Mile', ...extra });
+	s.api.api_state(s.pin);
+	for (const name of ['Sean Tovey', 'Stewart Baker', 'Chris Cobb', 'Lisa Palmer']) s.api.api_setRunning(s.pin, name, true);
+	return s;
+};
+check('Events says Mile, so the page is told it is a mass-start race', () => {
+	const s = mileNight();
+	const race = s.api.api_state(s.pin).race;
+	assert.deepEqual([race.type, race.kind, race.typeLabel, race.label], ['mile', 'mass', 'Mile', '8 Dec 2026 \u2014 Mile']);
+});
+check('the time call needs no PIN and reads no sheet', () => {
+	const s = mileNight();
+	const before = Date.now();
+	const t = s.api.api_time();
+	assert.ok(t >= before && t <= Date.now());
+});
+check('the finish phone hears the start the starter made', () => {
+	const s = mileNight();
+	assert.equal(asThePageSeesIt(s.api.api_clock(s.pin)).clockStartMs, undefined);
+	s.api.api_startClock(s.pin, 1765224000000, false);
+	const c = s.api.api_clock(s.pin);
+	assert.deepEqual([c.clockStartMs, c.raceKey], [1765224000000, '2026-12-08|mile']);
+	assert.equal(s.rows('Settings')[8][1], '', 'no "first group" for a race where everyone goes together');
+	assert.throws(() => s.api.api_clock('0000'), /Wrong PIN/);
+});
+const mileTaps = [{ id: 'a', clockSeconds: 311.2 }, { id: 'b', clockSeconds: 340 }, { id: 'c', clockSeconds: 395.6 }, { id: 'd', clockSeconds: 420.9 }];
+const mileFinished = () => {
+	const s = mileNight();
+	s.api.api_startClock(s.pin, 1765224000000, false);
+	s.api.api_syncFinishes(s.pin, mileTaps, 'finish-phone');
+	s.api.api_setToken(s.pin, 'Stewart Baker', 1);
+	s.api.api_setToken(s.pin, 'Sean Tovey', 2);
+	s.api.api_setToken(s.pin, 'Chris Cobb', 3);
+	return s;
+};
+check('the first phone to send a finish is the finish phone; another phone\'s list is refused', () => {
+	const s = mileFinished();
+	assert.equal(s.api.api_clock(s.pin).finishPhone, 'finish-phone');
+	assert.throws(() => s.api.api_syncFinishes(s.pin, [{ id: 'z', clockSeconds: 5 }], 'start-phone'), /ANOTHER_PHONE/);
+	assert.equal(s.rows('Timing').length, 5, 'and the finish phone\'s list is untouched');
+	s.api.api_syncFinishes(s.pin, mileTaps, 'finish-phone');
+	assert.equal(s.rows('Timing').length, 5);
+});
+check('a phone can take the finish over on purpose, and then it is the finish phone', () => {
+	const s = mileFinished();
+	s.api.api_syncFinishes(s.pin, [...mileTaps, { id: 'e', clockSeconds: 450 }], 'spare-phone', true);
+	assert.equal(s.api.api_clock(s.pin).finishPhone, 'spare-phone');
+	assert.equal(s.rows('Timing').length, 6);
+	assert.throws(() => s.api.api_syncFinishes(s.pin, mileTaps, 'finish-phone'), /ANOTHER_PHONE/);
+});
+check('a page from before 1.3, which sends no phone code, still works', () => {
+	const s = mileNight();
+	s.api.api_startClock(s.pin, 1765224000000, false);
+	s.api.api_syncFinishes(s.pin, mileTaps);
+	assert.equal(s.rows('Timing').length, 5);
+	assert.equal(s.api.api_clock(s.pin).finishPhone, '');
+});
+check('someone who ran without being ticked is added with no start time asked for', () => {
+	const s = mileFinished();
+	s.api.api_addLate(s.pin, 'Wayne Loveridge', '', 4);
+	const w = runner(s.api.api_state(s.pin), 'Wayne Loveridge');
+	assert.deepEqual([w.running, w.token], [true, 4]);
+	assert.equal(s.rows('Runners').find((r) => r[0] === 'Wayne Loveridge')[4], '', 'and nothing is written to Simon\'s start time');
+});
+check('a newcomer added at a mile is not marked as a handicap first-timer', () => {
+	const s = mileNight();
+	s.api.api_addRunner(s.pin, 'Brand New', '');
+	assert.equal(s.rows('Runners').find((r) => r[0] === 'Brand New')[16], 'FALSE');
+});
+check('the result: finishing order, whole-second times rounded up, no winner claimed', () => {
+	const s = mileFinished();
+	const result = asThePageSeesIt(s.api.api_result(s.pin));
+	assert.deepEqual(result.rows.map((r) => [r.position, r.name, r.run]), [
+		[1, 'Stewart Baker', '5:12'], [2, 'Sean Tovey', '5:40'], [3, 'Chris Cobb', '6:36'], [undefined, 'Lisa Palmer', ''],
+	]);
+	assert.equal(result.rows.filter((r) => r.winner).length, 0);
+	assert.deepEqual(result.problems, ['Position 4 (7:01 on the clock) has no runner against it']);
+	assert.ok(!JSON.stringify(result).includes('undefined'));
+});
+check('saving goes to Race history and never to the handicap\'s History', () => {
+	const s = mileFinished();
+	const handicapRows = s.rows('History').length;
+	const simon = JSON.stringify(s.rows('Runners').map((r) => r[4]));
+	assert.throws(() => s.api.api_saveRace(s.pin), /There is 1 thing to sort out first/);
+	const done = s.api.api_saveRace(s.pin, true);
+	assert.deepEqual([done.saved, done.winner], [4, '']);
+	assert.equal(s.rows('History').length, handicapRows, 'a mile must not feed the 5k suggestions');
+	assert.equal(JSON.stringify(s.rows('Runners').map((r) => r[4])), simon, 'nor touch Simon\'s start times');
+	const saved = s.rows('Race history').slice(1);
+	assert.deepEqual(saved.map((r) => [r[1], r[2], r[3], r[5], r[6]]), [
+		['8 Dec 2026 \u2014 Mile', 'Mile', 'Stewart Baker', '5:12', '1'], ['8 Dec 2026 \u2014 Mile', 'Mile', 'Sean Tovey', '5:40', '2'],
+		['8 Dec 2026 \u2014 Mile', 'Mile', 'Chris Cobb', '6:36', '3'], ['8 Dec 2026 \u2014 Mile', 'Mile', 'Lisa Palmer', '', ''],
+	]);
+	assert.equal(s.rows('Timing archive').length, 5);
+	const state = asThePageSeesIt(s.api.api_state(s.pin));
+	assert.equal(state.runners.filter((r) => r.running || r.token !== undefined).length, 0);
+	assert.deepEqual([state.clockStartMs, state.finishPhone, state.finishes.length], [undefined, '', 0]);
+	assert.throws(() => { s.api.api_setRunning(s.pin, 'Sean Tovey', true); s.api.api_saveRace(s.pin, true); }, /already in Race history/);
+});
+
+console.log('\nChoosing tonight\'s race on the page');
+check('with nothing due on Events, the page is told there is no race until one is chosen', () => {
+	const s = makeSheet({ ...FIELD, events: false, version: '1.2' });
+	assert.equal(s.api.api_state(s.pin).race.iso, '');
+	const race = s.api.api_setRace(s.pin, 'm1500');
+	assert.deepEqual([race.type, race.kind, race.iso], ['m1500', 'mass', new Date().toISOString().slice(0, 10)]);
+	assert.match(race.label, / \u2014 1500m$/);
+});
+check('a choice on the page overrides Events, and can be handed back', () => {
+	const s = night();
+	assert.equal(s.api.api_setRace(s.pin, 'k3').type, 'k3');
+	assert.equal(s.api.api_state(s.pin).race.kind, 'mass');
+	const back = s.api.api_setRace(s.pin, '');
+	assert.deepEqual([back.type, back.iso], ['handicap', '2026-10-27']);
+});
+check('a choice left over from another day is ignored', () => {
+	const s = night();
+	s.api.api_setRace(s.pin, 'mile');
+	s.book.sheets.Settings.put(11, 2, new Date(Date.now() - 3 * 86400000));
+	assert.equal(s.api.api_state(s.pin).race.type, 'handicap');
+});
+check('the race cannot be changed once the clock is running or finishes are held', () => {
+	const s = night();
+	s.api.api_startClock(s.pin, 1000, false);
+	assert.throws(() => s.api.api_setRace(s.pin, 'mile'), /Reset the clock/);
+	s.api.api_resetClock(s.pin);
+	assert.equal(s.api.api_setRace(s.pin, 'mile').type, 'mile');
+	assert.throws(() => s.api.api_setRace(s.pin, 'marathon'), /No such race/);
+});
+check('saving a race chosen on the page clears the choice, so next time goes by Events again', () => {
+	const s = night();
+	s.api.api_setRace(s.pin, 'mile');
+	s.api.api_startClock(s.pin, 1000, false);
+	s.api.api_syncFinishes(s.pin, [{ id: 'a', clockSeconds: 300 }], 'p');
+	s.api.api_setToken(s.pin, 'Sean Tovey', 1);
+	s.api.api_saveRace(s.pin, true);
+	assert.equal(s.api.api_state(s.pin).race.type, 'handicap');
+	assert.equal(s.rows('History').length, 7, 'and the mile did not land in History');
 });
 
 console.log(failures ? red(`\n${failures} failed\n`) : green('\nthe handicap night checks pass\n'));
