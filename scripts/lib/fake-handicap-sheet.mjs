@@ -78,7 +78,7 @@ class Sheet {
  * `runners`: [{ name, simonStart, suggested }] — suggested in seconds, or
  * omitted for nobody-knows. `history`: [{ dateIso, name, runSeconds }].
  */
-export function makeSheet({ runners, history = [], raceDateIso, raceLabel, pin = '1981', version = '1.1' }) {
+export function makeSheet({ runners, history = [], raceDateIso, raceLabel, pin = '4321', version = '1.1' }) {
 	const book = { sheets: {}, order: [], formulas: {} };
 	const add = (name, rows, columns) => { book.sheets[name] = new Sheet(book, name, rows, columns); book.order.push(name); };
 
