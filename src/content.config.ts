@@ -416,9 +416,33 @@ const contactPage = z.object({
 
   committee: z.object({
     heading: z.string(),
-    // Nothing renders while this is a TODO — a committee list is names and
-    // roles of real people, and inventing one is worse than not having it.
-    body: draftable,
+    intro: draftable,
+    // One entry per role. A role shows with its club address straight away;
+    // the name is added only once that person has said they are happy to be
+    // listed — so an entry with no name is a "not asked yet", not a gap. An
+    // entry with neither a name nor an address shows nothing.
+    //
+    // This repository is public, so a name typed here is published the moment
+    // it is committed, whether or not the page shows it. That is why names
+    // wait for a yes rather than sitting here hidden.
+    roles: z
+      .array(
+        z.object({
+          role: z.string().min(1),
+          name: z.string().min(1).optional(),
+          // Club addresses only. A committee member's own inbox never goes on
+          // the website: the role address forwards to it, and survives the
+          // role changing hands at the AGM.
+          email: z
+            .string()
+            .regex(
+              /^[a-z0-9.+-]+@chardroadrunners\.com$/,
+              "Committee emails must be a club address ending @chardroadrunners.com, never someone's own."
+            )
+            .optional(),
+        })
+      )
+      .default([]),
   }),
 });
 

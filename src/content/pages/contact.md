@@ -35,5 +35,46 @@ whereWeAre:
   credit: © OpenStreetMap contributors
 committee:
   heading: The committee
-  body: TODO — names and roles, once the committee has confirmed who is happy to be listed. Roles only, no personal addresses.
+  intro: Each address belongs to the role rather than the person, so it still reaches the right inbox when a role changes hands at the AGM.
+  roles:
+    - role: Chair
+      name: Claire Gibbs
+      email: chair@chardroadrunners.com
+    - role: Secretary
+      name: Mylena Wheaton
+      email: secretary@chardroadrunners.com
+    - role: Membership secretary
+      name: Helen Hickley
+      email: membership@chardroadrunners.com
+    - role: Welfare officer
+      name: Lizzie Cox
+      email: welfare@chardroadrunners.com
+    - role: Club captain
+      name: Wayne Loveridge
+      email: captain@chardroadrunners.com
+    - role: Championship organiser
+      name: Mike Egan
+      email: championship@chardroadrunners.com
+    - role: Handicap timekeeper
+      name: Simon Hall
+      email: handicap@chardroadrunners.com
+    - role: Race director, Chard Flyer
+      name: Phil Goodridge-Reynolds
+      email: chardflyer@chardroadrunners.com
+    - role: Race director, Forde Abbey 10k
+      name: Simon Hall
+      email: fordeabbey@chardroadrunners.com
+    - role: Social secretaries
+      name: Lizzie Cox and Claire Hall
+      email: social@chardroadrunners.com
+    - role: Couch to 5k lead
+      name: Kate Dobson
+      email: couchto5k@chardroadrunners.com
+    - role: PR and media
+      name: Phil Goodridge-Reynolds
+      email: media@chardroadrunners.com
+    - role: Welfare committee member
+      name: Nicky Smith
+    - role: Committee members
+      name: Maria Wadey and Steve Crook
 ---

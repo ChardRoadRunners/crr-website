@@ -397,9 +397,16 @@ source.
 - **The privacy page** — two sections still empty (Your rights, Who to
   contact), awaiting committee wording. Photographs was written on 2 November
   2026.
-- **The committee list** on the contact page (`src/content/pages/contact.md`) —
-  roles and names, once people have said they are happy to be listed. Nothing
-  renders while it starts with `TODO`.
+- **The committee list** (`src/content/pages/contact.md`) is complete: every
+  committee member agreed to be listed on 29 October 2026. Roles are from the
+  "CRR Roles, Contacts and Email Forwarders" sheet. When a role changes hands,
+  the new holder's name goes in only once they have said yes.
+- **Forwarders for the committee addresses.** chair@, secretary@, captain@,
+  championship@, handicap@, social@, couchto5k@ and media@ are
+  published on the contact page and must each have a Cloudflare Email Routing
+  rule before launch — tracked on the sheet's Email forwarders tab. A routing
+  rule sends to one inbox only, so social@ (two social secretaries) needs one
+  of them to own it, a shared inbox, or a small Email Worker.
 - **Both race pages** (`src/content/races/`) — parking, registration times,
   facilities, baggage, prizes, the course description, and who marshals contact.
   Chard Flyer also has no race director named and no alt text on its hero image.
