@@ -1,6 +1,7 @@
 ---
 import { getEntry } from 'astro:content';
 import ClubNights from '../components/ClubNights.astro';
+import ContourDivider from '../components/ContourDivider.astro';
 import CouchTo5k from '../components/CouchTo5k.astro';
 import Handicap from '../components/Handicap.astro';
 import Hero from '../components/Hero.astro';
@@ -26,9 +27,16 @@ const { hero, whatsOn, clubNights, handicap, pubRuns, couchTo5k, ourRaces } = ho
 <Layout title={SITE_TITLE} description={SITE_DESCRIPTION} overlayHeader hideLogoUntilScrolled>
 	<Hero {...hero} />
 	<WhatsOn {...whatsOn} feedWords={news.data} />
+	{/*
+	  The one divider on the page: the join between the club news above (for
+	  members) and the newcomer sections below. Bands then alternate — white,
+	  pale purple, white, purple, white — so no two sections of the same colour
+	  touch.
+	*/}
+	<ContourDivider />
 	<ClubNights {...clubNights} />
 	<Handicap {...handicap} />
-	<PubRuns {...pubRuns} />
+	<PubRuns {...pubRuns} tone="plain" />
 	<CouchTo5k {...couchTo5k} />
 	<OurRaces {...ourRaces} />
 </Layout>
