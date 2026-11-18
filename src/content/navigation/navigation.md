@@ -87,7 +87,7 @@ footerGroups:
   - label: "Connect"
     links:
       - label: "Facebook"
-        href: "https://www.facebook.com/groups/161908423862991/"
+        href: "https://www.facebook.com/profile.php?id=100057113633601"
       - label: "Instagram"
         href: "https://www.instagram.com/chard_road_runners"
       - label: "Strava"
