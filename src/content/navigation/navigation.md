@@ -88,6 +88,8 @@ footerGroups:
     links:
       - label: "Facebook"
         href: "https://www.facebook.com/groups/161908423862991/"
+      - label: "Instagram"
+        href: "https://www.instagram.com/chard_road_runners"
       - label: "Strava"
         href: "https://www.strava.com/clubs/246805/leaderboard"
       - label: "England Athletics"
