@@ -161,6 +161,45 @@ there is no size or weight at which 1.76:1 becomes readable.
 The daisyUI theme is named `crr`, defined in `src/styles/app.css`, applied via
 `data-theme="crr"` on `<html>`.
 
+### The colour rule
+
+Set 19 November 2026, after drawing every page as a strip of its background
+colours on the design canvas "CRR homepage — What's on layout" (page "Colour
+sequence"). Long pages read better in bands, and a rule keeps every new page
+and every webmaster's post looking like the same site.
+
+**Three colours make every band.** Purple (`bg-primary`) is the banner, one
+feature band at most, and the footer. Pale purple (`bg-base-200`) and white
+(`bg-base-100`) are everything else. **Sky blue and chalk are never a band**:
+sky is for calls to action and the latest-result tile, chalk for the logo.
+
+1. **Every page opens with the purple banner** — `PageHeader` with
+   `overlayHeader` on the layout (the homepage has its own hero).
+2. **Then white and pale purple take turns.** Two sections of the same colour
+   never touch: with no colour change, nothing shows where one ends. Use
+   `Band.astro` and alternate its `tone`; don't set `bg-base-200` on a section
+   by hand. The homepage's Handicap and Pub runs, and Join Us's Which night?
+   and Pub runs, were both pale purple and touching before this rule.
+3. **One purple feature band at most** (Couch to 5k), never straight after the
+   banner or straight before the footer, so it doesn't merge with either.
+4. **The band before the footer is white or pale purple.**
+5. **Pages you read stay white**: a race report, a news post, the news and
+   race report lists, a handicap night, and the welfare, privacy, inclusion
+   and rules pages. One topic read top to bottom; bands would only interrupt.
+6. **One contour divider at most**, where a page changes job (the homepage,
+   between club news and the newcomer sections). Where colours already take
+   turns it isn't needed — Calendar lost its divider to this rule. **The one
+   exception is Our Races**, where every race is white with a divider between
+   each: a list of equals, with more races to come.
+7. **A card is the opposite of its band.** White cards on pale purple; white
+   cards with a border, or pale purple cards, on white. A pale purple card on a
+   pale purple band disappears, and so does a bordered box with no fill: that
+   is why `FindYourName`, the handicap results boxes and the handicap table
+   carry `bg-base-100` of their own.
+
+Page not found is the exception to all of it: one purple panel, banner straight
+into footer, because a dead end has one job.
+
 ### Contour motif
 
 LIDAR topographic contour lines of Chard, from real elevation data. The club's
@@ -309,9 +348,9 @@ solid bar, at this script's 72px. Write those animation rules as longhands: the
 build's minifier folds `animation-timeline` into an `animation` shorthand,
 which browsers reject, and the rule silently disappears.
 
-It loads on every page with a purple banner, which is all of them except Our
-Races and the race reports index: those start with white content and keep a
-solid bar. Without the script the header stays transparent over the banner —
+It loads on every page with a purple banner, which since 19 November 2026 is
+every page: Our Races and Club Kit were the last to start on white under a
+solid bar, and the colour rule (under Brand) gave them banners. Without the script the header stays transparent over the banner —
 less tidy, still perfectly readable, because the scrim behind it is pure CSS
 and the contours sit at an opacity measured to be safe under text.
 

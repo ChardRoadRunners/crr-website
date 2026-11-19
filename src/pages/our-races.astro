@@ -2,7 +2,10 @@
 import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import FormattedDate from '../components/FormattedDate.astro';
+import Band from '../components/Band.astro';
+import ContourDivider from '../components/ContourDivider.astro';
 import ImageFallback from '../components/ImageFallback.astro';
+import PageHeader from '../components/PageHeader.astro';
 import { formatDistance } from '../utils/distance';
 import Layout from '../layouts/Layout.astro';
 import { resolveRaceDate } from '../utils/calendar';
@@ -26,17 +29,29 @@ const races = await Promise.all(
 );
 ---
 
-<Layout title="Our Races" description="The Chard Flyer and Forde Abbey 10k, hosted by Chard Road Runners.">
-	<section class="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-		<h1 class="text-center text-4xl font-bold text-primary">Our Races</h1>
-		<ul class="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-2">
-			{
-				races.map(({ race, when }) => {
-					const { data } = race;
-					const note = data.seriesNote || data.juniorRaceNote;
-					return (
-						<li class="overflow-hidden rounded-box border border-base-300 shadow-sm">
-							<div class="aspect-[2/1] overflow-hidden">
+{/*
+  The purple banner like every other page, then one band per race with a
+  contour divider between them (set 19 November 2026). Until then this page
+  started on white under a solid menu bar and showed the races as two cards
+  side by side; one race to a band leaves room for the two more races the
+  club means to add, with no layout change when they arrive.
+
+  The races are all white, separated by the divider rather than by taking
+  turns with pale purple: the one place the colour rule in CLAUDE.md lets a
+  page use more than one divider, because the races are a list of equals.
+*/}
+<Layout title="Our Races" description="The Chard Flyer and Forde Abbey 10k, hosted by Chard Road Runners." overlayHeader>
+	<PageHeader heading="Our Races" />
+	{
+		races.map(({ race, when }, index) => {
+			const { data } = race;
+			const note = data.seriesNote || data.juniorRaceNote;
+			return (
+				<>
+					{index > 0 && <ContourDivider />}
+					<Band tone="white">
+						<article class="overflow-hidden rounded-box border border-base-300 shadow-sm sm:grid sm:grid-cols-2">
+							<div class="aspect-[2/1] overflow-hidden sm:aspect-auto sm:h-full">
 								{data.heroImage ? (
 									<Image
 										width={640}
@@ -102,10 +117,10 @@ const races = await Promise.all(
 									</p>
 								)}
 							</div>
-						</li>
-					);
-				})
-			}
-		</ul>
-	</section>
+						</article>
+					</Band>
+				</>
+			);
+		})
+	}
 </Layout>

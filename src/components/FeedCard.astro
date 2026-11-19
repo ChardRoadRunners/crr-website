@@ -32,9 +32,16 @@ interface Props {
 	/** Whatever keeps the page's outline in order. */
 	headingLevel?: 2 | 3 | 4;
 	variant?: 'card' | 'compact';
+	/**
+	 * Compact only: from xl (1280px) the photo goes above the headline at
+	 * full card width instead of a small thumbnail beside it. Used by the
+	 * homepage's Latest news, where three posts sit side by side on a wide
+	 * screen and a thumbnail would leave each card mostly empty.
+	 */
+	photoAboveWide?: boolean;
 }
 
-const { item, words, headingLevel = 2, variant = 'card' } = Astro.props;
+const { item, words, headingLevel = 2, variant = 'card', photoAboveWide = false } = Astro.props;
 const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
 const compact = variant === 'compact';
 
@@ -63,13 +70,14 @@ const podium = item.kind === 'handicap' ? item.night.finishers.filter((f) => f.p
 	class:list={[
 		'relative',
 		compact ? 'flex items-start gap-3' : 'grid grid-cols-1 gap-3 sm:grid-cols-[13rem_1fr] sm:gap-6',
+		compact && photoAboveWide && 'xl:flex-col xl:gap-2.5',
 	]}
 >
 	<div
 		class:list={[
 			'overflow-hidden',
 			compact
-				? 'aspect-[3/2] w-24 shrink-0 rounded-md'
+				? ['aspect-[3/2] w-24 shrink-0 rounded-md', photoAboveWide && 'xl:w-full xl:rounded-box']
 				: // On a phone a handicap's three lines sit in a panel their own
 					// height; a photo-shaped block would be mostly empty sky blue.
 					item.kind === 'handicap'
@@ -102,8 +110,14 @@ const podium = item.kind === 'handicap' ? item.night.finishers.filter((f) => f.p
 			) : photo?.heroImage ? (
 				<Image
 					src={photo.heroImage}
-					widths={compact ? [96, 192] : [416, 832]}
-					sizes={compact ? '6rem' : '(min-width: 640px) 13rem, 100vw'}
+					widths={compact ? (photoAboveWide ? [96, 192, 384, 768] : [96, 192]) : [416, 832]}
+					sizes={
+						compact
+							? photoAboveWide
+								? '(min-width: 1280px) 22rem, 6rem'
+								: '6rem'
+							: '(min-width: 640px) 13rem, 100vw'
+					}
 					alt={photo.heroImageAlt ?? ''}
 					class="h-full w-full object-cover"
 					style={{ objectPosition: objectPosition(photo.heroImageCrop) }}
@@ -119,7 +133,7 @@ const podium = item.kind === 'handicap' ? item.night.finishers.filter((f) => f.p
 			<span class:list={['badge badge-purple', compact ? 'badge-xs' : 'badge-sm']}>{label}</span>
 			<FormattedDate date={item.date} approximate={approximate} />
 		</p>
-		<Heading class:list={['font-bold text-base-content', compact ? 'mt-1 text-base leading-snug' : 'mt-1 text-xl']}>
+		<Heading class:list={['font-bold text-base-content', compact ? 'mt-1 text-base leading-snug' : 'mt-1 text-xl', compact && photoAboveWide && 'xl:text-lg']}>
 			<a
 				href={item.href}
 				class="hover:underline focus-visible:outline-none after:absolute after:inset-0 after:rounded-box after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-primary"
