@@ -23,10 +23,6 @@ order: 2
 
 ### The race
 
-Set in the heart of West Dorset, the Forde Abbey 10k Cross Country race rolls through woodlands, meadows and rivers on the stunning Forde Abbey Estate.
-
-The 10km route includes mud, rocky tracks, hills, big views, more hills and two river crossings near to the end, after some more hills. Few race routes rival this for spectacular rural scenery.
-
 With post race catering and races for the whole family, what better way is there to spend a summer evening?
 
 The Forde Abbey 10k attracts seasoned club runners for the 10k, newer runners looking
@@ -44,7 +40,7 @@ The 10km route includes mud, rocky tracks, hills, big views, more hills and two 
 
 ### The junior race
 
-Free Junior 1500m - Online and on the day entries available. Pre entry online will significantly reduce your registration time...
+Free Junior 1500m - Online and on the day entries available. Pre entry online will significantly reduce your registration time.
 
 Registration opens at 17:30 at the Abbey, and the junior race starts at 18:15.
 
@@ -57,4 +53,4 @@ Registration opens at 17:30 at the Abbey, and the junior race starts at 18:15.
 
 ### Volunteering
 
-The race needs marshals. If you can help, contact Phil Goodridge-Reynolds.
+The race needs marshals. If you can help, email [fordeabbey@chardroadrunners.com](mailto:fordeabbey@chardroadrunners.com).

@@ -5,14 +5,15 @@ distance: { value: 10, unit: "km" }
 # The Flyer is always New Year's Day. Update the year each autumn.
 startTime: "11:00:00"
 venue: "Chard Cricket Club"
-entriesOpen: false
+entriesOpen: true
+entryUrl: "https://race-nation.co.uk/register/chard-road-runners/chard-flyer-2027"
 series: "Somerset Series"
 seriesNote: "First race in the Somerset Series"
 juniorRace: false
 raceDirector: "Phil Goodridge-Reynolds"
 contactEmail: "chardflyer@chardroadrunners.com"
 heroImage: "./images/chard-flyer-hero.jpg"
-heroImageAlt: "A reservoir on a summer day, with reeds and purple wildflowers on the bank, ducks on the shore and woodland beyond"
+heroImageAlt: "Chard Reservoir on a summer day, with reeds and purple wildflowers on the bank, ducks on the shore and woodland beyond"
 order: 1
 ---
 
@@ -26,8 +27,8 @@ An on-road 10k on roads and footpaths, with one hill right in the middle.
 
 ### On the day
 
-- **Parking:** Public car parks in the town centre. Boden Street and Essex Close are the closest to race HQ.
-- **Registration:** Opens at 9:30 and closes at 10:30.
+- **Parking:** Public car parks in the town centre. Boden Street and Essex Close are the closest to race HQ at Chard Cricket Club.
+- **Registration:** At Chard Cricket Club. Opens at 9:30 and closes at 10:30.
 - **Facilities:** Toilets, changing rooms, food and a bar.
 - **Baggage:** There is no staffed bag drop. You can leave things in the changing rooms, at your own risk.
 
