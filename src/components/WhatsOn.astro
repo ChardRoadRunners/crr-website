@@ -103,17 +103,28 @@ const latest = posts.slice(0, 3);
   - Phone: one column, everything stacked.
   - From md (768px): two columns. Four tiles make a two-by-two; with three,
     Latest news takes the whole bottom row.
-  - From xl (1280px): the results tiles share the top row between them
-    (three, two or one across, on a six-column grid so all three divide it
-    evenly), and Latest news runs underneath at full width with its three
-    posts side by side.
+  - From xl (1280px), on a six-column grid — option C on the design canvas,
+    chosen 19 November 2026:
+      - both results: the handicap and the championship side by side as a
+        pair, then Coming up beside Latest news, whose three posts show with
+        the photo on top;
+      - one result: it shares the top row with Coming up, and Latest news
+        runs full width underneath;
+      - no results: Coming up beside Latest news.
+    Pairing them keeps every row's tiles close in height, so no tile is left
+    with a block of empty colour at the bottom.
 
   The class names are written out in full, never assembled from pieces,
   because Tailwind only generates classes it can find spelled out in the code.
 */
-const resultTiles = (night ? 1 : 0) + (groups.length > 0 ? 1 : 0) + 1;
-const topSpan = { 1: 'xl:col-span-6', 2: 'xl:col-span-3', 3: 'xl:col-span-2' }[resultTiles];
-const latestSpan = resultTiles % 2 === 0 ? 'md:col-span-2 xl:col-span-6' : 'xl:col-span-6';
+const results = (night ? 1 : 0) + (groups.length > 0 ? 1 : 0);
+const resultSpan = 'xl:col-span-3';
+const comingUpSpan = results === 1 ? 'xl:col-span-3' : 'xl:col-span-2';
+// From md, Latest news takes the whole bottom row when the tile count is odd.
+const latestSpan = [
+	results % 2 === 1 ? 'md:col-span-2' : '',
+	results === 1 ? 'xl:col-span-6' : 'xl:col-span-4',
+].join(' ');
 const tile = 'flex flex-col rounded-box border border-base-300 bg-base-100 p-5';
 ---
 
@@ -126,15 +137,15 @@ const tile = 'flex flex-col rounded-box border border-base-300 bg-base-100 p-5';
 		<div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-6">
 			{
 				night && (
-					<article class:list={['flex flex-col rounded-box bg-accent p-5 text-accent-content', topSpan]}>
+					<article class:list={['flex flex-col rounded-box bg-accent p-5 text-accent-content xl:p-6', resultSpan]}>
 						<p class="text-sm font-semibold tracking-wide uppercase">
 							{words.handicapLabel} · <FormattedDate date={night.date} />
 						</p>
-						<h3 class="mt-1 text-2xl font-bold">
+						<h3 class="mt-1 text-2xl font-bold xl:text-3xl">
 							{fillNight(night.winner ? words.winnerLine : words.noWinnerLine, night)}
 						</h3>
 						{podium.length > 0 && (
-							<ol class="mt-3 space-y-1">
+							<ol class="mt-3 space-y-1 xl:max-w-sm">
 								{podium.map((runner) => (
 									<li class="flex gap-2">
 										<span class="w-5 text-right tabular-nums">{runner.position}</span>
@@ -156,7 +167,7 @@ const tile = 'flex flex-col rounded-box border border-base-300 bg-base-100 p-5';
 
 			{
 				groups.length > 0 && (
-					<article class:list={[tile, topSpan]}>
+					<article class:list={[tile, 'xl:p-6', resultSpan]}>
 						<h3 class="text-xl font-bold text-primary">
 							{words.championshipHeading} {CHAMPIONSHIP_SEASON}
 						</h3>
@@ -179,7 +190,7 @@ const tile = 'flex flex-col rounded-box border border-base-300 bg-base-100 p-5';
 				)
 			}
 
-			<div class:list={[tile, topSpan]}>
+			<div class:list={[tile, comingUpSpan]}>
 				<h3 class="text-xl font-bold text-primary">{words.comingUpHeading}</h3>
 				{
 					comingUp.length === 0 ? (
@@ -217,10 +228,10 @@ const tile = 'flex flex-col rounded-box border border-base-300 bg-base-100 p-5';
 					latest.length === 0 ? (
 						<p class="mt-3 text-base-content/80">{words.latestEmpty}</p>
 					) : (
-						<ul class="mt-3 grid grid-cols-1 gap-4 xl:grid-cols-3">
+						<ul class="mt-3 grid grid-cols-1 gap-4 xl:grid-cols-3 xl:gap-5">
 							{latest.map((item) => (
 								<li>
-									<FeedCard item={item} words={words.feedWords} headingLevel={4} variant="compact" />
+									<FeedCard item={item} words={words.feedWords} headingLevel={4} variant="compact" photoAboveWide />
 								</li>
 							))}
 						</ul>
