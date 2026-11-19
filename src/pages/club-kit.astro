@@ -1,10 +1,14 @@
 ---
+import Band from '../components/Band.astro';
+import PageHeader from '../components/PageHeader.astro';
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Club Kit" description="Chard Road Runners club kit — photos, sizes and prices.">
-	<section class="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6 lg:px-8">
-		<h1 class="text-4xl font-bold text-primary">Club Kit</h1>
-		<p class="mt-4 text-lg text-base-content/70">Page content coming soon.</p>
-	</section>
+{/* The purple banner like every other page (the colour rule in CLAUDE.md),
+    set 19 November 2026. Still a placeholder until the kit designs are in. */}
+<Layout title="Club Kit" description="Chard Road Runners club kit — photos, sizes and prices." overlayHeader>
+	<PageHeader heading="Club Kit" />
+	<Band tone="white" class="py-16">
+		<p class="text-lg text-base-content/70">Page content coming soon.</p>
+	</Band>
 </Layout>
