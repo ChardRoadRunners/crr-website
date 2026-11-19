@@ -17,6 +17,7 @@
 // Results tab — the timing page in that sheet decides positions and the
 // winner. Records have no backend yet, so they say so in their own words
 // rather than showing an empty table.
+import Band from '../components/Band.astro';
 import { getEntry } from 'astro:content';
 
 import ChampionshipStandings from '../components/ChampionshipStandings.astro';
@@ -80,7 +81,12 @@ const sections = [
 <Layout title="Results" description={seo.description} overlayHeader>
 	<PageHeader heading={hero.heading} strapline={hero.strapline} />
 
-	<div class="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+	{/*
+	  Three bands, one per section, taking turns: pale purple, white, pale
+	  purple — the colour rule in CLAUDE.md. They replace the thin rules that
+	  used to be the only thing between the sections.
+	*/}
+	<Band tone="pale" class="py-10">
 		<nav aria-label={jumpLabel} class="flex flex-wrap gap-2">
 			{
 				sections.map((section) => (
@@ -116,7 +122,7 @@ const sections = [
 							winnerOnlyNote={handicap.winnerOnlyNote}
 							emptyState={handicap.emptyState}
 						/>
-						<p class="mt-6 text-sm text-base-content/60">
+						<p class="mt-6 text-sm text-base-content/70">
 							{handicap.updatedLabel}{' '}
 							<FormattedDate date={handicapResults.readAt} weekday={false} />.{' '}
 							{handicap.updatedNote}
@@ -126,9 +132,12 @@ const sections = [
 			}
 		</section>
 
+	</Band>
+
+	<Band tone="white">
 		{/* id="championship" is also the target of the redirect from the old site's
 		    /club-championship, in public/_redirects. Rename it there too. */}
-		<section id="championship" class="mt-12 scroll-mt-20 border-t border-base-300 pt-8">
+		<section id="championship" class="scroll-mt-20">
 			<h2 class="text-3xl font-bold text-primary">
 				{championship.heading} {CHAMPIONSHIP_SEASON}
 			</h2>
@@ -172,7 +181,7 @@ const sections = [
 							<p class="mt-6 text-sm text-base-content/70">{championship.scoreNote}</p>
 						)}
 
-						<p class="mt-6 text-sm text-base-content/60">
+						<p class="mt-6 text-sm text-base-content/70">
 							{championship.updatedLabel}{' '}
 							<FormattedDate date={standings.readAt} weekday={false} />.{' '}
 							{championship.updatedNote}
@@ -195,16 +204,19 @@ const sections = [
 			}
 		</section>
 
+	</Band>
+
+	<Band tone="pale">
 		{/* Still waiting on a backend. */}
-		<section id="records" class="mt-12 scroll-mt-20 border-t border-base-300 pt-8">
+		<section id="records" class="scroll-mt-20">
 			<h2 class="text-3xl font-bold text-primary">{records.heading}</h2>
 			<p class="mt-3 text-base-content/80">{records.body}</p>
-			{records.notPublished && <p class="mt-2 text-sm text-base-content/60">{records.notPublished}</p>}
+			{records.notPublished && <p class="mt-2 text-sm text-base-content/70">{records.notPublished}</p>}
 		</section>
 
 		<RichText
 			text={footnote}
 			class="mt-12 border-t border-base-300 pt-8 text-base-content/80"
 		/>
-	</div>
+	</Band>
 </Layout>
