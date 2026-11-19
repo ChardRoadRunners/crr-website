@@ -1,0 +1,34 @@
+---
+// A full-width background band, white or pale purple, with the page's usual
+// centred column inside it.
+//
+// The site's colour rule (CLAUDE.md, "The colour rule"): after the purple
+// banner, sections take turns, white then pale purple, so two of the same
+// colour never touch. This is the piece that makes the turns. A page puts
+// each section in a Band and alternates `tone`; it never sets bg-base-200
+// on a section by hand.
+//
+// Anything with a border inside a pale purple band — a card, a table, a
+// search box — needs its own bg-base-100, or it vanishes into the band.
+// Rule 7 of the colour rule.
+
+interface Props {
+	tone: 'white' | 'pale';
+	/** The column's width, matching the page's other sections. */
+	width?: '3xl' | '4xl' | '5xl';
+	/** Extra classes for the inner column, usually its vertical padding. */
+	class?: string;
+	id?: string;
+}
+
+const { tone, width = '3xl', class: className = 'py-12', id } = Astro.props;
+
+// Written out in full: Tailwind only generates classes it can find spelled out.
+const widths = { '3xl': 'max-w-3xl', '4xl': 'max-w-4xl', '5xl': 'max-w-5xl' };
+---
+
+<div class:list={[tone === 'pale' ? 'bg-base-200' : 'bg-base-100']} id={id}>
+	<div class:list={['mx-auto px-4 sm:px-6 lg:px-8', widths[width], className]}>
+		<slot />
+	</div>
+</div>

@@ -46,7 +46,7 @@ const nightHref = (dateIso: string) => `/results/handicap/${dateIso}/`;
 		<p class="mt-4 text-base-content/80">{emptyState}</p>
 	) : (
 		<>
-			<div class="mt-6 rounded-box border border-base-300 p-4 sm:p-6">
+			<div class="mt-6 rounded-box border border-base-300 bg-base-100 p-4 sm:p-6">
 				<p class="text-sm font-semibold tracking-wide text-base-content/70 uppercase">
 					{latestHeading}
 				</p>
@@ -83,7 +83,7 @@ const nightHref = (dateIso: string) => `/results/handicap/${dateIso}/`;
 			{earlier.length > 0 && (
 				<div class="mt-8">
 					<h3 class="text-xl font-semibold text-primary">{earlierHeading}</h3>
-					<ul class="mt-3 divide-y divide-base-300 rounded-md border border-base-300">
+					<ul class="mt-3 divide-y divide-base-300 rounded-md border border-base-300 bg-base-100">
 						{earlier.map((night) => (
 							<li>
 								<a
