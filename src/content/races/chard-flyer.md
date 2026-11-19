@@ -9,36 +9,34 @@ entriesOpen: false
 series: "Somerset Series"
 seriesNote: "First race in the Somerset Series"
 juniorRace: false
-raceDirector: "TODO"
+raceDirector: "Phil Goodridge-Reynolds"
 contactEmail: "chardflyer@chardroadrunners.com"
 heroImage: "./images/chard-flyer-hero.jpg"
-heroImageAlt: ""
+heroImageAlt: "A reservoir on a summer day, with reeds and purple wildflowers on the bank, ducks on the shore and woodland beyond"
 order: 1
 ---
 
-## The race
+### The race
 
-Start the year right with the Chard Flyer 10k.  After a race briefing at the Chard Cricket Club, this 10k road race starts at Stringfellow Park and takes in a loop around around Chard Reservoir.  As with the majority of Somerset Series races there is some decent scenery to look at.
+Start the year right with the Chard Flyer 10k.  After a race briefing at the Chard Cricket Club, this 10k road race starts at Stringfellow Park and takes in a loop around Chard Reservoir.  As with the majority of Somerset Series races there is some decent scenery to look at.
 
-## The route
+### The route
 
-TODO — describe the course. Road or mixed? Where are the hills? Anything
-distinctive to warn people about or sell them on.
+An on-road 10k on roads and footpaths, with one hill right in the middle.
 
-Route map and elevation profile to be added.
+### On the day
 
-## On the day
+- **Parking:** Public car parks in the town centre. Boden Street and Essex Close are the closest to race HQ.
+- **Registration:** Opens at 9:30 and closes at 10:30.
+- **Facilities:** Toilets, changing rooms, food and a bar.
+- **Baggage:** There is no staffed bag drop. You can leave things in the changing rooms, at your own risk.
 
-- **Parking:** TODO
-- **Registration:** TODO — from what time, where
-- **Facilities:** TODO — toilets, changing, refreshments
-- **Baggage:** TODO
+### Prizes and categories
 
-## Prizes and categories
+- 1st, 2nd and 3rd man and lady
+- Fastest in each veteran category
+- Fastest affiliated club team of two men and two ladies
 
-TODO — what categories are prizes awarded in?
+### Volunteering
 
-## Volunteering
-
-TODO — the club needs marshals. Who do people contact, and roughly how many
-are needed?
+The race needs around 30 marshals. If you can help, contact the race director, Phil Goodridge-Reynolds, at [chardflyer@chardroadrunners.com](mailto:chardflyer@chardroadrunners.com).
