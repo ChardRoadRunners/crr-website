@@ -1808,6 +1808,70 @@ collections:
             widget: string
             hint: Above the share buttons at the foot of each club news post.
 
+      # The Our Races page, /our-races. Mirrors ourRacesPage in
+      # src/content.config.ts. The races themselves are under "Our races".
+      - name: our-races
+        label: Our Races page
+        file: src/content/pages/our-races.md
+        fields:
+          - { name: page, widget: hidden, default: our-races }
+
+          - label: Top of the page
+            name: hero
+            widget: object
+            fields:
+              - { label: Heading, name: heading, widget: string }
+
+          - label: Search engines
+            name: seo
+            widget: object
+            fields:
+              - label: Description
+                name: description
+                widget: text
+                hint: What Google shows under the page title.
+
+          - label: Junior race badge
+            name: juniorRaceBadge
+            widget: string
+            hint: Beside the name of a race that has a junior race.
+
+          - label: When the date is not known
+            name: dateToBeConfirmed
+            widget: string
+            hint: Shown in place of the date until next year's is on the club races calendar.
+
+          - label: Start time
+            name: startsLabel
+            widget: string
+            hint: "{time} is filled in from the race, for example \"Starts 11:00\" — keep the braces."
+
+          - label: Race director
+            name: raceDirectorLabel
+            widget: string
+            hint: "{name} is filled in from the race — keep the braces."
+
+          - label: Entry button
+            name: enterLabel
+            widget: string
+            hint: Shown while a race's entries are open.
+
+          - label: When entries are not open
+            name: entriesNotOpenLabel
+            widget: string
+
+          - label: Results link
+            name: resultsLabel
+            widget: string
+
+          - label: Facebook event link
+            name: facebookEventLabel
+            widget: string
+
+          - label: Above the race email
+            name: questionsLabel
+            widget: string
+
   # =========================================================================
   # LEGAL AND POLICY PAGES
   # =========================================================================

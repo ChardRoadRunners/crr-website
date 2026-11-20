@@ -734,6 +734,28 @@ const newsPage = z.object({
   shareHeading: z.string(),
 });
 
+// The Our Races page, /our-races. Added 20 November 2026: until then its
+// labels were written into the page code, against the copy rule in CLAUDE.md.
+// The races themselves are the `races` collection; this is only the wording
+// around them. {time} is the race's start time, "11:00"; {name} the race
+// director.
+const ourRacesPage = z.object({
+  page: z.literal("our-races"),
+  hero: z.object({ heading: z.string() }),
+  seo: z.object({ description: z.string() }),
+  juniorRaceBadge: z.string(),
+  // In place of the date while next year's is not on the club-races calendar.
+  dateToBeConfirmed: z.string(),
+  startsLabel: z.string(),
+  raceDirectorLabel: z.string(),
+  enterLabel: z.string(),
+  entriesNotOpenLabel: z.string(),
+  resultsLabel: z.string(),
+  facebookEventLabel: z.string(),
+  // Above each race's email address.
+  questionsLabel: z.string(),
+});
+
 // One collection, one file per page, each page its own shape. The `page`
 // field picks the branch — which also means a validation error names the
 // field that's wrong instead of listing every page's fields at once.
@@ -747,6 +769,7 @@ const pages = defineCollection({
     pubRunsPage,
     resultsPage,
     newsPage,
+    ourRacesPage,
   ]),
 });
 
