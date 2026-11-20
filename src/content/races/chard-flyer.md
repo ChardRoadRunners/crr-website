@@ -6,7 +6,7 @@ distance: { value: 10, unit: "km" }
 startTime: "11:00:00"
 venue: "Chard Cricket Club"
 entriesOpen: true
-entryUrl: "https://race-nation.co.uk/register/chard-road-runners/chard-flyer-2027"
+entryUrl: "https://race-nation.co.uk/register/chard-road-runners"
 series: "Somerset Series"
 seriesNote: "First race in the Somerset Series"
 juniorRace: false
