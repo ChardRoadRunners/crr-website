@@ -1,6 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import { getCollection } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import FormattedDate from '../components/FormattedDate.astro';
 import Band from '../components/Band.astro';
 import ContourDivider from '../components/ContourDivider.astro';
@@ -25,8 +25,13 @@ const races = await Promise.all(
 		.map(async (race) => ({
 			race,
 			when: await resolveRaceDate(race.data.title, race.data.nextDate, now),
+			// The race file's own text: route, race day, prizes, marshals.
+			Content: (await render(race)).Content,
 		})),
 );
+
+// "11:00:00" from the CMS time picker, shown as "11:00".
+const startLabel = (time?: string) => (time && /^\d{2}:\d{2}/.test(time) ? time.slice(0, 5) : undefined);
 ---
 
 {/*
@@ -43,9 +48,10 @@ const races = await Promise.all(
 <Layout title="Our Races" description="The Chard Flyer and Forde Abbey 10k, hosted by Chard Road Runners." overlayHeader>
 	<PageHeader heading="Our Races" />
 	{
-		races.map(({ race, when }, index) => {
+		races.map(({ race, when, Content }, index) => {
 			const { data } = race;
 			const note = data.seriesNote || data.juniorRaceNote;
+			const start = startLabel(data.startTime);
 			return (
 				<>
 					{index > 0 && <ContourDivider />}
@@ -80,8 +86,12 @@ const races = await Promise.all(
 									)}
 									{' · '}
 									{formatDistance(data.distance)}
+									{start && ` · Starts ${start}`}
 									{data.venue && ` · ${data.venue}`}
 								</p>
+								{data.raceDirector && !data.raceDirector.includes('TODO') && (
+									<p class="mt-1 text-sm text-base-content/70">Race director: {data.raceDirector}</p>
+								)}
 								{note && <p class="mt-3 text-base-content/70">{note}</p>}
 								<div class="mt-4 flex flex-wrap items-center gap-3">
 									{data.entriesOpen && data.entryUrl ? (
@@ -118,6 +128,13 @@ const races = await Promise.all(
 								)}
 							</div>
 						</article>
+						{/*
+						  The race file's text, under its card (added 19 November 2026).
+						  Its headings are h3, under the race's h2 in the card.
+						*/}
+						<div class="prose mx-auto max-w-3xl pt-8">
+							<Content />
+						</div>
 					</Band>
 				</>
 			);
