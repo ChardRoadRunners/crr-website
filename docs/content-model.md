@@ -17,7 +17,7 @@ Seven, all in `src/content/`:
   not a report on a race. Added 28 October 2026. See *news frontmatter* below.
 - **`races`** — the two club-hosted races.
 - **`pages`** — copy for one-off pages (`home.md`, `join-us.md`, `pub-runs.md`,
-  `calendar.md`, `contact.md`, `results.md`, `news.md`).
+  `calendar.md`, `contact.md`, `results.md`, `news.md`, `our-races.md`).
   A discriminated union: each entry is its own shape, picked by the `page`
   field. Some of these pages carry only the wording around a list whose
   contents come from elsewhere — `calendar.md`, `pub-runs.md` and `results.md`

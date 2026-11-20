@@ -1,6 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import { getCollection, render } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
 import FormattedDate from '../components/FormattedDate.astro';
 import Band from '../components/Band.astro';
 import ContourDivider from '../components/ContourDivider.astro';
@@ -12,6 +12,10 @@ import { resolveRaceDate } from '../utils/calendar';
 import { objectPosition } from '../utils/crop';
 
 const now = new Date();
+
+const page = await getEntry('pages', 'our-races');
+if (page?.data.page !== 'our-races') throw new Error('src/content/pages/our-races.md is missing.');
+const words = page.data;
 
 /*
   The date comes from the club-races calendar, which is what the committee
@@ -45,8 +49,8 @@ const startLabel = (time?: string) => (time && /^\d{2}:\d{2}/.test(time) ? time.
   turns with pale purple: the one place the colour rule in CLAUDE.md lets a
   page use more than one divider, because the races are a list of equals.
 */}
-<Layout title="Our Races" description="The Chard Flyer and Forde Abbey 10k, hosted by Chard Road Runners." overlayHeader>
-	<PageHeader heading="Our Races" />
+<Layout title={words.hero.heading} description={words.seo.description} overlayHeader>
+	<PageHeader heading={words.hero.heading} />
 	{
 		races.map(({ race, when, Content }, index) => {
 			const { data } = race;
@@ -73,7 +77,7 @@ const startLabel = (time?: string) => (time && /^\d{2}:\d{2}/.test(time) ? time.
 							<div class="p-5">
 								<div class="flex flex-wrap items-center gap-2">
 									<h2 class="text-xl font-bold text-base-content">{data.title}</h2>
-									{data.juniorRace && <span class="badge badge-purple">Junior race</span>}
+									{data.juniorRace && <span class="badge badge-purple">{words.juniorRaceBadge}</span>}
 								</div>
 								<p class="mt-1 text-sm text-base-content/60">
 									{when.date ? (
@@ -82,33 +86,33 @@ const startLabel = (time?: string) => (time && /^\d{2}:\d{2}/.test(time) ? time.
 											timeZone={when.showTime ? 'Europe/London' : 'UTC'}
 										/>
 									) : (
-										'Date to be confirmed'
+										words.dateToBeConfirmed
 									)}
 									{' · '}
 									{formatDistance(data.distance)}
-									{start && ` · Starts ${start}`}
+									{start && ` · ${words.startsLabel.replace('{time}', start)}`}
 									{data.venue && ` · ${data.venue}`}
 								</p>
 								{data.raceDirector && !data.raceDirector.includes('TODO') && (
-									<p class="mt-1 text-sm text-base-content/70">Race director: {data.raceDirector}</p>
+									<p class="mt-1 text-sm text-base-content/70">{words.raceDirectorLabel.replace('{name}', data.raceDirector)}</p>
 								)}
 								{note && <p class="mt-3 text-base-content/70">{note}</p>}
 								<div class="mt-4 flex flex-wrap items-center gap-3">
 									{data.entriesOpen && data.entryUrl ? (
 										<a href={data.entryUrl} class="btn btn-accent btn-sm">
-											Enter now
+											{words.enterLabel}
 										</a>
 									) : (
-										<span class="badge badge-outline">Entries not yet open</span>
+										<span class="badge badge-outline">{words.entriesNotOpenLabel}</span>
 									)}
 									{data.resultsUrl && (
 										<a href={data.resultsUrl} class="link link-primary text-sm">
-											Results
+											{words.resultsLabel}
 										</a>
 									)}
 									{data.facebookEventUrl && (
 										<a href={data.facebookEventUrl} class="link link-primary text-sm">
-											Facebook event
+											{words.facebookEventLabel}
 										</a>
 									)}
 								</div>
@@ -120,7 +124,7 @@ const startLabel = (time?: string) => (time && /^\d{2}:\d{2}/.test(time) ? time.
 								*/}
 								{data.contactEmail && (
 									<p class="mt-4 border-t border-base-300 pt-3 text-sm text-base-content/70">
-										Questions about this race?{' '}
+										{words.questionsLabel}{' '}
 										<a href={`mailto:${data.contactEmail}`} class="link link-primary">
 											{data.contactEmail}
 										</a>
