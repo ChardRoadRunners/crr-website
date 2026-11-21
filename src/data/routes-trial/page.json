@@ -1,0 +1,35 @@
+{
+  "seo": {
+    "description": "Six Tuesday club runs drawn on the LIDAR contours of Chard, with the distance and average pace of each. A trial for the club route library."
+  },
+  "hero": {
+    "heading": "Club run routes",
+    "strapline": "A trial: six Tuesday club runs, drawn on the contours of Chard."
+  },
+  "intro": "There are no set routes at Chard Road Runners. On a Tuesday the run leader picks one, and everyone follows. These are six of them, recorded on one member's watch, so you can see where the groups go and how quick they are.\n\nEvery run starts and finishes at Chard Cricket Club, the white dot on each map.",
+  "groups": [
+    {
+      "key": "slower",
+      "heading": "Slower 10k"
+    },
+    {
+      "key": "faster",
+      "heading": "Faster 10k"
+    },
+    {
+      "key": "tom",
+      "heading": "Tom's group"
+    }
+  ],
+  "labels": {
+    "distance": "Distance",
+    "pace": "Average pace",
+    "perKm": "/km",
+    "perMile": "/mi",
+    "mapLabel": "Map of the club run on {date}, {distance}, starting and finishing at Chard Cricket Club."
+  },
+  "about": {
+    "heading": "About these numbers",
+    "body": "The pace is one runner's average over the whole run, moving time only, so it takes in the hills but not the stops to regroup. Each group's pace changes from week to week with who turns up and who is leading.\n\nThe contour lines are the club's own LIDAR elevation data, five metres apart, with every 25 metres drawn a little stronger. Each map is scaled to fit its route, so two maps side by side are not at the same scale."
+  }
+}
