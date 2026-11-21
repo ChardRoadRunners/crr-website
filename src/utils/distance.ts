@@ -39,3 +39,13 @@ const format = (distance: Distance, unit: Unit): string => `${round(convert(dist
 export function formatDistance(distance: Distance): string {
 	return `${format(distance, distance.unit)} (${format(distance, otherUnit(distance.unit))})`;
 }
+
+/**
+ * The same two figures as formatDistance, kept apart so a layout can stack
+ * them: { primary: "10.1km", other: "6.3mi" }. Same rounding, same units —
+ * only the brackets are left out. Used by the route tiles, where the pair on
+ * one line wrapped on a phone.
+ */
+export function distanceParts(distance: Distance): { primary: string; other: string } {
+	return { primary: format(distance, distance.unit), other: format(distance, otherUnit(distance.unit)) };
+}
