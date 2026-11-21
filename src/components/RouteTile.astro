@@ -1,0 +1,156 @@
+---
+// One club run drawn on the LIDAR contours, with its distance and average
+// pace along the bottom. A TRIAL for the route library (backlog, Q1 2027):
+// see scripts/routes-trial/README.md for where the drawing comes from.
+//
+// Everything on the map is worked out before the build, by
+// scripts/routes-trial/make_tiles.py, and arrives as finished SVG paths in
+// src/data/routes-trial/tiles.json. No mapping library and no script on the
+// page: it is a picture with numbers under it.
+//
+// The rule from CLAUDE.md about contours and words: never contours behind
+// text. The date chip and the bottom bar are solid purple, and the contours
+// stop above the bar.
+import { distanceParts, formatDistance } from '../utils/distance';
+
+interface Route {
+	group: string;
+	date: string;
+	distanceKm: number;
+	paceSecondsPerKm: number;
+	viewBox: string;
+	contoursMinor: string;
+	contoursMajor: string;
+	route: string;
+	start: [number, number];
+	/** Where the contour data stops inside this tile, if it does: x, y, width, height. */
+	dataEdge: [number, number, number, number] | null;
+}
+
+interface Props {
+	route: Route;
+	labels: { distance: string; pace: string; perKm: string; perMile: string; mapLabel: string };
+}
+
+const { route, labels } = Astro.props;
+
+const KM_PER_MILE = 1.609344;
+const clock = (seconds: number) => {
+	const s = Math.round(seconds);
+	return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
+
+// Noon UTC, so the date cannot slip a day whatever the build machine's clock.
+const when = new Date(`${route.date}T12:00:00Z`);
+const dateShort = when.toLocaleDateString('en-GB', {
+	weekday: 'short',
+	day: 'numeric',
+	month: 'short',
+	year: 'numeric',
+	timeZone: 'Europe/London',
+});
+const dateLong = when.toLocaleDateString('en-GB', {
+	weekday: 'long',
+	day: 'numeric',
+	month: 'long',
+	year: 'numeric',
+	timeZone: 'Europe/London',
+});
+
+const rounded = { value: Math.round(route.distanceKm * 10) / 10, unit: 'km' as const };
+const distance = formatDistance(rounded);
+const parts = distanceParts(rounded);
+const paceKm = clock(route.paceSecondsPerKm);
+const paceMile = clock(route.paceSecondsPerKm * KM_PER_MILE);
+// Ids inside an inline SVG are page-wide, so each tile's mask needs its own.
+const maskId = `route-data-${route.date}`;
+
+// The mask is the data's own rectangle, blurred, pulled in from the sides
+// where the data stops so the fade happens inside the data, and pushed out past
+// the tile on the sides where it doesn't, so those keep their contours to the
+// edge.
+const [tileWidth, tileHeight] = route.viewBox.split(' ').slice(2).map(Number);
+const FADE = 14;
+const fade = route.dataEdge && (() => {
+	const [x, y, w, h] = route.dataEdge;
+	const left = x > 0.5 ? x + FADE : -4 * FADE;
+	const top = y > 0.5 ? y + FADE : -4 * FADE;
+	const right = x + w < tileWidth - 0.5 ? x + w - FADE : tileWidth + 4 * FADE;
+	const bottom = y + h < tileHeight - 0.5 ? y + h - FADE : tileHeight + 4 * FADE;
+	return { x: left, y: top, width: Math.max(right - left, 0), height: Math.max(bottom - top, 0) };
+})();
+const mapLabel = labels.mapLabel.replace('{date}', dateLong).replace('{distance}', distance);
+---
+
+<figure class="overflow-hidden rounded-box bg-primary text-primary-content shadow-sm">
+	<div class="relative">
+		<svg viewBox={route.viewBox} class="block h-auto w-full" role="img" aria-label={mapLabel}>
+			{
+				/* The club's LIDAR covers about 6.7 by 7.6 km round Chard. Where a
+				   run goes past it, the contours fade out instead of stopping at
+				   a hard straight edge that looks like a fault. */
+				fade && (
+					<defs>
+						<filter id={`${maskId}-blur`} x="-50%" y="-50%" width="200%" height="200%">
+							<feGaussianBlur stdDeviation={FADE} />
+						</filter>
+						<mask id={maskId} maskUnits="userSpaceOnUse">
+							<rect
+								x={fade.x}
+								y={fade.y}
+								width={fade.width}
+								height={fade.height}
+								fill="white"
+								filter={`url(#${maskId}-blur)`}
+							/>
+						</mask>
+					</defs>
+				)
+			}
+			<g
+				fill="none"
+				stroke="#8AABC6"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				mask={fade ? `url(#${maskId})` : undefined}
+				aria-hidden="true"
+			>
+				<path d={route.contoursMinor} stroke-width="1" opacity="0.35" vector-effect="non-scaling-stroke" />
+				<path d={route.contoursMajor} stroke-width="1.6" opacity="0.6" vector-effect="non-scaling-stroke" />
+			</g>
+			<g fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				{/* A purple casing under the line keeps it clear of the contours it crosses. */}
+				<path d={route.route} stroke="#262141" stroke-width="7" vector-effect="non-scaling-stroke" />
+				<path d={route.route} stroke="#96C8FA" stroke-width="3.5" vector-effect="non-scaling-stroke" />
+			</g>
+			<circle
+				cx={route.start[0]}
+				cy={route.start[1]}
+				r="6"
+				fill="#F2EFE9"
+				stroke="#262141"
+				stroke-width="2.5"
+				aria-hidden="true"
+			/>
+		</svg>
+		<p class="absolute top-2 left-2 rounded-field bg-primary px-2 py-1 text-sm font-semibold">
+			<time datetime={route.date}>{dateShort}</time>
+		</p>
+	</div>
+	{/* Spans, not paragraphs: the base paragraph margin would open a gap
+	    between each figure and its other unit. */}
+	<figcaption class="grid grid-cols-2 gap-3 px-4 pt-2 pb-4">
+		<div class="flex flex-col">
+			<span class="text-xs font-semibold tracking-wide text-sky uppercase">{labels.distance}</span>
+			<span class="mt-1 text-2xl leading-tight font-bold">{parts.primary}</span>
+			<span class="text-sm text-primary-content/80">{parts.other}</span>
+		</div>
+		<div class="flex flex-col">
+			<span class="text-xs font-semibold tracking-wide text-sky uppercase">{labels.pace}</span>
+			<span class="mt-1 text-2xl leading-tight font-bold">
+				{paceKm}<span class="text-base font-semibold"> {labels.perKm}</span>
+			</span>
+			<span class="text-sm text-primary-content/80">{paceMile} {labels.perMile}</span>
+		</div>
+	</figcaption>
+</figure>

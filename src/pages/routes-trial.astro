@@ -1,0 +1,65 @@
+---
+// Route tiles — A TRIAL, on its own branch, for the route library the
+// committee put in Q1 2027 (backlog, "Route library"). Not in the menu or the
+// footer, and PRE_LAUNCH keeps it out of search like every other page.
+//
+// The words come from src/data/routes-trial/page.json and the maps from
+// src/data/routes-trial/tiles.json, written by
+// scripts/routes-trial/make_tiles.py. A JSON file rather than a pages
+// collection entry on purpose: adding a page type to the collection means a
+// matching change to the CMS config in the same commit, which is the right
+// price for the real library and the wrong one for a trial. See
+// scripts/routes-trial/README.md.
+import Band from '../components/Band.astro';
+import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import RichText from '../components/RichText.astro';
+import RouteTile from '../components/RouteTile.astro';
+import page from '../data/routes-trial/page.json';
+import tiles from '../data/routes-trial/tiles.json';
+
+type Tile = (typeof tiles)[number] & { start: [number, number]; dataEdge: [number, number, number, number] | null };
+
+// Every route belongs to a group the page names, or the build stops: a route
+// silently missing from the page is worse than a failed build.
+const keys = new Set(page.groups.map((group) => group.key));
+const strays = tiles.filter((tile) => !keys.has(tile.group));
+if (strays.length > 0) {
+	throw new Error(`routes-trial: tiles with no group on the page: ${strays.map((t) => t.date).join(', ')}`);
+}
+
+const groups = page.groups.map((group) => ({
+	...group,
+	routes: (tiles as Tile[]).filter((tile) => tile.group === group.key).sort((a, b) => b.date.localeCompare(a.date)),
+}));
+---
+
+<Layout title={page.hero.heading} description={page.seo.description} overlayHeader>
+	<PageHeader heading={page.hero.heading} strapline={page.hero.strapline} />
+
+	<Band tone="white" width="4xl">
+		<RichText text={page.intro} class="max-w-3xl text-base-content/80" />
+	</Band>
+
+	{
+		groups.map((group, index) => (
+			<Band tone={index % 2 === 0 ? 'pale' : 'white'} width="4xl">
+				<section id={group.key} class="scroll-mt-20">
+					<h2 class="text-3xl font-bold text-primary">{group.heading}</h2>
+					<div class="mt-6 grid gap-6 sm:grid-cols-2">
+						{group.routes.map((route) => (
+							<RouteTile route={route} labels={page.labels} />
+						))}
+					</div>
+				</section>
+			</Band>
+		))
+	}
+
+	<Band tone={groups.length % 2 === 0 ? 'pale' : 'white'} width="4xl" class="pt-12 pb-16">
+		<section id="about-these-numbers" class="max-w-3xl scroll-mt-20">
+			<h2 class="text-3xl font-bold text-primary">{page.about.heading}</h2>
+			<RichText text={page.about.body} class="mt-3 text-base-content/80" />
+		</section>
+	</Band>
+</Layout>
