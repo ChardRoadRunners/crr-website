@@ -28,6 +28,9 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
     In a row of cards that opened a big gap in the shorter card, on landscape and
     desktop only. Neutralised once, at the bottom of `src/styles/app.css` — don't
     remove that rule, and don't fix it card by card.
+  - Its buttons are 40px tall, and `btn-sm` 32px. A rule at the bottom of
+    `src/styles/app.css` gives every `.btn` a 44px minimum, the size a thumb
+    needs; `btn-sm` keeps its smaller text. Don't set button heights one by one.
 - **TypeScript**, strict
 - **Markdown** for all content
 - **Deployment: live.** Cloudflare Workers, connected to the GitHub repo
