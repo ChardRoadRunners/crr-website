@@ -167,12 +167,12 @@ somebody ends up at a car park a week late.
 | `/race-reports/[slug]` | A report: purple masthead, photo, body, gallery, share block |
 | `/news` | Every handicap night, race report and club notice in one line, newest first |
 | `/news/[slug]` | A club notice |
-| `/our-races` | The Chard Flyer and Forde Abbey 10k |
+| `/our-races` | The Chard Flyer and Forde Abbey 10k, each with its details, start time and race director |
 | `/calendar` | The club's Google calendars and the race diary |
 | `/pub-runs` | The pub runs, with dates from the socials calendar |
 | `/results` | Find your name, the monthly handicap, the championship, club records |
 | `/results/handicap/[date]` | One handicap night's result |
-| `/contact` | Who to email and what about |
+| `/contact` | The committee, as roles with club email addresses, and who to email about what |
 | `/welfare` `/inclusion` `/privacy` `/rules-and-constitution` | From the `legal` collection via `[legal].astro` |
 | `/club-kit` | Placeholder |
 | `/404` | Styled, with links back to the main pages |
@@ -184,7 +184,8 @@ somebody ends up at a car park a week late.
 
 **The site makes none in normal use.** Verified against the built output: the
 only third-party hosts referenced are in link `href`s the reader chooses to
-follow — Facebook, Strava, England Athletics, and `wa.me` for the share links.
+follow — Facebook, Instagram, Strava, England Athletics, the races' entry
+pages, and `wa.me` for the share links.
 
 **Fonts are self-hosted.** Outfit and Inter are downloaded **at build time** by
 Astro's Fonts API and served from our own domain as two `.woff2` files. There is
@@ -323,10 +324,11 @@ not a job somebody has forgotten. Pointing it also publishes the domain in
 public certificate transparency logs, which is its own reason not to do it
 early.
 
-**Empty sections and `TODO` markers in content.** Three sections on the privacy
-page, a committee list, several race details. All deliberate: the project's rule
-is to leave a clear gap rather than invent club facts. Anything still reading
-`TODO` is stripped from the rendered page rather than shown to visitors.
+**Empty sections and `TODO` markers in content.** Where a club fact has not
+been decided yet, the content file leaves a clear gap rather than inventing
+one: the project's rule. `grep -rn TODO src/content` lists what is left.
+Anything still reading `TODO` is stripped from the rendered page rather than
+shown to visitors.
 
 ---
 
@@ -365,6 +367,10 @@ The short version:
   4.13:1 and fails.
 
 If a change alters a colour, measure it.
+
+**Which colour each section of a page gets is a rule too** — the colour rule
+in CLAUDE.md, set 19 November 2026: purple banner first, then white and pale
+purple taking turns through `Band.astro`, never two of the same touching.
 
 ---
 
