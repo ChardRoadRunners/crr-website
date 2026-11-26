@@ -20,8 +20,8 @@ lastReviewed: 2026-11-28
 #   still says "we may also ask". The membership form is being remade as a
 #   Google Form; once it is, either say what health information it asks for
 #   and why (and get explicit consent on the form), or remove the sentence.
-# - Social media policy. The club has none. EA's template says members must
-#   follow it; that clause is left out until the club writes one.
+# - Social media policy. Adopted 26 November 2026 at /social-media, so the
+#   Social media section now carries EA's "members must follow it" clause.
 # - Who approves this page. Matthew is asking the committee. Update
 #   lastReviewed whenever it is reviewed.
 #
@@ -95,7 +95,8 @@ would rather your name was not published, email us (see
 
 The club has a Facebook page, an Instagram account, a club on Strava and a
 WhatsApp community. Members are free to join them, and anyone can join the
-Strava club.
+Strava club. Anyone taking part on a club channel is expected to follow the
+club's [social media policy](/social-media).
 
 Each of these platforms has its own privacy policy, and the club is not
 responsible for those. Please check them before you share personal data on the

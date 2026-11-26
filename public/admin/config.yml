@@ -1879,7 +1879,7 @@ collections:
     label: Policy pages
     label_singular: Policy page
     description: >-
-      Welfare, inclusion, privacy, and the rules and constitution. Editing the
+      Welfare, inclusion, privacy, social media, and the rules and constitution. Editing the
       words here changes the page. There is no Delete button, and no way to add
       a new one: a new policy page also needs a footer link adding in the code,
       so it is a job for whoever looks after the website.
