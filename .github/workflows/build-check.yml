@@ -2,10 +2,30 @@
 #
 # Lives at: .github/workflows/build-check.yml
 #
-# On every push to main this runs the same build Cloudflare runs. If it fails,
-# it opens ONE GitHub issue titled "Website build failing" and assigns it to the
-# web admin — GitHub emails them. While that issue stays open, further failures
-# send nothing. The next passing build closes it automatically.
+# On every push to main, and once every morning, this runs the same build
+# Cloudflare runs. If it fails, it opens ONE GitHub issue titled "Website build
+# failing" and assigns it to the web admin — GitHub emails them. While that
+# issue stays open, further failures send nothing. The next passing build closes
+# it automatically.
+#
+# WHY EVERY MORNING AS WELL: a push is not the only thing that rebuilds the
+# site. The nightly rebuild (workers/diary-rebuild/, 04:00 UTC) reads the
+# results sheets afresh, and that is how a correction typed into a sheet reaches
+# the website. If the correction leaves something the site cannot show — two
+# winners on one night, say — Cloudflare's build fails and the site keeps
+# yesterday's version, which is right. But nothing was pushed, so until 15
+# November 2026 this check never ran and nobody was told: the sheets' own
+# instructions promised an email that could not be sent. The nightly calendar
+# commit did not cover it either, because GitHub does not run workflows for a
+# commit that a workflow pushed.
+#
+# The morning run builds whatever is on main against the sheets as they are
+# now, shortly after the nightly rebuild did the same. GitHub often starts
+# scheduled runs late, sometimes by hours; that only delays the email.
+#
+# WORTH KNOWING: GitHub switches off scheduled runs in a public repository
+# after 60 days with no commits. A race report or any other save counts. If the
+# morning run stops appearing in the Actions tab, re-enable it there.
 #
 # WHO GETS THE EMAIL: the repo variable BUILD_ALERT_ASSIGNEE, which must be a
 # person's GitHub username (not the ChardRoadRunners organisation). Set it in
@@ -18,6 +38,8 @@ name: Build check
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '45 4 * * *' # after the 04:00 nightly rebuild
   workflow_dispatch: # lets you run it by hand from the Actions tab
 
 permissions:
@@ -64,7 +86,18 @@ jobs:
             }
             const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             const commit = context.payload.head_commit;
-            const lines = [
+            // The morning run has no change and no author to name: nothing was
+            // pushed. Saying "made by" there would blame whoever saved last.
+            const scheduled = context.eventName === 'schedule';
+            const lines = scheduled ? [
+              'The morning check of the website build failed. **Nobody\'s save caused this**: nothing was changed on the website itself. The site is still showing the last version that built, and overnight updates have stopped reaching it.',
+              '',
+              'The usual cause is something in one of the Google Sheets the site reads: a correction to the handicap or championship results that left something the site cannot show, or a tab that is no longer published. The error in the build log names the sheet and what to fix. See "What fails the build" in docs/results.md.',
+              '',
+              `- **Build log:** ${runUrl}`,
+              '',
+              'Open the build log and look for the step with a red cross to see the error. Once it is fixed in the sheet, run this check by hand (Actions tab > Build check > Run workflow) or wait for tomorrow morning.',
+            ] : [
               'The website build failed. If Cloudflare hit the same error, this change has **not** gone live and the site is still showing the last version that built.',
               '',
               `- **Change:** ${commit ? commit.message.split('\n')[0] : context.sha}`,
