@@ -12,4 +12,4 @@ championship: false   # TODO confirm which races count
 # entryUrl: add when entries open
 ---
 
-Renamed. Exmouth Harriers moved it from Bicton Gardens to Budleigh Salterton Cricket Club, and it is 9.5 miles now rather than 10. The 2025 running was 23 November; 2026 is planned for a Sunday in mid-to-late November, date not published yet.
+Renamed. Exmouth Harriers moved it from Bicton Gardens to Budleigh Salterton Cricket Club, and it is 9.5 miles now rather than 10. The 2025 running was 23 November and 2026 was 22 November, both the fourth Sunday. The 2027 date is not published yet.
