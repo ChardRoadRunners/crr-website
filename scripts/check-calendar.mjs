@@ -20,6 +20,8 @@ import ical from 'node-ical';
 const {
 	normalise,
 	formatEventWhen,
+	machineDate,
+	comparableFeed,
 	isSameRace,
 	isPubRun,
 	retryDelayMs,
@@ -155,6 +157,104 @@ check('an all-day race in winter keeps its own date', () => {
 		WINDOW_TO,
 	);
 	assert.equal(formatEventWhen(event, new Date('2026-01-01T00:00:00Z')), 'Sun 8th Nov 2026');
+});
+
+// The checks above only prove the rule for the zone this machine is in, and
+// every build that matters runs in UTC — which is how an all-day date that
+// came out a day early on any PC set to UK time went unnoticed until November
+// 2026. So run the same events with the clock set to other places. Node
+// re-reads TZ when it changes.
+const inZone = (zone, fn) => {
+	const before = process.env.TZ;
+	process.env.TZ = zone;
+	try {
+		return fn();
+	} finally {
+		if (before === undefined) delete process.env.TZ;
+		else process.env.TZ = before;
+	}
+};
+const ZONES = ['UTC', 'Europe/London', 'America/Los_Angeles', 'Pacific/Auckland'];
+
+check('an all-day race keeps its own date wherever the site is built', () => {
+	for (const zone of ZONES) {
+		inZone(zone, () => {
+			const [summer, winter] = parse(
+				feed(
+					['UID:zone-summer@test', 'DTSTART;VALUE=DATE:20260704', 'DTEND;VALUE=DATE:20260705', 'SUMMARY:Summer'],
+					['UID:zone-winter@test', 'DTSTART;VALUE=DATE:20261108', 'DTEND;VALUE=DATE:20261109', 'SUMMARY:Winter'],
+				),
+				'race-calendar',
+				WINDOW_FROM,
+				WINDOW_TO,
+			).sort((a, b) => a.start - b.start);
+			const now = new Date('2026-01-01T00:00:00Z');
+			assert.equal(formatEventWhen(summer, now), 'Sat 4th Jul 2026', `built in ${zone}`);
+			assert.equal(formatEventWhen(winter, now), 'Sun 8th Nov 2026', `built in ${zone}`);
+			assert.equal(machineDate(summer), '2026-07-04', `built in ${zone}`);
+			assert.equal(summer.end.toISOString(), '2026-07-05T00:00:00.000Z', `built in ${zone}`);
+		});
+	}
+});
+
+check('a repeating all-day event keeps its dates wherever the site is built', () => {
+	for (const zone of ZONES) {
+		inZone(zone, () => {
+			const days = parse(
+				feed([
+					'UID:zone-repeat@test',
+					'DTSTART;VALUE=DATE:20260704',
+					'DTEND;VALUE=DATE:20260705',
+					'RRULE:FREQ=WEEKLY;COUNT=3',
+					'SUMMARY:Three Saturdays',
+				]),
+				'socials',
+				WINDOW_FROM,
+				WINDOW_TO,
+			).map((event) => machineDate(event));
+			assert.deepEqual(days, ['2026-07-04', '2026-07-11', '2026-07-18'], `built in ${zone}`);
+		});
+	}
+});
+
+check('a timed event reads the same wherever the site is built', () => {
+	for (const zone of ZONES) {
+		inZone(zone, () => {
+			const [event] = parse(
+				feed(['UID:zone-timed@test', 'DTSTART:20261018T090000Z', 'DTEND:20261018T110000Z', 'SUMMARY:Timed']),
+				'championship',
+				WINDOW_FROM,
+				WINDOW_TO,
+			);
+			assert.match(formatEventWhen(event, new Date('2026-01-01T00:00:00Z')), /Sun 18th Oct 2026, 10:00 am$/, `built in ${zone}`);
+		});
+	}
+});
+
+// The nightly download only commits a calendar that has changed. These pin
+// down what "changed" means.
+const stamped = (uid, summary, stamp) => [`UID:${uid}`, `DTSTAMP:${stamp}`, 'DTSTART:20261018T090000Z', `SUMMARY:${summary}`];
+
+check('the same events in a different order are not a change to the calendar', () => {
+	const monday = feed(stamped('a@test', 'Club run', '20261114T085933Z'), stamped('b@test', 'Handicap', '20261114T085933Z'));
+	const tuesday = feed(stamped('b@test', 'Handicap', '20261115T092906Z'), stamped('a@test', 'Club run', '20261115T092906Z'));
+	assert.notEqual(monday, tuesday);
+	assert.equal(comparableFeed(monday), comparableFeed(tuesday));
+	assert.equal(comparableFeed(monday.replace(/\r\n/g, '\n')), comparableFeed(tuesday), 'line endings do not count either');
+});
+
+check('an edited, added or removed event is a change', () => {
+	const before = feed(stamped('a@test', 'Club run', '20261114T085933Z'), stamped('b@test', 'Handicap', '20261114T085933Z'));
+	const renamed = feed(stamped('a@test', 'Club run', '20261114T085933Z'), stamped('b@test', 'Handicap 5k', '20261114T085933Z'));
+	const added = feed(stamped('a@test', 'Club run', '20261114T085933Z'), stamped('b@test', 'Handicap', '20261114T085933Z'), stamped('c@test', 'Social', '20261114T085933Z'));
+	const removed = feed(stamped('a@test', 'Club run', '20261114T085933Z'));
+	for (const after of [renamed, added, removed]) assert.notEqual(comparableFeed(before), comparableFeed(after));
+});
+
+check('a download cut off part-way through is a change, not a match', () => {
+	const whole = feed(stamped('a@test', 'Club run', '20261114T085933Z'), stamped('b@test', 'Handicap', '20261114T085933Z'));
+	const cut = whole.slice(0, whole.indexOf('SUMMARY:Handicap'));
+	assert.notEqual(comparableFeed(whole), comparableFeed(cut));
 });
 
 check('the year is always shown, so a January race is not read as this one', () => {
