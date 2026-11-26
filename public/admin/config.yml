@@ -2049,10 +2049,10 @@ collections:
     delete: false
     summary: "{{name}}"
     sortable_fields: [month, name, status]
-    # No `default` on purpose. A default filter of retired=false would hide
-    # every entry written before the field existed, because their files have no
-    # `retired` key at all — the schema defaults it, the file does not carry it.
-    # The list shows everything and these narrow it on request.
+    # No `default` on purpose. A race is retired (or dormant) through its
+    # Status field below, not a separate on/off switch. A default filter would
+    # hide every race outside that one status, so the list shows everything
+    # and these narrow it on request.
     view_filters:
       filters:
         - name: active
