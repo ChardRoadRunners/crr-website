@@ -8,7 +8,7 @@ lastUpdated: 2026-11-26
 # Committee notes, not published. They live here rather than in the body
 # because an HTML comment in Markdown reaches the page source.
 #
-# Drafted 26 November 2026 and approved by Matthew for the site the same
+# Drafted 26 November 2026 and approved by the Webmaster for the site the same
 # day. The working copy, with the committee's questions and answers, is the
 # Claude Doc "Chard Road Runners social media policy (draft)".
 #
