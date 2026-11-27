@@ -94,7 +94,12 @@ Read by `src/utils/championship.ts`, pinned by `scripts/check-championship.mjs`.
   the build fails, naming the heading — that is on purpose.
 - `Name` and `M or F` come first.
 - Then one column per race, headed with the race name from the `Races` tab.
-  Unused slots have blank headings and are ignored.
+  Unused slots have blank headings and are ignored. There are 25 slots
+  (raised from 20 on 27 November 2026, for the 2027 list of 21). Raising it
+  again is a sheet job, not a website one: insert columns before `Bonus`,
+  copy the last race column's formula across, then widen `C1`
+  (`Races!A2:A…`) and the `C2:…` ranges and `SEQUENCE(n,…)` counts in
+  `Races run`, `Points so far` and `Championship score`. Nothing here changes.
 - Then `Bonus`, `Races run`, `Points so far`, `Position`,
   `Championship score`.
 - Rows run to 1000 and go blank after the last runner. Blank names are dropped.
