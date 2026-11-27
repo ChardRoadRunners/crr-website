@@ -1977,6 +1977,7 @@ collections:
           - label: Top menu
             name: primary
             widget: list
+            min: 1
             label_singular: Menu item
             summary: "{{fields.label}} -> {{fields.href}}"
             hint: >-
@@ -2010,6 +2011,7 @@ collections:
           - label: Footer columns
             name: footerGroups
             widget: list
+            min: 1
             label_singular: Column
             summary: "{{fields.label}}"
             hint: >-
@@ -2020,6 +2022,7 @@ collections:
               - label: Links
                 name: links
                 widget: list
+                min: 1
                 label_singular: Link
                 summary: "{{fields.label}} -> {{fields.href}}"
                 fields:
