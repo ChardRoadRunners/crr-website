@@ -31,7 +31,13 @@
 import { getCollection } from 'astro:content';
 
 import { getUpcoming, isSameRace } from './calendar';
-import { describeTiming, hasExactDate, isRunning, nextOccurrence } from './race-diary';
+import {
+	countsForChampionship,
+	describeTiming,
+	hasExactDate,
+	isRunning,
+	nextOccurrence,
+} from './race-diary';
 
 export interface ComingUpEntry {
 	key: string;
@@ -82,7 +88,7 @@ export async function getComingUp({
 			date,
 			exact: hasExactDate(event.data, now),
 			timing: describeTiming(event.data),
-			championship: event.data.championship,
+			championship: countsForChampionship(event.data, date),
 			handicap: false,
 			showTime: false,
 		}))

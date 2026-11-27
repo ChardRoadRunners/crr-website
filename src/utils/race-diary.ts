@@ -146,6 +146,22 @@ export function hasExactDate(entry: DiaryRule, now: Date): boolean {
 	return entry.date >= startOfDay(now);
 }
 
+/**
+ * Whether this running of a race counts for the club championship.
+ *
+ * Takes the date being shown, not just the entry, because the championship is
+ * set for one year at a time. A race in the 2027 championship whose next
+ * running is in December 2026 shows no badge on that running, and neither
+ * does its 2028 running until somebody puts it in the 2028 championship. A
+ * plain yes/no would have done both, silently.
+ */
+export function countsForChampionship(
+	entry: { championshipYear?: number },
+	date: Date,
+): boolean {
+	return entry.championshipYear === date.getUTCFullYear();
+}
+
 /** How to say when this race happens, when no exact date may be shown. */
 export function describeTiming(entry: DiaryRule): string {
 	const month = MONTH_NAMES[entry.month - 1];

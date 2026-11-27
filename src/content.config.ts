@@ -888,7 +888,22 @@ const calendarEvents = defineCollection({
       lastSeen: z.date().optional(),
 
       clubRace: z.boolean().default(false),
-      championship: z.boolean().default(false),
+
+      // The championship year this race counts towards, e.g. 2027. Absent for
+      // a race that is not in the championship.
+      //
+      // A year rather than a yes/no, so it cannot carry over by mistake: the
+      // badge shows only on the running that falls in this year (see
+      // countsForChampionship in src/utils/race-diary.ts). When the 2028 list
+      // is agreed, the organiser changes 2027 to 2028 on each race that stays
+      // in. Until then the 2028 runnings show without a badge, which is true.
+      //
+      // Which races count is all this records. Points are worked out in the
+      // championship sheet and never here — see docs/results.md.
+      //
+      // The CMS shows every race with a year set in its own "Championship"
+      // section, which is a filtered view of these same files, not a copy.
+      championshipYear: z.number().int().min(2000).max(2100).optional(),
 
       // Whoever takes the entries, which is usually not the organiser: Race
       // Nation, FullOnSport, a club's own page. Optional — several of these

@@ -7,7 +7,6 @@ distances: [{ value: 10, unit: "km" }, { value: 5, unit: "km" }, { value: 2, uni
 status: "active"
 dateConfirmed: false
 lastSeen: 2018-02-25   # the date we have evidence for, from a club race report
-championship: false   # TODO confirm which races count
 # entryUrl: entries are taken on the day at the village hall
 ---
 

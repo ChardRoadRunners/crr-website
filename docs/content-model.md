@@ -35,6 +35,9 @@ Seven, all in `src/content/`:
   derived from a single race report. Entries ship as `status: expected` and the
   page must never render those as a specific day. `docs/race-diary.md` has the
   reasoning; `src/utils/race-diary.ts` is the only place a rule becomes a date.
+  `championshipYear` marks a race as counting for that year's championship.
+  The CMS also shows these files as a second section, **Championship**, which
+  is a filtered view of the same folder, not a copy.
 
 - **`navigation`** — the top menu and the footer, labels and addresses both.
   `scripts/check-cms-schema.mjs` fails the build if an address is not a page.

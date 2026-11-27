@@ -9,7 +9,6 @@ status: "active"
 date: 2027-09-05
 dateConfirmed: true
 lastSeen: 2026-09-06   # the date we have evidence for, from a club race report
-championship: false   # TODO confirm which races count
 entryUrl: "https://bridgwaterhalfmarathon.eventrac.co.uk/e/bridgwater-half-marathon-14428"
 ---
 

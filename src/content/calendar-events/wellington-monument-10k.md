@@ -11,7 +11,6 @@ date: 2026-12-13
 dateConfirmed: true
 lastSeen: 2017-12-17
 clubRace: false
-championship: false
 entryUrl: https://www.fullonsport.com/event/wellington-monument-race-2026/profile
 ---
 

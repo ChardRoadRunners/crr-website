@@ -7,7 +7,6 @@ distances: [{ value: 10, unit: "mi" }]
 dateConfirmed: true
 date: 2026-12-06
 lastSeen: 2017-12-03   # the date we have evidence for, from a club race report
-championship: false   # TODO confirm which races count
 entryUrl: "https://dashboard.race-nation.co.uk/register/crewkerne-running-club"
 ---
 
