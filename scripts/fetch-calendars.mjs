@@ -13,10 +13,11 @@
 // script is the only thing that does. It runs overnight with nobody waiting on
 // it, so it can afford to be far more patient than a build could.
 //
-// A FILE IS ONLY WRITTEN WHEN SOMETHING CHANGED. Google stamps every event with
-// the time of the download (the DTSTAMP line), so two downloads a minute apart
-// never match byte for byte. Those lines are ignored when comparing, otherwise
-// every night would make a commit and a build for nothing.
+// A FILE IS ONLY WRITTEN WHEN SOMETHING CHANGED. Two downloads a minute apart
+// never match byte for byte: Google stamps every event with the time of the
+// download, and returns the events in no fixed order. comparableFeed() in
+// src/utils/calendar.ts ignores both, otherwise every night would make a
+// commit and a build for nothing.
 //
 // IF A CALENDAR FAILS, its old copy is left exactly as it was, the others are
 // still saved, and the script exits with an error so the workflow opens a
@@ -27,23 +28,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { CALENDAR_IDS } from '../src/consts.ts';
-import { downloadFeed } from '../src/utils/calendar.ts';
+import { comparableFeed, downloadFeed } from '../src/utils/calendar.ts';
 
 const DIR = join(process.cwd(), 'src', 'data', 'calendars');
 
 // Eight tries, waiting up to a minute between them: about two minutes per
 // calendar before giving up, against half a minute in the old build.
 const PATIENCE = { attempts: 8, maxBackoffMs: 60_000 };
-
-// DTSTAMP changes on every download; line endings vary with how a file was
-// checked out. Neither is a change to the calendar.
-const comparable = (ics) =>
-	ics
-		.replace(/\r\n/g, '\n')
-		.split('\n')
-		.filter((line) => !line.startsWith('DTSTAMP:'))
-		.join('\n')
-		.trim();
 
 await mkdir(DIR, { recursive: true });
 
@@ -57,7 +48,7 @@ for (const source of Object.keys(CALENDAR_IDS)) {
 		const fresh = await downloadFeed(source, PATIENCE);
 		const old = await readFile(file, 'utf8').catch(() => null);
 
-		if (old !== null && comparable(old) === comparable(fresh)) {
+		if (old !== null && comparableFeed(old) === comparableFeed(fresh)) {
 			console.log(`${source}: unchanged`);
 			continue;
 		}

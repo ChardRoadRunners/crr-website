@@ -28,6 +28,9 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
     In a row of cards that opened a big gap in the shorter card, on landscape and
     desktop only. Neutralised once, at the bottom of `src/styles/app.css` — don't
     remove that rule, and don't fix it card by card.
+  - Its buttons are 40px tall, and `btn-sm` 32px. A rule at the bottom of
+    `src/styles/app.css` gives every `.btn` a 44px minimum, the size a thumb
+    needs; `btn-sm` keeps its smaller text. Don't set button heights one by one.
 - **TypeScript**, strict
 - **Markdown** for all content
 - **Deployment: live.** Cloudflare Workers, connected to the GitHub repo
@@ -55,6 +58,12 @@ See `crr-sitemap.md` for the page structure and content plan. Read it before pro
   the site's own `wrangler.jsonc` — that file is assets-only, and adding a script
   to it would put a Worker in front of unmatched requests and risk the 404
   handling. See `workers/diary-rebuild/README.md`.
+- **A third Worker** — `crr-cms-auth` in `workers/cms-auth/` — signs committee
+  members in to the CMS. It holds the GitHub OAuth secret a static site cannot.
+  Nothing on the public site touches it; if it were down only editing would
+  stop. Deployed by hand from that folder, not by a push. `base_url` in
+  `public/admin/config.yml` points at it and does not change when the site's
+  domain does. See `workers/cms-auth/README.md`.
 - **The club calendars are saved copies, not live fetches.** A nightly GitHub
   workflow, `.github/workflows/fetch-calendars.yml`, downloads the five Google
   calendars at 02:17 UTC and commits them to `src/data/calendars/` when they

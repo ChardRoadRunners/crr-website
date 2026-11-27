@@ -38,9 +38,13 @@ memory, and why the reasoning is written into the files rather than left in chat
 | **Sveltia CMS** | Git-backed editing at `/admin`. Commits to `main` through GitHub. |
 | **Cloudflare Workers** | Static assets. Push to `main` and it builds and deploys itself. |
 
-Node 22.12 or newer. Eight runtime dependencies, one dev dependency (`yaml`, used
-by the schema-drift check). `sharp` resizes and converts every image at build
-time, on Cloudflare's builder as well as locally.
+Node 22.12 or newer. Few dependencies on purpose; `package.json` is the list.
+`sharp` resizes and converts every image at build time, on Cloudflare's builder
+as well as locally.
+
+Counts are left out of this file deliberately. It once said "five collections"
+and "two scripts" for two months after both had changed; the folders are the
+count.
 
 ---
 
@@ -54,13 +58,22 @@ npm run dev          # localhost:4321
 | Command | What it does |
 | :------ | :----------- |
 | `npm run dev` | Local preview with hot reload |
-| `npm run build` | Runs both checks, then builds to `dist/` |
+| `npm run build` | Runs the checks below, then builds to `dist/` |
 | `npm run preview` | Serve the built output |
-| `npm run check:cms` | Assert the two schemas still describe the same fields |
-| `npm run check:diary` | List race diary entries running on stale evidence |
+| `npm run check:cms` | The content files, their photos and the menus against the CMS and the pages |
+| `npm run check:diary` | List race diary entries running on stale evidence (advisory) |
+| `npm run check:calendar` | The club calendar rules: time zones, repeats, cancellations |
+| `npm run check:championship` | Reading the championship sheet, and everything that should stop the build |
+| `npm run check:handicap-results` | The same for the handicap results sheet |
+| `npm run check:handicap` | The handicap rules in `sheets/handicap/`. **Not part of the build**: run it before pasting those files into the sheet |
 
-`npm run build` runs the checks first and **fails the build** on schema drift.
-That is deliberate — see [The two schemas](#the-two-schemas).
+`npm run build` runs the first five checks and **fails the build** if one
+breaks. That is deliberate — see [The two schemas](#the-two-schemas).
+
+**The build needs the internet.** It downloads the two fonts and reads the two
+results sheets from Google every time (the calendars are saved copies and are
+not fetched). With no connection, or behind a firewall that blocks Google, it
+stops at the results sheets and says so.
 
 `.claude/launch.json` is kept on purpose. It tells Claude Code's browser
 preview how to start this project's dev server — `npm run dev` on port 4321 —
@@ -74,22 +87,28 @@ starting the server manually.
 
 ```
 src/
-├── components/     19 Astro components
+├── components/     Astro components
 ├── content/        all editable content, as Markdown
-│   ├── race-reports/     22 posts, with an images/ folder beside them
-│   ├── races/             2 club races, with images/
-│   ├── pages/             3 one-off page copy files
-│   ├── legal/             4 policy pages
-│   └── calendar-events/  29 race diary entries
-├── layouts/        Layout.astro (site shell), BlogPost.astro (race reports)
+│   ├── race-reports/     members' race reports, with an images/ folder beside them
+│   ├── news/             club notices, with images/
+│   ├── races/            the two club races, with images/
+│   ├── pages/            the wording for each one-off page
+│   ├── legal/            the policy pages
+│   ├── calendar-events/  race diary entries
+│   └── navigation/       the top menu and the footer
+├── data/calendars/ saved copies of the club's Google calendars, refreshed nightly
+├── layouts/        Layout.astro (site shell), BlogPost.astro (race reports and news)
 ├── pages/          routes — file name becomes URL
 ├── styles/         app.css (theme + utilities), global.css (element defaults)
-├── utils/          date, distance, markdown and race-report helpers
+├── utils/          calendars, results sheets, the race diary, dates and distances
 └── assets/         logo and contour SVGs, processed at build time
 
-public/             served verbatim — favicons, logo, /admin
-scripts/            two build-time guards, described below
-workers/            a second, separate Cloudflare Worker (nightly rebuild)
+public/             served verbatim — favicons, logo, /admin, _redirects
+scripts/            the build's checks, and the nightly calendar download
+sheets/handicap/    the script and timing page that live inside the CRR Handicap
+                    Google Sheet, kept here as the master copy, plus the finish tokens
+workers/            two more Cloudflare Workers: the nightly rebuild, and CMS sign-in
+.github/workflows/  the build alarm and the nightly calendar download
 docs/               the reference documents listed at the end
 ```
 
@@ -97,28 +116,37 @@ docs/               the reference documents listed at the end
 
 ## Content collections
 
-Five, all in `src/content/`, each with a Zod schema in `src/content.config.ts`.
+Seven, all in `src/content/`, each with a Zod schema in `src/content.config.ts`.
+[docs/content-model.md](docs/content-model.md) is the full account.
 
-**`race-reports`** — race reports and club news, 22 posts. One entry per race in
+**`race-reports`** — reports on races members have run. One entry per race in
 a `races` array, so a weekend round-up covering three races sorts and links
 correctly. There is no top-level date field: posts sort by the **earliest**
 `raceDate` in that array, so nothing can drift out of sync. `draft: true` hides a
 post.
 
+**`news`** — club notices: anything that is not a report on a race. Dated by
+`posted`, because a notice has no race to take a date from.
+
 **`races`** — the two club-hosted races. Entry links only render when
 `entriesOpen` is true, which is what stops a dead entry link sitting on the page
 for eleven months of the year.
 
-**`pages`** — copy for `home`, `join-us` and `contact`. A discriminated union:
+**`pages`** — the wording for each one-off page: home, join us, calendar, pub
+runs, contact, results and news. A discriminated union:
 each page has its own shape, picked by the `page` field, so a validation error
 names the field that is wrong rather than listing every page's fields at once.
 
 **`legal`** — welfare, inclusion, privacy, rules and constitution. One shared
 shape, and the only collection whose Markdown body becomes the page. A new file
 gets a route automatically from `src/pages/[legal].astro`, but its footer link
-still has to be added to `FOOTER_PAGE_LINKS` in `consts.ts`.
+still has to be added to the footer in the `navigation` collection.
 
-**`calendar-events`** — the race diary, 29 entries. The unusual one, and worth
+**`navigation`** — the top menu and the footer, labels and addresses both, so
+the committee can change them in the CMS. The build fails if an address is not
+a page.
+
+**`calendar-events`** — the race diary. The unusual one, and worth
 reading [docs/race-diary.md](docs/race-diary.md) before judging it. Each entry
 stores a **rule** for roughly when a race happens ("last Sunday in November"),
 not a date, because every rule was derived from a single club race report. The
@@ -133,14 +161,18 @@ somebody ends up at a car park a week late.
 
 | Route | What it is |
 | :---- | :--------- |
-| `/` | Hero, club nights, handicap, Couch to 5k, latest reports, next races, club races |
+| `/` | Hero, "What's on!" (latest results, posts and what is coming up), club nights, handicap, pub runs, Couch to 5k, club races |
 | `/join-us` | First visit, which night to pick, membership, Couch to 5k |
 | `/race-reports` | Archive index, newest first, lead post spanning both columns |
 | `/race-reports/[slug]` | A report: purple masthead, photo, body, gallery, share block |
-| `/our-races` | The Chard Flyer and Forde Abbey 10k |
-| `/calendar` | Club calendar (not yet connected) and the race diary |
-| `/results` | Championship, handicap, records — all placeholders so far |
-| `/contact` | Who to email and what about |
+| `/news` | Every handicap night, race report and club notice in one line, newest first |
+| `/news/[slug]` | A club notice |
+| `/our-races` | The Chard Flyer and Forde Abbey 10k, each with its details, start time and race director |
+| `/calendar` | The club's Google calendars and the race diary |
+| `/pub-runs` | The pub runs, with dates from the socials calendar |
+| `/results` | Find your name, the monthly handicap, the championship, club records |
+| `/results/handicap/[date]` | One handicap night's result |
+| `/contact` | The committee, as roles with club email addresses, and who to email about what |
 | `/welfare` `/inclusion` `/privacy` `/rules-and-constitution` | From the `legal` collection via `[legal].astro` |
 | `/club-kit` | Placeholder |
 | `/404` | Styled, with links back to the main pages |
@@ -152,7 +184,8 @@ somebody ends up at a car park a week late.
 
 **The site makes none in normal use.** Verified against the built output: the
 only third-party hosts referenced are in link `href`s the reader chooses to
-follow — Facebook, Strava, England Athletics, and `wa.me` for the share links.
+follow — Facebook, Instagram, Strava, England Athletics, the races' entry
+pages, and `wa.me` for the share links.
 
 **Fonts are self-hosted.** Outfit and Inter are downloaded **at build time** by
 Astro's Fonts API and served from our own domain as two `.woff2` files. There is
@@ -176,9 +209,14 @@ which is `noindex` plus GitHub-authenticated. Worth knowing in a review: it is
 the one place anything depends on a third party at runtime. If unpkg were
 unavailable the CMS would not load; the published site would be unaffected.
 
-**JavaScript on the public site is two small scripts**, both progressive
-enhancement — every page works with JS off. CLAUDE.md lists them and the rules
-for adding a third.
+**The build itself does talk to Google**, from the build machine and never from
+a visitor's browser: the fonts, and the two results sheets, which are published
+as CSV and read on every build. [docs/results.md](docs/results.md) has the
+sheets and what happens when one cannot be read.
+
+**JavaScript on the public site is a short, named list of small scripts**, all
+progressive enhancement — every page works with JS off. CLAUDE.md lists them
+and the rules for adding another.
 
 ---
 
@@ -204,10 +242,26 @@ runtime one and breaks every image on the site.
 
 **A second, separate Worker** lives in `workers/diary-rebuild/`. It runs on a
 nightly cron and pings a deploy hook, so the race diary rolls forward — past
-races drop off and the twelve-month window moves — and the club's Google
-calendars stay current, without anyone touching it. It is deployed
-independently and shares nothing with the site. See
+races drop off and the twelve-month window moves — and the results sheets and
+the club's Google calendars stay current, without anyone touching it. It is
+deployed independently and shares nothing with the site. See
 [workers/diary-rebuild/README.md](workers/diary-rebuild/README.md).
+
+**A third Worker** lives in `workers/cms-auth/`: it signs committee members in
+to the CMS. Nothing on the public site touches it, and it is deployed by hand.
+See [workers/cms-auth/README.md](workers/cms-auth/README.md).
+
+**What keeps the site current overnight, and what says so when it breaks:**
+
+| When (UTC) | What | Where |
+| :-- | :-- | :-- |
+| 02:17 | The club calendars are downloaded and committed if they changed | `.github/workflows/fetch-calendars.yml` |
+| 04:00 | The site is rebuilt, reading the results sheets afresh | `workers/diary-rebuild/` |
+| 04:45 | The build is checked, and an issue is opened and emailed if it fails | `.github/workflows/build-check.yml` |
+
+GitHub often starts the first and third late, sometimes by hours. The build
+check also runs on every save. [docs/handover.md](docs/handover.md) covers the
+alerts and who receives them.
 
 ---
 
@@ -221,7 +275,7 @@ If they drift, the CMS accepts a post that the build then rejects, and the
 failure lands on the committee member who wrote it — the exact thing the CMS
 exists to prevent.
 
-`npm run check:cms` enforces this and fails the build. It checks three things:
+`npm run check:cms` guards this and fails the build. It checks three things:
 
 1. **Every frontmatter key is declared by a CMS field.** An undeclared key is
    invisible in the editor, and Sveltia rebuilds each file from the fields it
@@ -229,8 +283,14 @@ exists to prevent.
 2. **Every image path resolves on disk.** Deleting a race report through the CMS
    once removed every photo in a shared folder, orphaning paths in twenty other
    posts.
-3. **Every content file is covered by a CMS collection.** A file nobody can edit
-   is the failure this whole arrangement exists to avoid.
+3. **Every menu link points at a real page.** The menus are content now, so an
+   editor can mistype an address into the header of every page.
+
+It checks one direction only: that the CMS knows about everything in the
+content files. It does not check that everything the CMS will accept is
+something the build will accept. The two were tested against each other by
+hand on 15 November 2026 and agreed; keeping them that way is still the rule
+above, not the script.
 
 `npm run check:diary` is advisory and does not fail the build. It lists diary
 entries whose newest published report is over three years old — the age that, in
@@ -264,13 +324,11 @@ not a job somebody has forgotten. Pointing it also publishes the domain in
 public certificate transparency logs, which is its own reason not to do it
 early.
 
-**Empty sections and `TODO` markers in content.** Three sections on the privacy
-page, a committee list, several race details. All deliberate: the project's rule
-is to leave a clear gap rather than invent club facts. Anything still reading
-`TODO` is stripped from the rendered page rather than shown to visitors.
-
-**The results page is placeholders.** Championship and handicap data will be read
-from Google Sheets at build time; the sheet does not exist yet.
+**Empty sections and `TODO` markers in content.** Where a club fact has not
+been decided yet, the content file leaves a clear gap rather than inventing
+one: the project's rule. `grep -rn TODO src/content` lists what is left.
+Anything still reading `TODO` is stripped from the rendered page rather than
+shown to visitors.
 
 ---
 
@@ -310,6 +368,10 @@ The short version:
 
 If a change alters a colour, measure it.
 
+**Which colour each section of a page gets is a rule too** — the colour rule
+in CLAUDE.md, set 19 November 2026: purple banner first, then white and pale
+purple taking turns through `Band.astro`, never two of the same touching.
+
 ---
 
 ## Where the detail lives
@@ -318,8 +380,13 @@ If a change alters a colour, measure it.
 | :-- | :-- |
 | [CLAUDE.md](CLAUDE.md) | How the project works, the rules that are not obvious from the code, and why. **The most useful single file.** |
 | [docs/launch-checklist.md](docs/launch-checklist.md) | Everything still to do before launch |
-| [docs/content-model.md](docs/content-model.md) | The five collections and their frontmatter rules |
-| [docs/handover.md](docs/handover.md) | The CMS, and the things about it that have bitten us |
+| [docs/content-model.md](docs/content-model.md) | The collections and their frontmatter rules |
+| [docs/handover.md](docs/handover.md) | The CMS, the build alerts, and the things that have bitten us |
+| [docs/results.md](docs/results.md) | The championship and handicap sheets, how they reach the site, and what stops the build |
+| [docs/handicap.md](docs/handicap.md) | The handicap rules, the sheet and the timing page |
 | [docs/race-diary.md](docs/race-diary.md) | How the race diary works, and why it is deliberately vague about dates |
+| [docs/pub-runs.md](docs/pub-runs.md) | The pub runs page |
+| [docs/old-site-urls.md](docs/old-site-urls.md) | The old Webador addresses and where each one redirects |
 | [crr-sitemap.md](crr-sitemap.md) | Page structure and the content plan |
 | [workers/diary-rebuild/README.md](workers/diary-rebuild/README.md) | The nightly rebuild, how to set it up again, and the four ways it can look set up when it is not |
+| [workers/cms-auth/README.md](workers/cms-auth/README.md) | CMS sign-in: where it came from, how to deploy it, and the one setting nobody should "fix" |

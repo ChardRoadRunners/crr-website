@@ -178,3 +178,23 @@
 		flex-grow: 0;
 	}
 }
+
+/*
+  Every button at least 44px tall, so it is an easy target for a thumb.
+
+  daisyUI's own heights are 40px for a normal button and 32px for btn-sm, and
+  btn-sm is what the phone header's "Join us", the Enter now links, the share
+  buttons and the Results jump links all use. 44px is the size Apple and
+  WCAG 2.5.5 recommend for anything tapped with a finger.
+
+  A minimum, not a height: btn-sm keeps its smaller text and padding, so a
+  small button still reads as small, it just has a fuller tap area. Same layer
+  and reasoning as the card rule above: daisyUI's .btn sits nested inside the
+  utilities layer, so this beats it whatever the selector. Text fields are left
+  at daisyUI's 40px; this is about buttons.
+*/
+@layer utilities {
+	.btn {
+		min-height: 2.75rem;
+	}
+}

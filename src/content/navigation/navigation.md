@@ -71,6 +71,8 @@ footerGroups:
         href: "/inclusion"
       - label: "Privacy"
         href: "/privacy"
+      - label: "Social media"
+        href: "/social-media"
   - label: "The Club"
     links:
       # The News page lives here rather than in the top menu, decided 28 Oct

@@ -6,7 +6,7 @@ distances: [{ value: 10, unit: "km" }]
 dateConfirmed: true
 lastSeen: 2018-01-01   # the date we have evidence for, from a club race report
 clubRace: true
-# entryUrl: add when entries open
+entryUrl: "https://dashboard.race-nation.co.uk/register/chard-road-runners"
 ---
 
 Always New Year's Day. A club race.

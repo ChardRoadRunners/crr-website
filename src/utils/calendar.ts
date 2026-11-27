@@ -281,12 +281,76 @@ function splitDescription(raw?: string): Pick<ClubEvent, 'description' | 'entryL
 	return { description, entryLink };
 }
 
+/**
+ * A saved calendar file reduced to what would count as a change to it.
+ *
+ * scripts/fetch-calendars.mjs downloads each calendar nightly and only writes
+ * the file, and so only makes a commit and a build, when this differs from
+ * the copy already saved. Three things differ between two downloads of a
+ * calendar nobody has touched, and all three are ignored here:
+ *
+ *   - DTSTAMP, which Google sets to the moment of the download.
+ *   - Line endings, which vary with how a file was checked out.
+ *   - THE ORDER OF THE EVENTS. Google does not return them in a fixed order.
+ *     Until 15 November 2026 this was not allowed for, and the Club nights
+ *     calendar was committed every single night with the same events
+ *     shuffled: a commit, a build and a line in the editor's History panel
+ *     for nothing.
+ */
+export function comparableFeed(ics: string): string {
+	const lines = ics
+		.replace(/\r\n/g, '\n')
+		.split('\n')
+		.filter((line) => !line.startsWith('DTSTAMP:'));
+
+	const outside: string[] = [];
+	const events: string[] = [];
+	let current: string[] | null = null;
+
+	for (const line of lines) {
+		if (line === 'BEGIN:VEVENT') {
+			current = [line];
+		} else if (current) {
+			current.push(line);
+			if (line === 'END:VEVENT') {
+				events.push(current.join('\n'));
+				current = null;
+			}
+		} else {
+			outside.push(line);
+		}
+	}
+	// An event cut off before its END line is kept, so a truncated download
+	// never compares equal to a whole one.
+	if (current) events.push(current.join('\n'));
+
+	return [...outside, ...events.sort()].join('\n').trim();
+}
+
 /** node-ical hands back `VEvent`s mixed in with timezone components. */
 const isEvent = (value: ical.CalendarComponent): value is ical.VEvent =>
 	value.type === 'VEVENT';
 
 const isCancelled = (raw: { status?: string }) =>
 	String(raw.status ?? '').toUpperCase() === 'CANCELLED';
+
+/**
+ * An all-day date as midnight UTC on that calendar day, whatever the clock on
+ * the machine doing the build is set to.
+ *
+ * node-ical turns `VALUE=DATE:20260704` into midnight on 4 July IN THE BUILD
+ * MACHINE'S OWN TIME ZONE. On Cloudflare and GitHub that zone is UTC, so the
+ * result is midnight UTC and nothing looks wrong. On a computer set to UK time
+ * it is midnight BST, which is 23:00 UTC on 3 July — and everything downstream
+ * that reads the date in UTC printed the day before. That stayed hidden until
+ * 15 November 2026 because every build that mattered ran in UTC, while
+ * `npm run build` failed on any PC in Britain.
+ *
+ * Reading the day back with the local getters undoes exactly what node-ical
+ * did, so the answer is the same on every machine.
+ */
+const calendarDay = (date: Date): Date =>
+	new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 
 function toClubEvent(
 	raw: ical.VEvent,
@@ -297,15 +361,17 @@ function toClubEvent(
 ): ClubEvent {
 	const { description, entryLink } = splitDescription(raw.description);
 
+	// node-ical reports `date` for DTSTART;VALUE=DATE and `date-time`
+	// otherwise. That distinction is the whole of the all-day handling —
+	// see calendarDay above and formatEventWhen below.
+	const allDay = raw.datetype === 'date';
+
 	return {
 		uid: raw.uid,
 		title: (raw.summary ?? '').trim(),
-		start,
-		end,
-		// node-ical reports `date` for DTSTART;VALUE=DATE and `date-time`
-		// otherwise. That distinction is the whole of the all-day handling —
-		// see formatEventWhen for why it must not be timezone-converted.
-		allDay: raw.datetype === 'date',
+		start: allDay ? calendarDay(start) : start,
+		end: allDay && end ? calendarDay(end) : end,
+		allDay,
 		location: raw.location?.trim() || null,
 		description,
 		entryLink,
@@ -578,10 +644,10 @@ const LONDON = 'Europe/London';
  *    `20261018T090000Z` — which is 10am BST. Read as UTC it says 9am: an hour
  *    early, and only in summer.
  *
- * 2. All-day events read in UTC, because that is how the calendar date was
- *    encoded — node-ical turns `VALUE=DATE:20261108` into midnight UTC.
- *    Running that through a timezone is how an all-day race shows the day
- *    before.
+ * 2. All-day events read in UTC, because toClubEvent stores every all-day
+ *    date as midnight UTC on its own calendar day (see calendarDay — node-ical
+ *    itself does not, it uses the build machine's zone). Running that through
+ *    a timezone is how an all-day race shows the day before.
  */
 export function formatEventWhen(event: ClubEvent, _now = new Date()): string {
 	const date = formatDate(event.start, { timeZone: event.allDay ? 'UTC' : LONDON });

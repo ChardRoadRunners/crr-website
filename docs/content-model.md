@@ -28,7 +28,8 @@ Seven, all in `src/content/`:
 - **`legal`** — welfare, inclusion, privacy, and the rules and constitution. One
   shared shape, and the only collection whose Markdown body is rendered as the
   page. Routed by `src/pages/[legal].astro`, so a new file gets a route on its
-  own — but its footer link still has to be added to `FOOTER_PAGE_LINKS`.
+  own — but its footer link still has to be added to the footer in the
+  `navigation` collection.
 - **`calendar-events`** — the race diary. Each entry is a rule for roughly when
   a race happens ("last Sunday in November"), not a date, because every rule was
   derived from a single race report. Entries ship as `status: expected` and the

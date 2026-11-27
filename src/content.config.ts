@@ -773,9 +773,9 @@ const pages = defineCollection({
   ]),
 });
 
-// Welfare, privacy, inclusion, and the rules and constitution. Deliberately
+// Welfare, privacy, inclusion, social media, and the rules and constitution. Deliberately
 // not part of `pages`: that collection is a discriminated union of one-off
-// page shapes, and these four share one shape — a title, an intro and a
+// page shapes, and these five share one shape — a title, an intro and a
 // Markdown body — so they would only bloat the union. They are also the only
 // content whose Markdown body is rendered as the page.
 //

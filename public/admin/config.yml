@@ -51,7 +51,7 @@ backend:
     uploadMedia: 'Add photo “{{path}}”'
     deleteMedia: 'Remove photo “{{path}}”'
   # GitHub OAuth proxy Worker, deployed separately from the site.
-  # Source: crr-cms-auth/ in the project folder.
+  # Source: workers/cms-auth/ in this repository.
   base_url: https://crr-cms-auth.chardrunners.workers.dev
 
 # Simple publishing: Save commits straight to main and Cloudflare rebuilds.
@@ -109,14 +109,14 @@ media_libraries:
 
       # Shrink photos in the browser before they are committed.
       #
-      # This matters more here than on most sites because astro.config.mjs uses
-      # passthroughImageService: Cloudflare's builder cannot run Sharp, so Astro
-      # does no resizing or format conversion and serves whatever is committed,
-      # at full size. A 2.9MB phone photo reached visitors as 2.9MB, and the race
-      # reports index was loading 14MB of images for cards shown about 480px wide.
+      # Astro resizes every photo for visitors when the site builds, so this is
+      # not what keeps pages light. It keeps the REPOSITORY light: without it a
+      # 2.9MB phone photo is committed as 2.9MB, for ever, and every build and
+      # every clone carries it.
       #
-      # Doing it here sidesteps that entirely — the work happens in the editor's
-      # browser at upload time, so it does not depend on the build environment.
+      # (This note used to say the site served photos at full size because
+      # Cloudflare's builder could not run Sharp. That was tested on 12 September
+      # 2026 and is not true — see astro.config.mjs.)
       #
       # raster_image covers jpeg, png and the rest in one entry. 1600px is about
       # twice the widest the site ever displays an image (the race report hero,
@@ -1879,7 +1879,7 @@ collections:
     label: Policy pages
     label_singular: Policy page
     description: >-
-      Welfare, inclusion, privacy, and the rules and constitution. Editing the
+      Welfare, inclusion, privacy, social media, and the rules and constitution. Editing the
       words here changes the page. There is no Delete button, and no way to add
       a new one: a new policy page also needs a footer link adding in the code,
       so it is a job for whoever looks after the website.
@@ -2049,10 +2049,10 @@ collections:
     delete: false
     summary: "{{name}}"
     sortable_fields: [month, name, status]
-    # No `default` on purpose. A default filter of retired=false would hide
-    # every entry written before the field existed, because their files have no
-    # `retired` key at all — the schema defaults it, the file does not carry it.
-    # The list shows everything and these narrow it on request.
+    # No `default` on purpose. A race is retired (or dormant) through its
+    # Status field below, not a separate on/off switch. A default filter would
+    # hide every race outside that one status, so the list shows everything
+    # and these narrow it on request.
     view_filters:
       filters:
         - name: active
