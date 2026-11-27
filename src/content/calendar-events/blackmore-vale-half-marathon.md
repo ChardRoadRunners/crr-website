@@ -7,7 +7,6 @@ distances: [{ value: 13.1, unit: "mi" }, { value: 5.75, unit: "mi" }]
 status: "active"
 dateConfirmed: false
 lastSeen: 2018-02-04   # the date we have evidence for, from a club race report
-championship: false   # TODO confirm which races count
 # entryUrl: add when entries open
 ---
 

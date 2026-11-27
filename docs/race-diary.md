@@ -220,3 +220,39 @@ tour". Both cannot be right about the same running, and the club's own report is
 not evidence to overwrite from a listings page.
 
 The pattern from the first review held. Everything wrong was old.
+
+---
+
+## Championship races
+
+Added 27 November 2026, for the 2027 championship.
+
+**The diary is the one list.** A race counts for the championship when its
+`championshipYear` is set — `2027`, say. There is no separate championship
+list to keep in step with it.
+
+**A year, not a yes/no.** The badge shows only on the running of a race that
+falls in that year (`countsForChampionship` in `src/utils/race-diary.ts`). So
+in December 2026 a 2027 championship race whose next running is still in 2026
+shows no badge on it, and in 2028 nothing is badged until the 2028 list is
+agreed and somebody changes the years. A yes/no switch would have carried last
+year's list over without anyone noticing.
+
+**Dates follow the diary's one rule.** An organiser's published date goes in
+`date` with `dateConfirmed` ticked. A guess — including one from a listings
+site or an AI tool — can go in `date` to put the race in the right place, but
+leaves `dateConfirmed` unticked, and the page says "usually the second Sunday
+in June" rather than a day. The "which one" and "which day" boxes are the
+usual timing; there is no separate free-text note to drift from them.
+
+**The CMS has a Championship section.** It is the same folder as the Race
+diary, filtered to races with a year set and grouped by year, so the
+championship organiser can work from a short list. Editing a race there edits
+its diary entry. It cannot create races — Sveltia does not fill in the filter
+field on a new entry, so a race made there would drop out of the list on save.
+New races are added in the Race diary with the year filled in. It shares its
+field list with the Race diary through a YAML anchor, `&race-diary-fields`, so
+there is one list of fields to edit, not two.
+
+**Points are not here.** Which races count is all the website records. The
+scoring stays in the championship sheet — see `docs/results.md`.

@@ -113,7 +113,9 @@
             // It has to come first. Until 11 October 2026 it sat at the end of
             // this handler, below the line that leaves early for anything
             // that is not a race report or a race, so it never ran at all.
-            if (collection === 'calendar-events') {
+            // 'championship' is the same files seen through a filter (see
+            // config.yml), so it needs the same check.
+            if (collection === 'calendar-events' || collection === 'championship') {
               var fixed = String(entry.getIn(['data', 'fixedDate']) || '').trim();
               var nth = String(entry.getIn(['data', 'nth']) || '').trim();
               var weekday = String(entry.getIn(['data', 'weekday']) || '').trim();

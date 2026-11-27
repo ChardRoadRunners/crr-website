@@ -6,7 +6,6 @@ weekday: "Sunday"
 distances: [{ value: 6.27, unit: "mi" }]
 dateConfirmed: false
 lastSeen: 2017-12-17   # the date we have evidence for, from a club race report
-championship: false   # TODO confirm which races count
 # entryUrl: add when entries open
 ---
 

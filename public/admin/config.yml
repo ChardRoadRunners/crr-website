@@ -2071,7 +2071,10 @@ collections:
           label: Retired
           field: status
           pattern: retired
-    fields:
+    # The anchor (&race-diary-fields) lets the Championship section below
+    # reuse this exact list of fields with *race-diary-fields, so the two can
+    # never drift apart. Edit the fields here; there is no second copy.
+    fields: &race-diary-fields
       - label: Race name
         name: name
         widget: string
@@ -2215,11 +2218,19 @@ collections:
         required: false
         default: false
 
-      - label: Counts for the championship
-        name: championship
-        widget: boolean
+      - label: Championship year
+        name: championshipYear
+        widget: number
+        value_type: int
         required: false
-        default: false
+        min: 2000
+        max: 2100
+        hint: >-
+          The year of the club championship this race counts towards, for
+          example 2027. Leave empty if it is not a championship race. The
+          website shows a Championship badge only on the running that falls in
+          that year, so last year's list cannot carry over by mistake. Points
+          are worked out in the championship sheet, never here.
 
       - label: Entry link
         name: entryUrl
@@ -2243,3 +2254,42 @@ collections:
         hint: >-
           Anything useful about the race — terrain, where it starts, whether the
           date has moved before.
+
+  # CHAMPIONSHIP — A FILTERED VIEW OF THE RACE DIARY, NOT A SECOND LIST
+  #
+  # Same folder as the race diary above, so every race here is the same file
+  # as its diary entry: edit it in either section and it is one edit. It
+  # shows only the races with a Championship year filled in, grouped by year.
+  #
+  # Filtered on "has a year" rather than on 2027, so nothing here needs
+  # changing when the 2028 championship starts.
+  #
+  # create: false because Sveltia does not fill in the filter field on a new
+  # entry: a race added here with no year would vanish from this list the
+  # moment it was saved. Add new races in the Race diary section.
+  - name: championship
+    label: Championship
+    label_singular: Championship race
+    description: >-
+      Races that count for the club championship, grouped by year. These are
+      the same entries as the Race diary, shown on their own: a change here
+      is a change there. To put a race in or take it out, set or clear its
+      Championship year. To add a race that is not in the diary yet, add it
+      in the Race diary section with its Championship year filled in. Tick
+      "Date confirmed" only once the organiser has published the date.
+    folder: src/content/calendar-events
+    create: false
+    delete: false
+    summary: "{{name}}"
+    filter:
+      field: championshipYear
+      pattern: "^[0-9]{4}$"
+    sortable_fields: [date, month, name]
+    view_groups:
+      default: year
+      groups:
+        - name: year
+          label: Championship year
+          field: championshipYear
+          pattern: "[0-9]{4}"
+    fields: *race-diary-fields

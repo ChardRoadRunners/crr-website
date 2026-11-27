@@ -14,6 +14,7 @@ import FormattedDate from './FormattedDate.astro';
 import { formatDistance } from '../utils/distance';
 import { getEarliestRaceDate, sortByRaceDateDesc } from '../utils/race-reports';
 import {
+	countsForChampionship,
 	describeTiming,
 	diaryCutoff,
 	groupByMonth,
@@ -104,7 +105,7 @@ const months = groupByMonth(
 												<span class="badge badge-outline badge-wrap badge-sm">Was {event.data.aliases[0]}</span>
 											)}
 											{event.data.clubRace && <span class="badge badge-secondary badge-sm">Our race</span>}
-										{event.data.championship && (
+										{countsForChampionship(event.data, date) && (
 											<span class="badge badge-outline badge-sm">Championship</span>
 										)}
 									</div>
