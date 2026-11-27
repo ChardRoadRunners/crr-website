@@ -11,8 +11,9 @@
  * can render.
  *
  * COLUMNS ARE FOUND BY NAME, never by position. The Standings tab has room for
- * twenty races and only fifteen are in use, so the summary columns sit at a
- * different letter every time a race is added. Reading "Points so far" by name
+ * twenty-five races (twenty until 27 November 2026, when the 2027 list came to
+ * twenty-one), and not every slot is in use, so the summary columns sit at a
+ * different letter every time a race is added — or a slot. Reading "Points so far" by name
  * survives that; reading column Y does not, and would silently start rendering
  * a race's points as somebody's total.
  */
@@ -118,7 +119,7 @@ export function parseStandings(rows: string[][], readAt = new Date()): Standings
 
 	// Races are everything between the two name columns and the first summary
 	// column. Unused slots have blank headers and are dropped — the sheet keeps
-	// room for twenty races whether or not the club has entered that many.
+	// room for twenty-five races whether or not the club has entered that many.
 	const firstSummary = Math.min(...Object.values(summary));
 	const raceColumns: number[] = [];
 	for (let i = Math.max(nameColumn, genderColumn) + 1; i < firstSummary; i += 1) {
